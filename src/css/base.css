@@ -1,0 +1,144 @@
+*, *::before, *::after { box-sizing: border-box; }
+
+html { -webkit-text-size-adjust: 100%; }
+
+body {
+  margin: 0;
+  background: var(--void);
+  color: var(--cream);
+  font-family: var(--text);
+  font-size: var(--step-0);
+  font-weight: 400;
+  line-height: 1.6;
+  overflow-x: hidden;          /* горизонтального скролла нет нигде */
+  -webkit-font-smoothing: antialiased;
+}
+
+/* overflow: hidden ставится только скриптом — без JS страница прокручивается */
+body.is-flight { overflow: hidden; }
+
+img, picture, video { display: block; max-width: 100%; }
+
+h1, h2, h3 {
+  font-family: var(--display);
+  font-weight: 400;
+  font-style: normal;          /* курсив Cormorant ломает кириллицу */
+  line-height: 1.06;
+  letter-spacing: -.01em;
+  margin: 0;
+  text-wrap: balance;
+}
+
+p { margin: 0; }
+
+a { color: inherit; text-decoration-color: var(--brass-40); text-underline-offset: .22em; }
+a:hover { text-decoration-color: var(--brass); }
+
+button {
+  font: inherit;
+  color: inherit;
+  background: none;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+}
+
+:focus-visible {
+  outline: 2px solid var(--flame);
+  outline-offset: 3px;
+  border-radius: var(--radius);
+}
+
+::selection { background: var(--brass); color: var(--void); }
+
+.visually-hidden {
+  position: absolute;
+  width: 1px; height: 1px;
+  margin: -1px; padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* Служебные элементы */
+
+.kicker {
+  font-family: var(--text);
+  font-size: var(--step--1);
+  font-weight: 500;
+  letter-spacing: .18em;
+  text-transform: uppercase;
+  color: var(--brass);
+  margin: 0 0 .9em;
+}
+
+.fact {
+  font-size: var(--step--1);
+  letter-spacing: .04em;
+  color: var(--cream-70);
+  font-variant-numeric: tabular-nums lining-nums;
+  border-top: 1px solid var(--rule);
+  padding-top: .85em;
+  margin: 0;
+}
+
+.skip-link {
+  position: fixed;
+  top: .5rem; left: .5rem;
+  z-index: 100;
+  padding: .6em 1em;
+  background: var(--dark);
+  color: var(--cream);
+  border: 1px solid var(--brass-40);
+  border-radius: var(--radius);
+  transform: translateY(-200%);
+  transition: transform 160ms ease;
+}
+.skip-link:focus-visible { transform: none; }
+
+/* Экран загрузки: держится, пока не готовы первые кадры */
+.loader {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  display: grid;
+  place-items: center;
+  background: var(--void);
+  transition: opacity 520ms ease, visibility 0s 520ms;
+}
+.loader__mark {
+  font-family: var(--display);
+  font-size: var(--step-1);
+  letter-spacing: .22em;
+  text-transform: uppercase;
+  color: var(--cream-55);
+}
+.loader__bar {
+  margin-top: 1.2rem;
+  width: min(46vw, 240px);
+  height: 1px;
+  background: var(--rule);
+  overflow: hidden;
+}
+.loader__bar::after {
+  content: '';
+  display: block;
+  height: 100%;
+  width: var(--loader-progress, 8%);
+  background: var(--brass);
+  transition: width 320ms ease;
+}
+.loader.is-done { opacity: 0; visibility: hidden; pointer-events: none; }
+/* Без JS экран загрузки не появляется вовсе */
+html:not(.js) .loader { display: none; }
+
+/* Заглушка: видна только в отладочной сборке */
+.placeholder {
+  display: inline-block;
+  padding: 0 .4em;
+  border: 1px dashed var(--brass);
+  color: var(--flame);
+  font-family: var(--text);
+  font-size: .85em;
+  letter-spacing: .06em;
+}

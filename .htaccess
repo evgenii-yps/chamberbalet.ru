@@ -1,0 +1,60 @@
+# Камерный театр балета — Apache на рег.ру, статика.
+
+# --- HTTPS и канонический хост -------------------------------------------
+RewriteEngine On
+
+RewriteCond %{HTTPS} !=on
+RewriteCond %{HTTP:X-Forwarded-Proto} !=https
+RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [R=301,L]
+
+RewriteCond %{HTTP_HOST} ^www\.(.+)$ [NC]
+RewriteRule ^ https://%1%{REQUEST_URI} [R=301,L]
+
+# --- Сжатие ---------------------------------------------------------------
+<IfModule mod_brotli.c>
+  AddOutputFilterByType BROTLI_COMPRESS text/html text/css text/plain text/xml \
+    application/javascript application/json image/svg+xml application/manifest+json
+</IfModule>
+
+<IfModule mod_deflate.c>
+  AddOutputFilterByType DEFLATE text/html text/css text/plain text/xml \
+    application/javascript application/json image/svg+xml application/manifest+json
+</IfModule>
+
+# --- Типы -----------------------------------------------------------------
+<IfModule mod_mime.c>
+  AddType image/avif                 .avif
+  AddType image/webp                 .webp
+  AddType font/woff2                 .woff2
+  AddType video/webm                 .webm
+  AddType video/mp4                  .mp4
+  AddType application/manifest+json  .webmanifest
+</IfModule>
+
+# --- Кэш ------------------------------------------------------------------
+# Имена файлов в assets/ содержат хэш содержимого, поэтому кэш вечный.
+<IfModule mod_headers.c>
+  <FilesMatch "\.(avif|webp|jpg|jpeg|png|svg|woff2|mp4|webm|css|js)$">
+    Header set Cache-Control "public, max-age=31536000, immutable"
+  </FilesMatch>
+
+  # Страница обновляется на месте — кэшировать нельзя.
+  <FilesMatch "^(index\.html|sitemap\.xml|robots\.txt|site\.webmanifest)$">
+    Header set Cache-Control "no-cache"
+  </FilesMatch>
+
+  Header always set X-Content-Type-Options "nosniff"
+  Header always set Referrer-Policy "strict-origin-when-cross-origin"
+  Header always unset X-Powered-By
+</IfModule>
+
+<IfModule mod_expires.c>
+  ExpiresActive On
+  ExpiresByType text/html "access plus 0 seconds"
+</IfModule>
+
+# --- Мелочи ---------------------------------------------------------------
+Options -Indexes
+DirectoryIndex index.html
+
+ErrorDocument 404 /index.html

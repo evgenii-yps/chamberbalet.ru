@@ -1,0 +1,232 @@
+/* Пролёт: камера идёт вперёд сквозь стопку полноэкранных кадров.
+ *
+ * Два режима.
+ *   Статический — по умолчанию. Без JS и при prefers-reduced-motion страница
+ *   остаётся обычной прокручиваемой стопкой кадров с подписями.
+ *   Активный (.flight.is-active) — включается только скриптом.
+ *
+ * Анимируются исключительно transform и opacity.
+ */
+
+.flight { position: relative; background: var(--void); }
+
+.slide { position: relative; height: 100svh; min-height: 26rem; margin: 0; }
+
+.slide__frame { position: absolute; inset: 0; overflow: hidden; background: var(--stage); }
+
+.slide__photo { position: absolute; inset: 0; }
+
+.slide__photo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: var(--focus, 50% 50%);
+}
+
+/* Кадра ещё нет — на его месте ровное поле сцены, а не белая дыра */
+.slide__photo:empty { background: var(--stage); }
+
+/* ------------------------------------------------------------------ *
+ *  Затемнение
+ *  Числа держит scripts/check-scrim.mjs: база + виньетка дают среднюю
+ *  плотность 0,391 при потолке 0,40 — при большем свечи перестают светиться.
+ *  Пик в текстовой зоне 0,753. Правя здесь, прогоните `npm run check`.
+ * ------------------------------------------------------------------ */
+
+.slide__scrim {
+  position: absolute;
+  inset: 0;
+  --scrim-text: .50;
+  background:
+    /* виньетка к углам, до 25 % */
+    radial-gradient(60% 50% at 50% 45%,
+      rgb(7 5 6 / 0)    60%,
+      rgb(7 5 6 / .016) 70%,
+      rgb(7 5 6 / .063) 80%,
+      rgb(7 5 6 / .141) 90%,
+      rgb(7 5 6 / .25) 100%),
+    /* усиление в текстовой зоне: плато под подписью и сглаженный сход вверх,
+       поэтому границы между тёмной и светлой частью не видно */
+    linear-gradient(to top,
+      rgb(7 5 6 / calc(var(--scrim-text) * 1))      0%,
+      rgb(7 5 6 / calc(var(--scrim-text) * 1))     38%,
+      rgb(7 5 6 / calc(var(--scrim-text) * .844)) 44.5%,
+      rgb(7 5 6 / calc(var(--scrim-text) * .5))    51%,
+      rgb(7 5 6 / calc(var(--scrim-text) * .156)) 57.5%,
+      rgb(7 5 6 / 0)                               64%),
+    /* база ровным полем на всю площадь кадра */
+    rgb(7 5 6 / .34);
+}
+
+/* Светлые кадры. Усиливаем ТОЛЬКО текстовую зону: ровное поле над
+   фотографией не трогаем, иначе свечи гаснут. 1-(1-.50)(1-.34) = .67 */
+.slide__scrim[data-scrim='strong'] { --scrim-text: .67; }
+
+/* ------------------------------------------------------------------ *
+ *  Подпись
+ * ------------------------------------------------------------------ */
+
+.slide__caption {
+  position: absolute;
+  left: var(--gutter);
+  bottom: clamp(3rem, 8vh, 5.5rem);
+  width: min(42ch, 100% - var(--gutter) * 2);
+  max-width: 100%;
+}
+
+.slide__title { font-size: var(--step-3); margin: 0 0 .5em; }
+.slide__body  { color: var(--cream-70); max-width: var(--measure); margin: 0 0 1.5em; }
+.slide__caption .fact { max-width: var(--measure); }
+
+.slide--hero .slide__caption { bottom: clamp(4rem, 14vh, 9rem); width: min(30ch, 100% - var(--gutter) * 2); }
+.slide--hero .slide__title { font-size: var(--step-4); }
+.slide--hero .slide__body { font-size: var(--step-1); }
+
+/* ------------------------------------------------------------------ *
+ *  Видеофон первого экрана
+ * ------------------------------------------------------------------ */
+
+.slide__video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0;
+  transition: opacity 1s ease;
+}
+.slide__video.is-ready { opacity: 1; }
+
+/* ------------------------------------------------------------------ *
+ *  Подсказка прокрутки
+ * ------------------------------------------------------------------ */
+
+.scroll-hint {
+  position: absolute;
+  left: 50%;
+  bottom: clamp(1rem, 3vh, 2rem);
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: .7em;
+  font-size: var(--step--1);
+  letter-spacing: .2em;
+  text-transform: uppercase;
+  color: var(--cream-55);
+  transition: opacity 400ms ease;
+}
+.scroll-hint::after {
+  content: '';
+  width: 1px;
+  height: 2.2em;
+  background: linear-gradient(to bottom, var(--brass), transparent);
+}
+
+
+/* ------------------------------------------------------------------ *
+ *  Активный режим: стопка кадров во весь экран
+ * ------------------------------------------------------------------ */
+
+.flight.is-active {
+  position: fixed;
+  inset: 0;
+  height: 100svh;
+  /* выше .after: в этом режиме .flight вынут из потока, и секции стоят
+     в документе на нулевой отметке, прямо под ним */
+  z-index: 5;
+}
+
+.flight.is-active .slide {
+  position: absolute;
+  inset: 0;
+  height: 100%;
+  /* Ближние кадры лежат поверх дальних: камера уходит вперёд, верхний слой
+     растворяется, под ним уже стоит следующий — чёрного провала не возникает */
+  z-index: calc(var(--count) - var(--i));
+}
+
+.flight.is-active .slide__frame {
+  opacity: var(--o, 0);
+  visibility: hidden;          /* из потока не выкидываем, только гасим */
+}
+.flight.is-active .slide[data-live] .slide__frame { visibility: visible; }
+
+.flight.is-active .slide__photo { transform: scale(var(--s, 1.15)); }
+
+.flight.is-active .slide__caption {
+  opacity: var(--c, 0);   /* --c ставится на .slide и наследуется */
+  visibility: hidden;
+}
+.flight.is-active .slide[data-live] .slide__caption { visibility: visible; }
+
+/* will-change держим только на живых слоях: на четырнадцати слоях сразу
+   это утечка памяти */
+.flight.is-active .slide[data-live] .slide__frame { will-change: opacity; }
+.flight.is-active .slide[data-live] .slide__photo { will-change: transform; }
+
+/* Подсказка прокрутки гаснет вместе с подписью своего кадра */
+.flight.is-active .scroll-hint { opacity: var(--c, 0); visibility: hidden; }
+.flight.is-active .slide[data-live] .scroll-hint { visibility: visible; }
+.flight.is-active .scroll-hint[data-hidden] { opacity: 0; }
+
+/* ------------------------------------------------------------------ *
+ *  Рельс глав
+ * ------------------------------------------------------------------ */
+
+.rail {
+  position: absolute;
+  right: clamp(.75rem, 2.2vw, 1.75rem);
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 40;
+  display: none;
+  flex-direction: column;
+  gap: clamp(.6rem, 1.4vh, 1rem);
+}
+.flight.is-active .rail { display: flex; }
+
+.rail__dot {
+  width: 1.5rem;
+  height: 1.5rem;
+  display: grid;
+  place-items: center;
+}
+.rail__dot::before {
+  content: '';
+  width: 7px;
+  height: 7px;
+  border: 1px solid var(--brass-40);
+  background: transparent;
+  transition: background 300ms ease, border-color 300ms ease, transform 300ms ease;
+}
+.rail__dot:hover::before { border-color: var(--brass); }
+.rail__dot[aria-current='true']::before {
+  background: var(--flame);
+  border-color: var(--flame);
+  transform: scale(1.15);
+}
+
+/* ------------------------------------------------------------------ *
+ *  Статический режим и уважение к prefers-reduced-motion
+ * ------------------------------------------------------------------ */
+
+@media (prefers-reduced-motion: reduce) {
+  .slide__video { display: none; }
+}
+
+/* Мелкая высота: подпись не должна упираться в край */
+@media (max-height: 520px) {
+  .slide__caption { bottom: 1.5rem; }
+  .slide__body { display: none; }
+}
+
+/* ------------------------------------------------------------------ *
+ *  Пролёт закончен: остаётся последний кадр, дальше обычная прокрутка
+ * ------------------------------------------------------------------ */
+
+.flight.is-done { height: 100svh; overflow: hidden; }
+.flight.is-done .slide { position: absolute; inset: 0; height: 100%; }
+.flight.is-done .slide:not([data-live]) { display: none; }
+.flight.is-done .slide__frame { opacity: var(--o, 1); }
+.flight.is-done .slide__photo { transform: scale(var(--s, 1.15)); }
+.flight.is-done .slide__caption { opacity: var(--c, 1); }
