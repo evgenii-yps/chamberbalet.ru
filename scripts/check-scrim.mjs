@@ -21,8 +21,8 @@
 export const SCRIM = {
   base:       0.34,   // ровное поле
   textMax:    0.50,   // плато усиления под подписью
-  textPlateau:0.38,   // докуда снизу держится плато, доля высоты
-  textFade:   0.64,   // где усиление сходит в ноль
+  textPlateau:0.40,   // докуда снизу держится плато, доля высоты
+  textFade:   0.66,   // где усиление сходит в ноль
   strongExtra:0.34,   // добавка для светлых кадров, только в текстовой зоне
   vignette:   0.25,   // в углах
   vignetteR:  0.60,   // радиус, внутри которого виньетки нет
@@ -31,7 +31,9 @@ export const SCRIM = {
 const CEILING_FLAT = 0.40;
 const TEXT_PEAK = [0.70, 0.755];
 /** Прямоугольник, который реально занимает подпись (с полями). */
-const CAPTION = { x0: 0.05, x1: 0.50, y0: 0.07, y1: 0.38 };
+/** Прямоугольник, который реально занимает подпись — измерен в браузере
+ *  на 1440 × 900: от нижнего поля до верха рубрики. */
+const CAPTION = { x0: 0.04, x1: 0.52, y0: 0.05, y1: 0.40 };
 
 const smoothstep = (t) => t * t * (3 - 2 * t);
 
@@ -65,6 +67,46 @@ export function measure(P = SCRIM, strong = false) {
   }
   return { flatMean: flatSum / n, fullMean: fullSum / n, peak,
            capMean: capSum / capN, capMin, centre: full(0.5, 0.55), corner: full(0.99, 0.99) };
+}
+
+/**
+ * Тот же пресет в виде CSS. Градиенты собираются из чисел SCRIM, а не
+ * набиваются руками: иначе стили и проверка разъезжаются на первой же правке.
+ */
+export function scrimCss(P = SCRIM) {
+  const span = P.textFade - P.textPlateau;
+  const text = [0, 0.25, 0.5, 0.75, 1].map((t) => {
+    const alpha = (1 - smoothstep(t)) * 100;
+    const pos = (P.textPlateau + t * span) * 100;
+    return `      rgb(7 5 6 / calc(var(--scrim-text) * ${(alpha / 100).toFixed(3)}))  ${pos.toFixed(1)}%`;
+  });
+  const vign = [0.6, 0.7, 0.8, 0.9, 1].map((t) => {
+    const local = Math.max(0, (t - P.vignetteR) / (1 - P.vignetteR));
+    return `      rgb(7 5 6 / ${(P.vignette * local * local).toFixed(3)}) ${(t * 100).toFixed(0)}%`;
+  });
+  const strong = 1 - (1 - P.textMax) * (1 - P.strongExtra);
+
+  return [
+    '.slide__scrim {',
+    '  position: absolute;',
+    '  inset: 0;',
+    `  --scrim-text: ${P.textMax.toFixed(2)};`,
+    '  background:',
+    '    /* виньетка к углам */',
+    '    radial-gradient(60% 50% at 50% 45%,',
+    vign.join(',\n') + '),',
+    '    /* усиление в текстовой зоне: плато под подписью и сглаженный сход',
+    '       вверх, поэтому границы между тёмной и светлой частью не видно */',
+    '    linear-gradient(to top,',
+    text.join(',\n') + '),',
+    '    /* база ровным полем на всю площадь кадра */',
+    `    rgb(7 5 6 / ${P.base.toFixed(2)});`,
+    '}',
+    '',
+    '/* Светлые кадры. Усиливаем ТОЛЬКО текстовую зону: ровное поле над',
+    '   фотографией не трогаем, иначе свечи гаснут. */',
+    `.slide__scrim[data-scrim='strong'] { --scrim-text: ${strong.toFixed(2)}; }`,
+  ].join('\n');
 }
 
 /** Контраст кремового текста поверх кадра с относительной яркостью photo. */

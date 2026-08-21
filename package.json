@@ -11,7 +11,9 @@
     "video": "node scripts/build-video.mjs",
     "fonts": "node scripts/build-fonts.mjs",
     "serve": "node scripts/serve.mjs",
-    "check": "node scripts/check-flight.mjs && node scripts/check-scrim.mjs"
+    "check": "node scripts/check-flight.mjs && node scripts/check-scrim.mjs",
+    "qa": "node scripts/qa/browser.mjs",
+    "lighthouse": "node scripts/qa/lighthouse.mjs"
   },
   "devDependencies": {
     "@fontsource/cormorant-garamond": "^5.2.8",

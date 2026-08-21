@@ -117,10 +117,19 @@ export async function buildImages({ quiet = false } = {}) {
   const warnings = [];
   const missing = [];
 
-  for (const slide of slides) {
+  // Кодирование AVIF в четырёх ширинах идёт минуты. Печатаем ход работы:
+  // молчащая сборка выглядит зависшей.
+  const total = slides.length;
+  for (const [n, slide] of slides.entries()) {
     const source = await findOriginal(slide.photo);
     if (!source) { missing.push(slide.photo); continue; }
+    const started = performance.now();
     const entry = await processPhoto(slide.photo, source, cache);
+    if (!quiet) {
+      const took = (performance.now() - started) / 1000;
+      const note = took < 0.05 ? 'из кэша' : `${took.toFixed(1)} с`;
+      process.stdout.write(`   [${String(n + 1).padStart(2)}/${total}] ${slide.photo} — ${note}\n`);
+    }
     cache[slide.photo] = entry;
     warnings.push(...(entry.warnings || []));
     manifest.photos[slide.photo] = {

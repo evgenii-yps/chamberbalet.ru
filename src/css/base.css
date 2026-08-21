@@ -69,7 +69,7 @@ button {
   letter-spacing: .18em;
   text-transform: uppercase;
   color: var(--brass);
-  margin: 0 0 .9em;
+  margin: 0 0 .75em;
 }
 
 .fact {
@@ -95,6 +95,34 @@ button {
   transition: transform 160ms ease;
 }
 .skip-link:focus-visible { transform: none; }
+
+/* Верхняя панель. Первое, куда уводит Tab, и постоянный выход к контакту.
+   Фона нет: она лежит поверх кадра, а затемнение уже своё.
+   Позиционирование absolute, а не fixed: в пролёте страница не прокручена и
+   панель всё равно на месте, а в секциях она уезжает вверх и не налезает на
+   текст. */
+.topbar {
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  z-index: 30;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: clamp(1rem, 2.6vh, 1.75rem) var(--gutter);
+  font-size: var(--step--1);
+  letter-spacing: .16em;
+  text-transform: uppercase;
+  pointer-events: none;
+}
+.topbar__name { color: var(--cream-55); }
+.topbar__link {
+  color: var(--cream);
+  text-decoration: none;
+  border-bottom: 1px solid var(--brass-40);
+  pointer-events: auto;
+}
+.topbar__link:hover { border-bottom-color: var(--brass); }
 
 /* Экран загрузки: держится, пока не готовы первые кадры */
 .loader {

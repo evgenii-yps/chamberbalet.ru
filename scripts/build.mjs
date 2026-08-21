@@ -16,6 +16,7 @@ import { buildImages } from './build-images.mjs';
 import { buildVideo } from './build-video.mjs';
 import { buildFonts } from './build-fonts.mjs';
 import { createRenderer, esc } from './render.mjs';
+import { scrimCss } from './check-scrim.mjs';
 import * as C from '../src/content.js';
 
 const DEBUG = process.env.BUILD_MODE === 'debug';
@@ -52,7 +53,10 @@ async function buildCss(fontCss) {
   const parts = [];
   if (fontCss) parts.push('/* шрифты: самохостинг, ноль внешних запросов */\n' + fontCss);
   for (const name of order) {
-    parts.push(`/* ${name} */\n` + await fs.readFile(path.join(SRC, 'css', name), 'utf8'));
+    let css = await fs.readFile(path.join(SRC, 'css', name), 'utf8');
+    // Затемнение собирается из чисел SCRIM, которые проверяет check-scrim.mjs
+    css = css.replace('/*{{scrim}}*/', scrimCss());
+    parts.push(`/* ${name} */\n` + css);
   }
   const css = parts.join('\n\n');
   const file = `app.${hash(css)}.css`;
@@ -163,7 +167,7 @@ async function main() {
   const video = await buildVideo();
   const fonts = await buildFonts();
 
-  const R = createRenderer({ debug: DEBUG, images, video });
+  const R = createRenderer({ debug: DEBUG, images, video, fonts });
 
   const mediaSize = await copyAssets();
   const css = await buildCss(fonts.css);
@@ -183,6 +187,7 @@ async function main() {
     social: R.renderSocial(),
     preload: R.renderPreload(),
     styles: `<link rel="stylesheet" href="/assets/css/${css.file}">`,
+    topbar: R.renderTopbar(),
     flight: R.renderFlight(),
     sections: R.renderSections(),
     footer: R.renderFooter(),

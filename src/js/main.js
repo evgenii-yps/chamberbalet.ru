@@ -92,7 +92,9 @@ async function runLoader(loader, photos) {
  * ------------------------------------------------------------------ */
 
 function init() {
-  document.documentElement.classList.add('js');
+  // Инлайновый скрипт в <head> уже поставил js и завёл таймер отката.
+  // Снимаем откат: страница дожила до рабочего состояния.
+  document.documentElement.classList.add('js', 'ready');
 
   const root = document.querySelector('.flight');
   const after = document.querySelector('.after');
@@ -182,20 +184,20 @@ function init() {
   const nav = createNav({
     target: root,
     isEnabled: () => active,
+    // Возвращаем true, только если переход действительно начался: по этому
+    // признаку ввод понимает, ждать ему остановки или можно принимать
+    // следующее действие
     onIntent: (intent, payload) => {
-      if (intent === 'contact') { toContact(); return; }
-      if (intent === 'goto') {
-        flight.goTo(payload === 'last' ? flight.count - 1 : 0);
-        return;
-      }
-      if (intent === 'prev') { flight.prev(); return; }
+      if (intent === 'contact') { toContact(); return false; }
+      if (intent === 'goto') return flight.goTo(payload === 'last' ? flight.count - 1 : 0);
+      if (intent === 'prev') return flight.prev();
       if (flight.index >= flight.count - 1) {
         // Пролёт закончен: отпускаем прокрутку и уходим в секции
         exitFlight();
-        after?.scrollIntoView({ behavior: 'smooth' });
-        return;
+        after?.scrollIntoView({ behavior: reduceMotion.matches ? 'auto' : 'smooth' });
+        return false;
       }
-      flight.next();
+      return flight.next();
     },
   });
   nav.attach();
@@ -225,8 +227,8 @@ function init() {
   for (const dot of railDots) {
     dot.addEventListener('click', () => {
       const index = Number(dot.dataset.index);
-      if (!active) enterFlight(index);
-      else flight.goTo(index);
+      if (!active) { enterFlight(index); return; }
+      flight.goTo(index);
     });
   }
 
@@ -234,10 +236,10 @@ function init() {
 
   after?.addEventListener('focusin', () => { if (active) exitFlight(); });
 
-  document.querySelector('.skip-link')?.addEventListener('click', (e) => {
-    e.preventDefault();
-    toContact();
-  });
+  // Ссылка на контакт из любого места сначала отпускает пролёт
+  for (const link of document.querySelectorAll('.skip-link, [data-to-contact]')) {
+    link.addEventListener('click', (e) => { e.preventDefault(); toContact(); });
+  }
 
   window.addEventListener('resize', debounce(() => flight.resize(), RESIZE_DEBOUNCE), { passive: true });
 

@@ -29,35 +29,46 @@ function wheelDelta(event) {
 
 export function createNav({ target = window, onIntent, isEnabled }) {
   let accumulated = 0;
-  let locked = false;
+  /** Жест ещё идёт: снимается только тишиной. Держит очередь дельт тачпада. */
+  let gestureLock = false;
+  /** Переход ещё идёт: снимается, когда пролёт доехал до остановки. */
+  let transitionPending = false;
   let silenceTimer = 0;
   let cooldownUntil = 0;
 
   const enabled = () => (isEnabled ? isEnabled() : true);
-  const busy = () => locked || performance.now() < cooldownUntil;
+  const busy = () => gestureLock || transitionPending || performance.now() < cooldownUntil;
 
+  function armSilence() {
+    clearTimeout(silenceTimer);
+    silenceTimer = setTimeout(() => { gestureLock = false; accumulated = 0; }, SILENCE);
+  }
+
+  /**
+   * onIntent сообщает, начался ли переход. Если не начался — а так бывает на
+   * первом кадре и на выходе из пролёта — ждать нечего, иначе ввод залипнет
+   * навсегда.
+   */
   function emit(intent, payload) {
     accumulated = 0;
-    locked = true;
-    onIntent(intent, payload);
+    gestureLock = true;
+    armSilence();
+    transitionPending = onIntent(intent, payload) === true;
+    if (!transitionPending) cooldownUntil = performance.now() + AFTER_TRANSITION;
   }
 
   /** Вызывается снаружи, когда переход закончился. */
-  function transitionEnded(duration = 0) {
+  function transitionEnded() {
+    transitionPending = false;
     cooldownUntil = performance.now() + AFTER_TRANSITION;
-    void duration;
-  }
-
-  function releaseAfterSilence() {
-    clearTimeout(silenceTimer);
-    silenceTimer = setTimeout(() => { locked = false; accumulated = 0; }, SILENCE);
   }
 
   function onWheel(event) {
     if (!enabled()) return;
     event.preventDefault();
 
-    releaseAfterSilence();
+    // Поток дельт продлевает замок: пока палец на тачпаде, переход один
+    if (gestureLock) armSilence();
     if (busy()) { accumulated = 0; return; }
 
     accumulated += wheelDelta(event);
@@ -88,11 +99,7 @@ export function createNav({ target = window, onIntent, isEnabled }) {
 
     event.preventDefault();
     if (busy()) return;
-    // Клавиша — дискретное действие: замок снимаем сразу после паузы,
-    // без ожидания «тишины», иначе серия нажатий залипнет
     emit(intent, payload);
-    clearTimeout(silenceTimer);
-    silenceTimer = setTimeout(() => { locked = false; accumulated = 0; }, SILENCE);
   }
 
   let touchY = 0, touchX = 0, touchActive = false, touchUsed = false;
@@ -110,6 +117,7 @@ export function createNav({ target = window, onIntent, isEnabled }) {
     const dy = touchY - event.touches[0].clientY;
     const dx = touchX - event.touches[0].clientX;
     if (Math.abs(dy) > Math.abs(dx) * SWIPE_SLOPE) event.preventDefault();
+    if (gestureLock) armSilence();
     if (touchUsed || busy()) return;
     if (Math.abs(dy) < SWIPE_THRESHOLD || Math.abs(dy) <= Math.abs(dx) * SWIPE_SLOPE) return;
     touchUsed = true;                                          // один свайп — один слайд
@@ -118,8 +126,7 @@ export function createNav({ target = window, onIntent, isEnabled }) {
 
   function onTouchEnd() {
     touchActive = false;
-    clearTimeout(silenceTimer);
-    silenceTimer = setTimeout(() => { locked = false; accumulated = 0; }, SILENCE);
+    armSilence();
   }
 
   function attach() {
@@ -141,5 +148,8 @@ export function createNav({ target = window, onIntent, isEnabled }) {
     clearTimeout(silenceTimer);
   }
 
-  return { attach, detach, transitionEnded, reset() { accumulated = 0; locked = false; cooldownUntil = 0; } };
+  return {
+    attach, detach, transitionEnded,
+    reset() { accumulated = 0; gestureLock = false; transitionPending = false; cooldownUntil = 0; },
+  };
 }

@@ -15,7 +15,19 @@
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <link rel="manifest" href="/site.webmanifest">
 
-<script>document.documentElement.classList.add('js')</script>
+<script>
+/* Раскладка пролёта включается сразу, до первой отрисовки: иначе страница
+   рисуется стопкой в четырнадцать экранов и потом схлопывается.
+   Если скрипт так и не доехал, через восемь секунд откатываемся к обычной
+   прокручиваемой стопке — чёрный экран не остаётся ни при каких условиях. */
+(function () {
+  var d = document.documentElement;
+  d.classList.add('js');
+  setTimeout(function () {
+    if (!d.classList.contains('ready')) d.classList.remove('js');
+  }, 8000);
+})();
+</script>
 
 <!--{{preload}}-->
 <!--{{styles}}-->
@@ -30,6 +42,8 @@
     <div class="loader__bar"></div>
   </div>
 </div>
+
+<!--{{topbar}}-->
 
 <main>
   <!--{{flight}}-->

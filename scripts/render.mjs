@@ -20,7 +20,7 @@ export const esc = (s) => String(s)
 /** Значения, которые нельзя показывать. */
 const blank = C.isBlank;
 
-export function createRenderer({ debug = false, images = { photos: {}, og: null }, video = { sources: [], poster: [] } }) {
+export function createRenderer({ debug = false, images = { photos: {}, og: null }, video = { sources: [], poster: [] }, fonts = { faces: [] } }) {
   /**
    * Заполненное значение → само значение.
    * Пустое → null в проде (блок исчезает) или пометка в отладке.
@@ -267,6 +267,15 @@ export function createRenderer({ debug = false, images = { photos: {}, og: null 
     ].join('')}</div>`;
   }
 
+  function renderTopbar() {
+    return [
+      '<header class="topbar">',
+      `<span class="topbar__name">${esc(C.site.organisation.name)}</span>`,
+      `<a class="topbar__link" href="#${esc(C.contactSection.id)}" data-to-contact>${esc(C.ui.toContact)}</a>`,
+      '</header>',
+    ].join('');
+  }
+
   function renderFooter() {
     const year = C.ui.footer;
     return `<footer class="footer"><span>${esc(year)}</span><span>${esc(C.site.organisation.city)}</span></footer>`;
@@ -314,9 +323,17 @@ export function createRenderer({ debug = false, images = { photos: {}, og: null 
     return `<script type="application/ld+json">${JSON.stringify(data)}</script>`;
   }
 
-  /** Первые два кадра просим заранее и с высоким приоритетом. */
+  /**
+   * Первые два кадра просим заранее и с высоким приоритетом; вместе с ними —
+   * кириллические начертания, которыми набран первый экран. Без этого swap
+   * успевает перерисовать заголовок и даёт сдвиг макета.
+   */
   function renderPreload() {
     const out = [];
+    for (const face of fonts.faces || []) {
+      if (face.weight !== 400 || !/cyrillic/.test(face.source || '')) continue;
+      out.push(`<link rel="preload" as="font" type="font/woff2" crossorigin href="/assets/fonts/${face.file}">`);
+    }
     for (const slide of C.slides.slice(0, 2)) {
       const photo = photoOf(slide.photo);
       if (!photo) continue;
@@ -331,7 +348,7 @@ export function createRenderer({ debug = false, images = { photos: {}, og: null 
   }
 
   return {
-    renderFlight, renderSections, renderFooter, renderSocial, renderJsonLd,
+    renderFlight, renderSections, renderTopbar, renderFooter, renderSocial, renderJsonLd,
     renderPreload, posterPicture,
   };
 }

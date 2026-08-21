@@ -3,7 +3,8 @@
  * Два режима.
  *   Статический — по умолчанию. Без JS и при prefers-reduced-motion страница
  *   остаётся обычной прокручиваемой стопкой кадров с подписями.
- *   Активный (.flight.is-active) — включается только скриптом.
+ *   Пролёт — раскладка включается классом js с первой отрисовки, поведением
+ *   управляет main.js.
  *
  * Анимируются исключительно transform и opacity.
  */
@@ -15,6 +16,11 @@
 .slide__frame { position: absolute; inset: 0; overflow: hidden; background: var(--stage); }
 
 .slide__photo { position: absolute; inset: 0; }
+
+/* <picture> — обёртка без собственной высоты. Если её не растянуть,
+   height: 100% у картинки не к чему привязать, и кадр складывается до
+   своих пропорций вместо того, чтобы закрыть экран. */
+.slide__photo picture { position: absolute; inset: 0; display: block; }
 
 .slide__photo img {
   width: 100%;
@@ -28,39 +34,15 @@
 
 /* ------------------------------------------------------------------ *
  *  Затемнение
- *  Числа держит scripts/check-scrim.mjs: база + виньетка дают среднюю
- *  плотность 0,391 при потолке 0,40 — при большем свечи перестают светиться.
- *  Пик в текстовой зоне 0,753. Правя здесь, прогоните `npm run check`.
+ *
+ *  Блок ниже подставляется при сборке из констант SCRIM в
+ *  scripts/check-scrim.mjs — там же, где считается плотность. Править числа
+ *  нужно там: база + виньетка дают среднюю плотность 0,391 при потолке 0,40,
+ *  при большем свечи перестают светиться. Пик в текстовой зоне 0,753.
+ *  После правки — `npm run check`.
  * ------------------------------------------------------------------ */
 
-.slide__scrim {
-  position: absolute;
-  inset: 0;
-  --scrim-text: .50;
-  background:
-    /* виньетка к углам, до 25 % */
-    radial-gradient(60% 50% at 50% 45%,
-      rgb(7 5 6 / 0)    60%,
-      rgb(7 5 6 / .016) 70%,
-      rgb(7 5 6 / .063) 80%,
-      rgb(7 5 6 / .141) 90%,
-      rgb(7 5 6 / .25) 100%),
-    /* усиление в текстовой зоне: плато под подписью и сглаженный сход вверх,
-       поэтому границы между тёмной и светлой частью не видно */
-    linear-gradient(to top,
-      rgb(7 5 6 / calc(var(--scrim-text) * 1))      0%,
-      rgb(7 5 6 / calc(var(--scrim-text) * 1))     38%,
-      rgb(7 5 6 / calc(var(--scrim-text) * .844)) 44.5%,
-      rgb(7 5 6 / calc(var(--scrim-text) * .5))    51%,
-      rgb(7 5 6 / calc(var(--scrim-text) * .156)) 57.5%,
-      rgb(7 5 6 / 0)                               64%),
-    /* база ровным полем на всю площадь кадра */
-    rgb(7 5 6 / .34);
-}
-
-/* Светлые кадры. Усиливаем ТОЛЬКО текстовую зону: ровное поле над
-   фотографией не трогаем, иначе свечи гаснут. 1-(1-.50)(1-.34) = .67 */
-.slide__scrim[data-scrim='strong'] { --scrim-text: .67; }
+/*{{scrim}}*/
 
 /* ------------------------------------------------------------------ *
  *  Подпись
@@ -69,17 +51,17 @@
 .slide__caption {
   position: absolute;
   left: var(--gutter);
-  bottom: clamp(3rem, 8vh, 5.5rem);
-  width: min(42ch, 100% - var(--gutter) * 2);
+  bottom: clamp(2.5rem, 6vh, 4rem);
+  width: min(46ch, 100% - var(--gutter) * 2);
   max-width: 100%;
 }
 
-.slide__title { font-size: var(--step-3); margin: 0 0 .5em; }
-.slide__body  { color: var(--cream-70); max-width: var(--measure); margin: 0 0 1.5em; }
-.slide__caption .fact { max-width: var(--measure); }
+.slide__title { font-size: var(--step-3); margin: 0 0 .42em; max-width: 14ch; }
+.slide__body  { color: var(--cream-70); max-width: var(--measure); margin: 0 0 1.1em; line-height: 1.55; }
+.slide__caption .fact { max-width: var(--measure); padding-top: .7em; }
 
-.slide--hero .slide__caption { bottom: clamp(4rem, 14vh, 9rem); width: min(30ch, 100% - var(--gutter) * 2); }
-.slide--hero .slide__title { font-size: var(--step-4); }
+.slide--hero .slide__caption { bottom: clamp(3.5rem, 12vh, 7rem); }
+.slide--hero .slide__title { font-size: var(--step-4); max-width: 11ch; }
 .slide--hero .slide__body { font-size: var(--step-1); }
 
 /* ------------------------------------------------------------------ *
@@ -124,50 +106,73 @@
 
 
 /* ------------------------------------------------------------------ *
- *  Активный режим: стопка кадров во весь экран
+ *  Раскладка пролёта
+ *
+ *  Применяется с первой отрисовки — по классу js, который ставит инлайновый
+ *  скрипт в <head>, а не по классу от main.js. Иначе страница успевает
+ *  нарисоваться стопкой в четырнадцать экранов и затем схлопывается в один:
+ *  это сдвиг макета величиной со всю страницу.
+ *
+ *  Условие «не reduced-motion» в форме not (…) истинно и там, где браузер
+ *  вовсе не знает этой возможности, — ровно как matchMedia в main.js.
  * ------------------------------------------------------------------ */
 
-.flight.is-active {
-  position: fixed;
-  inset: 0;
-  height: 100svh;
-  /* выше .after: в этом режиме .flight вынут из потока, и секции стоят
-     в документе на нулевой отметке, прямо под ним */
-  z-index: 5;
+@media not (prefers-reduced-motion: reduce) {
+  html.js .flight {
+    position: fixed;
+    inset: 0;
+    height: 100svh;
+    /* выше .after: в этом режиме .flight вынут из потока, и секции стоят
+       в документе на нулевой отметке, прямо под ним */
+    z-index: 5;
+  }
+
+  html.js .flight .slide {
+    position: absolute;
+    inset: 0;
+    height: 100%;
+    /* Ближние кадры лежат поверх дальних: камера уходит вперёд, верхний слой
+       растворяется, под ним уже стоит следующий — чёрного провала не возникает */
+    z-index: calc(var(--count) - var(--i));
+  }
+
+  html.js .flight .slide__frame {
+    opacity: var(--o, 0);
+    visibility: hidden;          /* из потока не выкидываем, только гасим */
+  }
+  html.js .flight .slide[data-live] .slide__frame { visibility: visible; }
+
+  html.js .flight .slide__photo { transform: scale(var(--s, 1.15)); }
+
+  html.js .flight .slide__caption {
+    opacity: var(--c, 0);        /* --c ставится на .slide и наследуется */
+    visibility: hidden;
+  }
+  html.js .flight .slide[data-live] .slide__caption { visibility: visible; }
+
+  /* will-change держим только на живых слоях: на четырнадцати слоях сразу
+     это утечка памяти */
+  html.js .flight .slide[data-live] .slide__frame { will-change: opacity; }
+  html.js .flight .slide[data-live] .slide__photo { will-change: transform; }
+
+  /* Подсказка прокрутки гаснет вместе с подписью своего кадра */
+  html.js .flight .scroll-hint { opacity: var(--c, 0); visibility: hidden; }
+  html.js .flight .slide[data-live] .scroll-hint { visibility: visible; }
+  html.js .flight .scroll-hint[data-hidden] { opacity: 0; }
+
+  html.js .rail { display: flex; }
+
+  /* Пролёт закончен: страница отпущена, остаётся последний кадр,
+     дальше обычная прокрутка */
+  html.js .flight.is-done {
+    position: relative;
+    height: 100svh;
+    overflow: hidden;
+    z-index: auto;
+  }
+  html.js .flight.is-done .slide:not([data-live]) { display: none; }
+  html.js .flight.is-done .rail { display: none; }
 }
-
-.flight.is-active .slide {
-  position: absolute;
-  inset: 0;
-  height: 100%;
-  /* Ближние кадры лежат поверх дальних: камера уходит вперёд, верхний слой
-     растворяется, под ним уже стоит следующий — чёрного провала не возникает */
-  z-index: calc(var(--count) - var(--i));
-}
-
-.flight.is-active .slide__frame {
-  opacity: var(--o, 0);
-  visibility: hidden;          /* из потока не выкидываем, только гасим */
-}
-.flight.is-active .slide[data-live] .slide__frame { visibility: visible; }
-
-.flight.is-active .slide__photo { transform: scale(var(--s, 1.15)); }
-
-.flight.is-active .slide__caption {
-  opacity: var(--c, 0);   /* --c ставится на .slide и наследуется */
-  visibility: hidden;
-}
-.flight.is-active .slide[data-live] .slide__caption { visibility: visible; }
-
-/* will-change держим только на живых слоях: на четырнадцати слоях сразу
-   это утечка памяти */
-.flight.is-active .slide[data-live] .slide__frame { will-change: opacity; }
-.flight.is-active .slide[data-live] .slide__photo { will-change: transform; }
-
-/* Подсказка прокрутки гаснет вместе с подписью своего кадра */
-.flight.is-active .scroll-hint { opacity: var(--c, 0); visibility: hidden; }
-.flight.is-active .slide[data-live] .scroll-hint { visibility: visible; }
-.flight.is-active .scroll-hint[data-hidden] { opacity: 0; }
 
 /* ------------------------------------------------------------------ *
  *  Рельс глав
@@ -183,7 +188,6 @@
   flex-direction: column;
   gap: clamp(.6rem, 1.4vh, 1rem);
 }
-.flight.is-active .rail { display: flex; }
 
 .rail__dot {
   width: 1.5rem;
@@ -220,13 +224,3 @@
   .slide__body { display: none; }
 }
 
-/* ------------------------------------------------------------------ *
- *  Пролёт закончен: остаётся последний кадр, дальше обычная прокрутка
- * ------------------------------------------------------------------ */
-
-.flight.is-done { height: 100svh; overflow: hidden; }
-.flight.is-done .slide { position: absolute; inset: 0; height: 100%; }
-.flight.is-done .slide:not([data-live]) { display: none; }
-.flight.is-done .slide__frame { opacity: var(--o, 1); }
-.flight.is-done .slide__photo { transform: scale(var(--s, 1.15)); }
-.flight.is-done .slide__caption { opacity: var(--c, 1); }
