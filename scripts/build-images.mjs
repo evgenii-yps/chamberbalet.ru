@@ -15,8 +15,10 @@ import path from 'node:path';
 import crypto from 'node:crypto';
 import sharp from 'sharp';
 import {
-  ORIGINALS, BUILD, BUILD_ASSETS, PHOTO_WIDTHS, PHOTO_FORMATS, OG_IMAGE,
+  ORIGINALS, BUILD, BUILD_ASSETS, PHOTO_FORMATS, OG_IMAGE,
   MIN_ORIGINAL_LONG_SIDE, BUDGET, BUDGET_WIDTH, FIRST_SCREEN_SLIDES, bytes,
+  widthsFor, PASSTHROUGH_PHOTOS, PHOTO_WIDTHS, requestWidthAt, CODE_FONTS_FALLBACK,
+  TRIM_PASSTHROUGH,
 } from './config.mjs';
 import { layers } from '../src/content.js';
 
@@ -58,7 +60,9 @@ async function renderVariant(pipeline, basename, width, format) {
 
 async function processPhoto(basename, source, cache) {
   const stat = await fs.stat(source);
-  const key = `${basename}:${stat.size}:${Math.round(stat.mtimeMs)}`;
+  const widths = widthsFor(basename);
+  // Лесенка входит в ключ: без неё отключение 2560 отдало бы кадры из кэша.
+  const key = `${basename}:${stat.size}:${Math.round(stat.mtimeMs)}:${widths.join('/')}`;
   if (cache[basename]?.key === key) {
     const files = cache[basename].variants.map((v) => path.join(PHOTO_OUT, v.file));
     const present = await Promise.all(files.map((f) => fs.access(f).then(() => true, () => false)));
@@ -77,7 +81,7 @@ async function processPhoto(basename, source, cache) {
   const base = input.rotate().toColourspace('srgb').withIccProfile('srgb');
 
   const variants = [];
-  for (const width of PHOTO_WIDTHS) {
+  for (const width of widths) {
     if (width > longSide && variants.some((v) => v.width >= longSide)) continue;
     for (const format of PHOTO_FORMATS) {
       variants.push(await renderVariant(base, basename, width, format));
@@ -145,19 +149,42 @@ export async function buildImages({ quiet = false } = {}) {
   await fs.writeFile(CACHE_FILE, JSON.stringify(cache, null, 2));
   await fs.writeFile(MANIFEST_FILE, JSON.stringify(manifest, null, 2));
 
-  if (!quiet) report(manifest, warnings, missing);
+  if (!quiet) report(manifest, warnings, missing, await codeAndFontsSize(), await videoSize());
   return manifest;
 }
 
-/** Вес одного кадра в том виде, в каком его реально возьмёт браузер на BUDGET_WIDTH. */
+/** Вес одного кадра в том виде, в каком его реально возьмёт браузер.
+ *
+ *  Считаем не по ширине экрана, а по ширине ЗАПРОСА: sizes = min(160vw, 2560px)
+ *  на FullHD даёт 2560, поэтому браузер тянет самый крупный вариант кадра.
+ *  Счёт по 1920 занижал бы бюджет почти вдвое. */
 function representativeSize(photo) {
   if (!photo) return 0;
   const avif = photo.variants.filter((v) => v.ext === 'avif').sort((a, b) => a.width - b.width);
   if (!avif.length) return 0;
-  return (avif.find((v) => v.width >= BUDGET_WIDTH) || avif[avif.length - 1]).size;
+  const want = requestWidthAt(BUDGET_WIDTH);
+  return (avif.find((v) => v.width >= want) || avif[avif.length - 1]).size;
 }
 
-function report(manifest, warnings, missing) {
+/** Вес шрифтов и кода: измеренный прошлой полной сборкой, иначе — резерв. */
+async function codeAndFontsSize() {
+  try {
+    const w = JSON.parse(await fs.readFile(path.join(BUILD, 'weights.json'), 'utf8'));
+    if (Number.isFinite(w.codeAndFonts)) return { size: w.codeAndFonts, measured: true };
+  } catch { /* полной сборки ещё не было */ }
+  return { size: CODE_FONTS_FALLBACK, measured: false };
+}
+
+/** Вес видео: из манифеста прошлой сборки. Нет видео — строка нулевая. */
+async function videoSize() {
+  try {
+    const v = JSON.parse(await fs.readFile(path.join(BUILD, 'video.json'), 'utf8'));
+    const files = v?.variants || [];
+    return files.reduce((s, f) => s + (f.size || 0), 0) + (v?.poster?.size || 0);
+  } catch { return 0; }
+}
+
+function report(manifest, warnings, missing, extra, videoBytes) {
   const names = Object.keys(manifest.photos);
   console.log('\nИзображения');
 
@@ -188,19 +215,58 @@ function report(manifest, warnings, missing) {
   const firstScreen = layers
     .slice(0, FIRST_SCREEN_SLIDES)
     .reduce((s, sl) => s + representativeSize(manifest.photos[sl.photo]), 0) + videoPoster;
-  const page = layers.reduce((s, sl) => s + representativeSize(manifest.photos[sl.photo]), 0) + videoPoster;
+  const photos = layers.reduce((s, sl) => s + representativeSize(manifest.photos[sl.photo]), 0) + videoPoster;
 
+  const { size: codeFonts, measured } = extra;
+  const page = photos + codeFonts;
+
+  const want = requestWidthAt(BUDGET_WIDTH);
+  log(`ширина запроса на ${BUDGET_WIDTH} px: ${want} px (sizes = min(160vw, 2560px)) — по ней и считаем`);
   log(`первый экран (${FIRST_SCREEN_SLIDES} кадра + постер): ${bytes(firstScreen)} из ${bytes(BUDGET.firstScreen)}`);
-  log(`вся страница (${layers.length} кадров): ${bytes(page)} из ${bytes(BUDGET.page)}`);
+
+  // Две строки. §4.5 и §5.2 противоречили друг другу; развели явно.
+  console.log('\n  Бюджет — две независимые строки');
+  log(`  1. изображения + шрифты и код: ${bytes(photos)} + ${bytes(codeFonts)}${measured ? '' : ' (резерв, полной сборки ещё не было)'} = ${bytes(page)} из ${bytes(BUDGET.page)}`);
+  log(`  2. видео:                      ${bytes(videoBytes)} из ${bytes(BUDGET.video)}${videoBytes ? '' : ' — видео не снято'}`);
+
+  // Средство против перерасхода: отключить 2560 у проходных кадров. Считаем
+  // выигрыш всегда — и когда включено, и когда нет, чтобы решение было с цифрой.
+  const passthrough = layers.filter((sl) => PASSTHROUGH_PHOTOS.has(sl.photo));
+  if (passthrough.length) {
+    const gain = passthrough.reduce((s, sl) => {
+      const p = manifest.photos[sl.photo];
+      if (!p) return s;
+      const avif = p.variants.filter((v) => v.ext === 'avif').sort((a, b) => b.width - a.width);
+      const top = avif[0];
+      if (!top) return s;
+      // Вариант 2560 есть — выигрыш это разница до следующей ступени.
+      if (top.width > 1920) {
+        const next = avif.find((v) => v.width <= 1920);
+        return s + (next ? top.size - next.size : 0);
+      }
+      // Его нет (оригинал не дотягивает) — отключать уже нечего.
+      return s;
+    }, 0);
+    if (TRIM_PASSTHROUGH) {
+      log(`  2560 отключён у ${passthrough.length} проходных кадров (TRIM_PASSTHROUGH=1)`);
+    } else if (gain) {
+      log(`  запас: отключение 2560 у ${passthrough.length} проходных кадров дало бы ${bytes(gain)} (TRIM_PASSTHROUGH=1)`);
+    }
+  }
 
   const over = [];
   if (firstScreen > BUDGET.firstScreen) over.push(`первый экран ${bytes(firstScreen)} > ${bytes(BUDGET.firstScreen)}`);
-  if (page > BUDGET.page) over.push(`страница ${bytes(page)} > ${bytes(BUDGET.page)}`);
+  if (page > BUDGET.page) over.push(`строка 1 (изображения + шрифты и код) ${bytes(page)} > ${bytes(BUDGET.page)}`);
+  if (videoBytes > BUDGET.video) over.push(`строка 2 (видео) ${bytes(videoBytes)} > ${bytes(BUDGET.video)}`);
   if (over.length) {
     console.error('\nБюджет превышен:');
     over.forEach((o) => console.error('  ', o));
+    if (!TRIM_PASSTHROUGH) {
+      console.error('   потолок не поднимаем. Первое средство — отключить 2560');
+      console.error('   у проходных кадров: TRIM_PASSTHROUGH=1 npm run images');
+    }
     process.exitCode = 1;
-    throw new Error('бюджет веса изображений превышен');
+    throw new Error('бюджет веса превышен');
   }
 }
 
