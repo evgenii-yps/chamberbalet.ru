@@ -1,227 +1,262 @@
 /**
- * Кадровый цикл пролёта.
+ * Кадровый цикл пролёта. Механика перенесена из согласованного прототипа.
  *
  * Камера идёт вперёд сквозь стопку полноэкранных кадров. Положение — одно
- * дробное число t: целое значение означает покой на кадре с этим номером.
+ * дробное число p в системе номеров слоёв: p = 3 означает, что камера стоит
+ * ровно на четвёртом кадре.
  *
- * Пресет масштаба. Для кадра n смещение d = t − n:
- *   d = −1  кадр рождается,          масштаб 1,04
- *   d =  0  кадр стоит на главе,     масштаб 1,15
- *   d = +1  кадр ушёл вперёд,        масштаб 2,60
- * Между этими точками функция линейна в логарифме масштаба и имеет излом в
- * нуле: вперёд кадр разгоняется куда быстрее, чем подходил. Излом сглажен
- * через softplus, поэтому на остановке нет рывка.
- *
- * Масштаб всегда ≥ 1,04, а фотография лежит под object-fit: cover —
- * значит она никогда не меньше экрана.
+ * Остановок меньше, чем кадров. Останавливаемся только на главах; кадры без
+ * главы — проходные, камера пролетает их внутри одного перехода и идёт по
+ * ним заметно быстрее. Первая остановка отрицательная: там стоит первый
+ * экран, лежащий отдельным слоем поверх стопки.
  */
 
-export const SCALE = {
-  born: 1.04,
-  rest: 1.15,
-  gone: 2.60,
-  kink: 0.10,      // τ: чем меньше, тем резче излом
-};
-
-/**
- * Подходящий кадр набирает непрозрачность почти мгновенно. Это не опечатка:
- * он лежит ПОД уходящим и, пока тот плотен, всё равно не виден. Зато в
- * середине перехода под растворяющимся кадром всегда стоит непрозрачный слой,
- * и чёрного провала не возникает. На остановке (d = −1) он ровно в нуле,
- * поэтому правило чистой остановки не нарушено.
+/* ── масштаб ──────────────────────────────────────────────────────────
+ * Кадр рождается уже во весь экран (1,04), на главе около 1,15, к уходу
+ * доходит до 2,6. softplus сглаживает излом: до главы кривая почти плоская,
+ * после — резко уходит вперёд.
  */
-const FADE_IN = 0.02;
-/** Полуширина окна, в котором видна подпись. */
-const CAPTION_WINDOW = 0.34;
-/** За пределами этого смещения слой не участвует в отрисовке. */
-export const LIVE_RANGE = 1;
+export const SCALE = { base: 1.04, accel: 0.8, soft: 0.18 };
+
+/** softplus: сглаженный max(0, t). Без защиты от переполнения exp(t/soft) рвётся. */
+function softplus(t, soft) {
+  const x = t / soft;
+  if (x > 30) return t;
+  if (x < -30) return soft * Math.exp(x);
+  return soft * Math.log1p(Math.exp(x));
+}
+
+export function scaleAt(t) {
+  return SCALE.base * Math.exp(SCALE.accel * softplus(t, SCALE.soft));
+}
 
 const clamp = (v, lo, hi) => (v < lo ? lo : v > hi ? hi : v);
-const smoothstep = (t) => t * t * (3 - 2 * t);
 
-/** softplus: сглаженный max(0, d). */
-function softplus(d, tau) {
-  const x = d / tau;
-  if (x > 30) return d;              // ln(1+e^x) → x
-  if (x < -30) return tau * Math.exp(x);
-  return tau * Math.log1p(Math.exp(x));
+/* ── прозрачность ─────────────────────────────────────────────────────
+ * Кадр проявляется под предыдущим, стоит плотным и растворяется.
+ * Растворение обязано закончиться до того, как встанет следующая остановка,
+ * иначе на остановке видно два слоя, — поэтому окно ухода считается от
+ * фактического расстояния до ближайшей главы впереди.
+ *
+ * in1 = −(1 + in0 − out0): подходящий кадр набирает полную плотность ровно к
+ * тому мгновению, когда уходящий начинает растворяться. Так стопка закрыта
+ * всегда, и чёрный провал невозможен по построению, а не по совпадению.
+ * В прототипе окно было на 0,1 длиннее и оставляло просвет в 1,7 %.
+ */
+export const FADE = { in0: -1.00, in1: -0.80, out0: 0.20, outMax: 0.70 };
+
+export function fadeOutEnd(layers, i) {
+  let next = i + 1;
+  while (next < layers.length && !layers[next].chapter) next++;
+  const gap = (next < layers.length ? next : i + 1) - i;
+  return Math.min(FADE.outMax, gap * FADE.outMax);
+}
+
+export function opacityAt(t, outEnd) {
+  if (t <= FADE.in0 || t >= outEnd) return 0;
+  if (t < FADE.in1) return clamp((t - FADE.in0) / (FADE.in1 - FADE.in0), 0, 1);
+  if (t > FADE.out0) return clamp(1 - (t - FADE.out0) / (outEnd - FADE.out0), 0, 1);
+  return 1;
+}
+
+/* ── прочее ───────────────────────────────────────────────────────── */
+
+/** Где на числовой оси стоит первый экран. */
+export const OPENER_AT = -1.05;
+/**
+ * Первый экран держится плотным, пока под ним не встанет первый кадр, и
+ * только потом растворяется. В прототипе он начинал гаснуть сразу от своей
+ * остановки, и между ним и ещё не проявившимся кадром просвечивала пустота
+ * на 18 % — на тёмных кадрах это почти незаметно, но приёмка требует, чтобы
+ * провала не было вовсе. Держим до FADE.in1: там кадр уже плотный.
+ */
+export const OPENER_HOLD = FADE.in1;
+export const OPENER_FADE = 0.55;
+
+export function openerOpacityAt(p) {
+  return clamp(1 - (p - OPENER_HOLD) / OPENER_FADE, 0, 1);
+}
+/** Проходной кадр «дешевле» главы: камера идёт по нему быстрее. */
+export const PASS_COST = 0.45;
+
+/** cubic-bezier(.65, 0, .35, 1) — та же кривая, что в CSS. */
+function bezier(x) {
+  const x1 = 0.65, x2 = 0.35;
+  let u = clamp(x, 0, 1);
+  for (let k = 0; k < 6; k++) {
+    const mt = 1 - u;
+    const fx = 3 * mt * mt * u * x1 + 3 * mt * u * u * x2 + u * u * u;
+    const dx = 3 * mt * mt * x1 + 6 * mt * u * (x2 - x1) + 3 * u * u * (1 - x2);
+    if (dx < 1e-6) break;
+    u = clamp(u - (fx - x) / dx, 0, 1);
+  }
+  const mu = 1 - u;
+  return 3 * mu * u * u + u * u * u;    // y1 = 0, y2 = 1
 }
 
 /**
- * Коэффициенты подбираются один раз так, чтобы функция точно проходила через
- * три опорные точки пресета. Меняешь числа в SCALE — коэффициенты едут следом.
+ * Карта темпа внутри одного перехода. Глава стоит единицу, проходной кадр —
+ * PASS_COST. Равномерная доля пути по этой карте даёт неравномерное движение
+ * по номерам слоёв: на главах камера идёт медленно, между ними разгоняется.
  */
-function solveScale(preset) {
-  const tau = preset.kink;
-  const sp0 = softplus(0, tau);
-  const spMinus = softplus(-1, tau) - sp0;
-  const spPlus = softplus(1, tau) - sp0;
-  const lnBorn = Math.log(preset.born / preset.rest);   // g(−1)
-  const lnGone = Math.log(preset.gone / preset.rest);   // g(+1)
-  // −A + C·spMinus = lnBorn
-  //  A + C·spPlus  = lnGone
-  const C = (lnGone + lnBorn) / (spPlus + spMinus);
-  const A = lnGone - C * spPlus;
-  return { tau, sp0, A, C, lnRest: Math.log(preset.rest) };
+export function buildPath(from, to, isChapter, count, steps = 48) {
+  const cumulative = [0];
+  let total = 0;
+  for (let k = 0; k < steps; k++) {
+    const p = from + (to - from) * ((k + 0.5) / steps);
+    const i = clamp(Math.round(p), 0, count - 1);
+    total += isChapter(i) ? 1 : PASS_COST;
+    cumulative.push(total);
+  }
+  return { from, to, cumulative, total, steps };
 }
 
-const K = solveScale(SCALE);
-
-/** Масштаб кадра при смещении d. */
-export function scaleAt(d) {
-  const g = K.A * d + K.C * (softplus(d, K.tau) - K.sp0);
-  return Math.exp(K.lnRest + g);
+export function positionOn(path, u) {
+  const x = u * path.total;
+  let lo = 0, hi = path.steps;
+  while (hi - lo > 1) {
+    const mid = (lo + hi) >> 1;
+    if (path.cumulative[mid] <= x) lo = mid; else hi = mid;
+  }
+  const segment = path.cumulative[hi] - path.cumulative[lo];
+  const f = segment ? (x - path.cumulative[lo]) / segment : 0;
+  return path.from + (path.to - path.from) * ((lo + f) / path.steps);
 }
 
-/** Непрозрачность кадра при смещении d. */
-export function frameOpacityAt(d) {
-  if (d <= -LIVE_RANGE || d >= LIVE_RANGE) return 0;
-  if (d <= 0) return clamp((d + 1) / FADE_IN, 0, 1);
-  return 1 - d;
+/**
+ * Дрейф кадров: медленный снос вбок, привязанный к базовому масштабу.
+ * Направления разложены золотым углом, чтобы соседние кадры не сносило
+ * одинаково. Амплитуда мала — 0,8…1,4 % экрана, чёрных краёв не даёт:
+ * даже на минимальном масштабе 1,04 запас вчетверо больше.
+ */
+export function driftOf(i) {
+  const angle = i * 2.399963;
+  return { x: Math.cos(angle), y: Math.sin(angle) * 0.6, amp: 0.008 + (i % 3) * 0.003 };
 }
-
-/** Непрозрачность подписи при смещении d: читается ровно одна. */
-export function captionOpacityAt(d) {
-  return smoothstep(clamp(1 - Math.abs(d) / CAPTION_WINDOW, 0, 1));
-}
-
-/** cubic-bezier(.65, 0, .35, 1) — та же кривая, что в CSS. */
-function bezier(x1, y1, x2, y2) {
-  const A = (a, b) => 1 - 3 * b + 3 * a;
-  const B = (a, b) => 3 * b - 6 * a;
-  const C = (a) => 3 * a;
-  const calc = (t, a, b) => ((A(a, b) * t + B(a, b)) * t + C(a)) * t;
-  const slope = (t, a, b) => 3 * A(a, b) * t * t + 2 * B(a, b) * t + C(a);
-  return (x) => {
-    if (x <= 0) return 0;
-    if (x >= 1) return 1;
-    let t = x;
-    for (let i = 0; i < 6; i++) {
-      const d = slope(t, x1, x2);
-      if (Math.abs(d) < 1e-6) break;
-      const e = calc(t, x1, x2) - x;
-      if (Math.abs(e) < 1e-6) break;
-      t -= e / d;
-    }
-    return calc(t, y1, y2);
-  };
-}
-
-const EASE = bezier(0.65, 0, 0.35, 1);
 
 /**
  * @param {object} options
- * @param {HTMLElement} options.root         контейнер .flight
- * @param {NodeListOf<HTMLElement>} options.slides
- * @param {number} options.duration          длительность перехода, мс
- * @param {(index:number)=>void} options.onSettle  вызывается в момент чистой остановки
- * @param {(index:number)=>void} options.onNeed     просьба подгрузить кадр
+ * @param {HTMLElement[]} options.layers    слои кадров, по одному на фотографию
+ * @param {boolean[]} options.isChapter     несёт ли слой главу
+ * @param {number[]} options.stops          позиции остановок, первая — первый экран
+ * @param {number} options.duration         длительность перехода, мс
+ * @param {(index:number)=>void} options.onSettle  вызывается на чистой остановке
+ * @param {(position:number)=>void} options.onNeed просьба подгрузить кадры
+ * @param {(opacity:number)=>void} options.onOpener состояние первого экрана
  */
-export function createFlight({ root, slides, duration = 1000, onSettle, onNeed }) {
-  const count = slides.length;
-  const layers = Array.from(slides, (slide) => ({
-    slide,
-    frame: slide.querySelector('.slide__frame'),
-    photo: slide.querySelector('.slide__photo'),
-    live: false,
+export function createFlight({
+  layers, isChapter, stops, duration = 1000, onSettle, onNeed, onOpener,
+}) {
+  const count = layers.length;
+  const last = stops.length - 1;
+
+  // Окно ухода зависит от расстояния до ближайшей главы впереди
+  const chapterMap = layers.map((_, i) => ({ chapter: isChapter(i) || undefined }));
+  const state = layers.map((el, i) => ({
+    el,
+    drift: driftOf(i),
+    outEnd: fadeOutEnd(chapterMap, i),
+    visible: null,
     lastO: -1,
-    lastS: -1,
-    lastC: -1,
+    lastT: null,
   }));
 
-  let position = 0;          // текущее t
-  let index = 0;             // ближайшая остановка
-  let from = 0, to = 0, startedAt = 0, animating = false, raf = 0;
+  let viewportW = window.innerWidth;
+  let viewportH = window.innerHeight;
+  let position = stops[0];
+  let index = 0;
+  let path = null, startedAt = 0, animating = false, raf = 0;
 
-  /** Один проход отрисовки. Ничего, кроме transform и opacity, не трогаем. */
   function paint() {
     for (let i = 0; i < count; i++) {
-      const layer = layers[i];
-      const d = position - i;
-      const live = d > -LIVE_RANGE && d < LIVE_RANGE;
+      const layer = state[i];
+      const t = position - i;
 
-      if (live !== layer.live) {
-        layer.live = live;
-        if (live) layer.slide.setAttribute('data-live', '');
-        else layer.slide.removeAttribute('data-live');
-      }
-      if (!live) {
-        // Гасим один раз, дальше не трогаем: лишние записи в стиль дороги
-        if (layer.lastO !== 0) {
-          layer.frame.style.setProperty('--o', '0');
-          layer.slide.style.setProperty('--c', '0');
-          layer.lastO = 0; layer.lastC = 0; layer.lastS = -1;
+      if (t <= FADE.in0 || t >= layer.outEnd) {
+        if (layer.visible !== false) {
+          layer.visible = false;
+          layer.el.style.visibility = 'hidden';
+          layer.el.style.opacity = '0';
+          layer.el.removeAttribute('data-live');
+          layer.lastO = 0;
+          layer.lastT = null;
         }
         continue;
       }
 
-      const o = frameOpacityAt(d);
-      const s = scaleAt(d);
-      if (o !== layer.lastO) { layer.frame.style.setProperty('--o', o.toFixed(4)); layer.lastO = o; }
-      if (s !== layer.lastS) { layer.photo.style.setProperty('--s', s.toFixed(4)); layer.lastS = s; }
-      const c = captionOpacityAt(d);
-      if (c !== layer.lastC) { layer.slide.style.setProperty('--c', c.toFixed(4)); layer.lastC = c; }
+      if (layer.visible !== true) {
+        layer.visible = true;
+        layer.el.style.visibility = 'visible';
+        layer.el.setAttribute('data-live', '');
+      }
+
+      const o = opacityAt(t, layer.outEnd);
+      if (o !== layer.lastO) { layer.el.style.opacity = o.toFixed(3); layer.lastO = o; }
+
+      if (t !== layer.lastT) {
+        const k = clamp(t, -1, 1);
+        const dx = layer.drift.x * layer.drift.amp * k * viewportW;
+        const dy = layer.drift.y * layer.drift.amp * k * viewportH;
+        layer.el.style.transform =
+          `translate3d(${dx.toFixed(1)}px, ${dy.toFixed(1)}px, 0) scale(${scaleAt(t).toFixed(4)})`;
+        layer.lastT = t;
+      }
     }
+    onOpener?.(openerOpacityAt(position));
   }
 
-  function tick(now) {
-    const elapsed = now - startedAt;
-    const progress = duration <= 1 ? 1 : clamp(elapsed / duration, 0, 1);
-    position = from + (to - from) * EASE(progress);
-    paint();
-    if (progress < 1) {
-      raf = requestAnimationFrame(tick);
-      return;
-    }
-    // Чистая остановка: ровно один слой с непрозрачностью 1, остальные в нуле
-    position = to;
-    index = to;
-    animating = false;
+  function step(now) {
     raf = 0;
+    const u = duration <= 1 ? 1 : clamp((now - startedAt) / duration, 0, 1);
+    position = positionOn(path, bezier(u));
+    paint();
+    if (u < 1) { raf = requestAnimationFrame(step); return; }
+    position = path.to;
+    animating = false;
     paint();
     onSettle?.(index);
   }
 
-  function goTo(next, { immediate = false } = {}) {
-    const target = clamp(Math.round(next), 0, count - 1);
-    // immediate вызывают при входе в режим — там нужен обязательный проход
-    // отрисовки, даже если номер кадра не изменился
+  function goTo(n, { immediate = false } = {}) {
+    const target = clamp(Math.round(n), 0, last);
     if (target === index && !animating && !immediate) return false;
-    if (raf) cancelAnimationFrame(raf);
+    if (raf) { cancelAnimationFrame(raf); raf = 0; }
 
-    // Кадр n+2 просим заранее, чтобы на переходе не было пустого места
-    onNeed?.(target);
-    onNeed?.(target + 1);
-    onNeed?.(target + 2);
+    index = target;
+    onNeed?.(stops[target]);
 
-    from = position;
-    to = target;
     if (immediate || duration <= 1) {
-      position = target; index = target; animating = false; raf = 0;
+      position = stops[target];
+      animating = false;
       paint();
       onSettle?.(index);
       return true;
     }
+
+    path = buildPath(position, stops[target], isChapter, count);
     startedAt = performance.now();
     animating = true;
-    raf = requestAnimationFrame(tick);
+    raf = requestAnimationFrame(step);
     return true;
   }
 
-  function resize() { paint(); }
-
-  paint();   // первый проход: без него слои остались бы на фолбэках из CSS
+  function resize() {
+    viewportW = window.innerWidth;
+    viewportH = window.innerHeight;
+    state.forEach((layer) => { layer.lastT = null; });   // дрейф зависит от размера
+    paint();
+  }
 
   return {
     get count() { return count; },
+    get stopCount() { return stops.length; },
     get index() { return index; },
     get position() { return position; },
     get animating() { return animating; },
-    goTo,
+    get atLast() { return index >= last; },
+    goTo, paint, resize,
     next: (opts) => goTo(index + 1, opts),
     prev: (opts) => goTo(index - 1, opts),
-    paint,
-    resize,
     destroy() { if (raf) cancelAnimationFrame(raf); },
   };
 }

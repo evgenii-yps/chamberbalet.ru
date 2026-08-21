@@ -5,15 +5,19 @@
  * страница ведёт себя как обычная: overflow: hidden снимается, секции
  * листаются нативно.
  */
-import { createFlight } from './flight.js';
+import { createFlight, OPENER_AT } from './flight.js';
 import { createNav } from './nav.js';
 import { setupHeroVideo } from './hero-video.js';
 import { setupReveal } from './reveal.js';
 
 const DURATION = 1000;
 const RESIZE_DEBOUNCE = 150;
-const FIRST_SCREEN_SLIDES = 3;
+const FIRST_SCREEN_FRAMES = 3;
 const LOADER_TIMEOUT = 6000;
+/** Пауза перед подменой подписи: старая успевает уйти, новая не мелькает. */
+const CAPTION_SWAP = 240;
+/** Насколько заранее просим кадры, которых ещё нет. */
+const LOOKAHEAD = 5;
 
 const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
 
@@ -23,17 +27,16 @@ function debounce(fn, wait) {
 }
 
 /* ------------------------------------------------------------------ *
- *  Кадры: разметка первых трёх лежит в HTML, остальные достаём из манифеста
+ *  Кадры: разметка первых трёх в HTML, остальные — в <noscript>
  * ------------------------------------------------------------------ */
 
 function createPhotoLoader(root) {
-  const holders = Array.from(root.querySelectorAll('.slide__photo'));
+  const holders = Array.from(root.querySelectorAll('.layer__photo'));
 
   /**
-   * Разметка отложенных кадров лежит в <noscript>. При включённом скриптинге
-   * его содержимое не разбирается парсером и доступно как обычный текст —
-   * значит одна и та же разметка обслуживает и страницу без JS, и ленивую
-   * загрузку, без дублирующего манифеста.
+   * При включённом скриптинге содержимое <noscript> не разбирается парсером и
+   * доступно как обычный текст — значит одна и та же разметка обслуживает и
+   * страницу без JS, и ленивую загрузку, без дублирующего манифеста.
    */
   function ensure(index) {
     const holder = holders[index];
@@ -45,12 +48,18 @@ function createPhotoLoader(root) {
     return holder.querySelector('img');
   }
 
-  /** Кадры, отрисованные прямо в HTML, считаем уже загруженными. */
   holders.forEach((holder) => { if (holder.querySelector('img')) holder.dataset.loaded = 'yes'; });
 
-  const imageOf = (index) => holders[index]?.querySelector('img') || null;
-
-  return { ensure, imageOf, count: holders.length };
+  return {
+    ensure,
+    imageOf: (i) => holders[i]?.querySelector('img') || null,
+    count: holders.length,
+    /** Просим всё до позиции камеры плюс запас. */
+    upto(position) {
+      const limit = Math.min(this.count - 1, Math.floor(position) + LOOKAHEAD);
+      for (let i = 0; i <= limit; i++) this.ensure(i);
+    },
+  };
 }
 
 const settled = (img) => {
@@ -62,26 +71,24 @@ const settled = (img) => {
   });
 };
 
-/* ------------------------------------------------------------------ *
- *  Экран загрузки: держим, пока не готовы первые три кадра
- * ------------------------------------------------------------------ */
-
-async function runLoader(loader, photos) {
+async function runLoader(loader, photos, openerImage) {
   if (!loader) return;
-  const first = [];
-  for (let i = 0; i < Math.min(FIRST_SCREEN_SLIDES, photos.count); i++) {
+  const first = openerImage ? [openerImage] : [];
+  for (let i = 0; i < Math.min(FIRST_SCREEN_FRAMES, photos.count); i++) {
     photos.ensure(i);
     first.push(photos.imageOf(i));
   }
+  if (!first.length) { loader.classList.add('is-done'); setTimeout(() => loader.remove(), 700); return; }
   let done = 0;
   const step = () => {
     done += 1;
     loader.style.setProperty('--loader-progress', `${Math.round((done / first.length) * 100)}%`);
   };
 
-  const all = Promise.all(first.map((img) => settled(img).then(step)));
-  const timeout = new Promise((resolve) => setTimeout(resolve, LOADER_TIMEOUT));
-  await Promise.race([all, timeout]);
+  await Promise.race([
+    Promise.all(first.map((img) => settled(img).then(step))),
+    new Promise((resolve) => setTimeout(resolve, LOADER_TIMEOUT)),
+  ]);
 
   loader.classList.add('is-done');
   setTimeout(() => loader.remove(), 700);
@@ -92,84 +99,120 @@ async function runLoader(loader, photos) {
  * ------------------------------------------------------------------ */
 
 function init() {
-  // Инлайновый скрипт в <head> уже поставил js и завёл таймер отката.
-  // Снимаем откат: страница дожила до рабочего состояния.
   document.documentElement.classList.add('js', 'ready');
 
-  const root = document.querySelector('.flight');
+  const flightEl = document.querySelector('.flight');
+  const world = document.querySelector('.flight__world');
+  const opener = document.querySelector('.opener');
   const after = document.querySelector('.after');
   const loader = document.querySelector('.loader');
   setupReveal();
 
-  if (!root) return;
+  if (!flightEl || !world || !opener) return;
 
-  const slides = root.querySelectorAll('.slide');
-  const photos = createPhotoLoader(root);
+  const layerEls = Array.from(world.querySelectorAll('.layer'));
+  const photoEls = layerEls.map((el) => el.querySelector('.layer__photo'));
+  const chapterAt = layerEls.map((el) => Boolean(el.querySelector('.layer__caption')));
+  const stopIndexes = layerEls
+    .map((el, i) => (chapterAt[i] ? i : -1))
+    .filter((i) => i >= 0);
+
+  const photos = createPhotoLoader(world);
   const live = document.getElementById('flight-live');
-  const rail = root.querySelector('.rail');
+  const scrim = document.querySelector('.flight__scrim');
+  const rail = document.querySelector('.rail');
   const railDots = rail ? Array.from(rail.querySelectorAll('.rail__dot')) : [];
-  const hint = root.querySelector('.scroll-hint');
-  const video = setupHeroVideo(root.querySelector('.slide__video'));
+  const hint = document.querySelector('.hint');
+  const video = setupHeroVideo(opener.querySelector('.opener__video'));
 
-  runLoader(loader, photos);
+  runLoader(loader, photos, opener.querySelector('.opener__bg img'));
 
-  // Уважаем reduced-motion: пролёт вырождается в обычную прокрутку,
-  // все кадры просто грузятся по мере появления
+  // Уважаем reduced-motion: пролёт вырождается в обычную прокрутку
   if (reduceMotion.matches) {
     for (let i = 0; i < photos.count; i++) photos.ensure(i);
     return;
   }
 
   let active = false;
+  let swapTimer = 0;
+  let shownChapter = -2;
 
   const flight = createFlight({
-    root,
-    slides,
+    layers: photoEls,
+    isChapter: (i) => chapterAt[i],
+    stops: [OPENER_AT, ...stopIndexes],
     duration: DURATION,
-    onNeed: (index) => { if (index >= 0 && index < photos.count) photos.ensure(index); },
-    onSettle: (index) => {
-      nav.transitionEnded(DURATION);
-      announce(index);
-      markRail(index);
-      video?.setActive(index === 0);
-      if (hint) hint.toggleAttribute('data-hidden', index !== 0);
+    onNeed: (position) => photos.upto(position + 1),
+    onOpener: (opacity) => {
+      opener.style.opacity = opacity.toFixed(3);
+      opener.style.transform = `scale(${(1 + (1 - opacity) * 0.06).toFixed(4)})`;
+      opener.style.visibility = opacity < 0.01 ? 'hidden' : 'visible';
+      // Первый экран несёт своё затемнение. Экранный слой поднимается ровно
+      // настолько, насколько уходит первый экран, — плотность не удваивается
+      if (scrim) scrim.style.opacity = (1 - opacity).toFixed(3);
+      video?.setActive(opacity > 0.02);
+    },
+    onSettle: (stop) => {
+      nav.transitionEnded();
+      markRail(stop);
     },
   });
 
-  function announce(index) {
-    if (!live) return;
-    const slide = slides[index];
-    const label = slide?.dataset.chapter;
-    live.textContent = label || '';
+  /** Подпись подменяется с паузой: старая успевает уйти, новая не мелькает. */
+  function setChapter(stop) {
+    const chapterNumber = stop - 1;             // остановка 0 — первый экран
+    markRail(stop);
+    if (chapterNumber === shownChapter) return;
+    shownChapter = chapterNumber;
+
+    clearTimeout(swapTimer);
+    layerEls.forEach((el) => el.removeAttribute('data-in'));
+    if (chapterNumber < 0) { if (live) live.textContent = ''; return; }
+
+    const target = layerEls[stopIndexes[chapterNumber]];
+    swapTimer = setTimeout(() => {
+      target?.setAttribute('data-in', '');
+      const bright = target?.hasAttribute('data-bright');
+      if (scrim) scrim.toggleAttribute('data-bright', Boolean(bright));
+      if (live) live.textContent = target?.dataset.chapter || '';
+    }, CAPTION_SWAP);
   }
 
-  function markRail(index) {
+  function markRail(stop) {
     for (const dot of railDots) {
-      const target = Number(dot.dataset.index);
-      dot.setAttribute('aria-current', target === index ? 'true' : 'false');
+      dot.setAttribute('aria-current', Number(dot.dataset.stop) === stop ? 'true' : 'false');
     }
+    if (hint) hint.style.opacity = stop > 0 ? '0' : '';
   }
 
   /* --- режимы --------------------------------------------------- */
 
-  function enterFlight(index = flight.index) {
+  function enterFlight(stop = flight.index) {
     if (active) return;
     active = true;
-    root.classList.remove('is-done');
-    root.classList.add('is-active');
+    flightEl.classList.remove('is-done');
+    document.documentElement.classList.remove('flight-done');
     document.body.classList.add('is-flight');
     window.scrollTo(0, 0);
-    flight.goTo(index, { immediate: true });
+    scrim?.setAttribute('data-on', '');
+    if (rail) rail.style.opacity = '';
+    flight.goTo(stop, { immediate: true });
+    setChapter(stop);
     nav.reset();
   }
 
   function exitFlight() {
     if (!active) return;
     active = false;
-    root.classList.remove('is-active');
-    root.classList.add('is-done');
+    // Остаётся последний кадр: страница отпущена, дальше обычная прокрутка
+    layerEls.forEach((el, i) => el.toggleAttribute('data-live-frame', i === stopIndexes.at(-1)));
+    flightEl.classList.add('is-done');
+    document.documentElement.classList.add('flight-done');
     document.body.classList.remove('is-flight');
     window.scrollTo(0, 0);
+    scrim?.removeAttribute('data-on');
+    if (scrim) scrim.style.opacity = '';        // назад под переход из CSS
+    if (rail) rail.style.opacity = '0';
     video?.setActive(false);
   }
 
@@ -182,21 +225,30 @@ function init() {
   }
 
   const nav = createNav({
-    target: root,
+    target: window,
     isEnabled: () => active,
     // Возвращаем true, только если переход действительно начался: по этому
     // признаку ввод понимает, ждать ему остановки или можно принимать
     // следующее действие
     onIntent: (intent, payload) => {
       if (intent === 'contact') { toContact(); return false; }
-      if (intent === 'goto') return flight.goTo(payload === 'last' ? flight.count - 1 : 0);
-      if (intent === 'prev') return flight.prev();
-      if (flight.index >= flight.count - 1) {
+      if (intent === 'goto') {
+        const stop = payload === 'last' ? flight.stopCount - 1 : 0;
+        setChapter(stop);
+        return flight.goTo(stop);
+      }
+      if (intent === 'prev') {
+        if (flight.index <= 0) return false;
+        setChapter(flight.index - 1);
+        return flight.prev();
+      }
+      if (flight.atLast) {
         // Пролёт закончен: отпускаем прокрутку и уходим в секции
         exitFlight();
-        after?.scrollIntoView({ behavior: reduceMotion.matches ? 'auto' : 'smooth' });
+        after?.scrollIntoView({ behavior: 'smooth' });
         return false;
       }
+      setChapter(flight.index + 1);
       return flight.next();
     },
   });
@@ -206,50 +258,39 @@ function init() {
 
   function maybeReenter(goingUp) {
     if (active || !goingUp || window.scrollY > 2) return;
-    enterFlight(flight.count - 1);
+    enterFlight(flight.stopCount - 1);
   }
 
-  window.addEventListener('wheel', (e) => {
-    if (active) return;
-    maybeReenter(e.deltaY < 0);
-  }, { passive: true });
+  window.addEventListener('wheel', (e) => { if (!active) maybeReenter(e.deltaY < 0); }, { passive: true });
 
   let reentryTouchY = 0;
   window.addEventListener('touchstart', (e) => { reentryTouchY = e.touches[0]?.clientY ?? 0; }, { passive: true });
   window.addEventListener('touchmove', (e) => {
     if (active) return;
-    const y = e.touches[0]?.clientY ?? 0;
-    maybeReenter(y - reentryTouchY > 24);
+    maybeReenter((e.touches[0]?.clientY ?? 0) - reentryTouchY > 24);
   }, { passive: true });
 
-  /* --- рельс глав ------------------------------------------------ */
+  /* --- рельс и выходы -------------------------------------------- */
 
   for (const dot of railDots) {
     dot.addEventListener('click', () => {
-      const index = Number(dot.dataset.index);
-      if (!active) { enterFlight(index); return; }
-      flight.goTo(index);
+      const stop = Number(dot.dataset.stop);
+      if (!active) { enterFlight(stop); return; }
+      setChapter(stop);
+      flight.goTo(stop);
     });
   }
 
-  /* --- фокус не должен запирать зрителя --------------------------- */
-
   after?.addEventListener('focusin', () => { if (active) exitFlight(); });
 
-  // Ссылка на контакт из любого места сначала отпускает пролёт
   for (const link of document.querySelectorAll('.skip-link, [data-to-contact]')) {
     link.addEventListener('click', (e) => { e.preventDefault(); toContact(); });
   }
 
   window.addEventListener('resize', debounce(() => flight.resize(), RESIZE_DEBOUNCE), { passive: true });
-
   reduceMotion.addEventListener?.('change', (e) => { if (e.matches) exitFlight(); });
 
   enterFlight(0);
-  announce(0);
-  markRail(0);
-  photos.ensure(1);
-  photos.ensure(2);
 }
 
 if (document.readyState === 'loading') {

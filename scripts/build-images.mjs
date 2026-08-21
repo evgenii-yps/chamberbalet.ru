@@ -18,7 +18,7 @@ import {
   ORIGINALS, BUILD, BUILD_ASSETS, PHOTO_WIDTHS, PHOTO_FORMATS, OG_IMAGE,
   MIN_ORIGINAL_LONG_SIDE, BUDGET, BUDGET_WIDTH, FIRST_SCREEN_SLIDES, bytes,
 } from './config.mjs';
-import { slides } from '../src/content.js';
+import { layers } from '../src/content.js';
 
 const PHOTO_SRC = path.join(ORIGINALS, 'photo');
 const PHOTO_OUT = path.join(BUILD_ASSETS, 'photo');
@@ -119,8 +119,8 @@ export async function buildImages({ quiet = false } = {}) {
 
   // Кодирование AVIF в четырёх ширинах идёт минуты. Печатаем ход работы:
   // молчащая сборка выглядит зависшей.
-  const total = slides.length;
-  for (const [n, slide] of slides.entries()) {
+  const total = layers.length;
+  for (const [n, slide] of layers.entries()) {
     const source = await findOriginal(slide.photo);
     if (!source) { missing.push(slide.photo); continue; }
     const started = performance.now();
@@ -139,7 +139,7 @@ export async function buildImages({ quiet = false } = {}) {
     };
   }
 
-  const heroSource = await findOriginal(slides[0].photo);
+  const heroSource = await findOriginal(layers[0].photo);
   if (heroSource) manifest.og = await makeOgImage(heroSource);
 
   await fs.writeFile(CACHE_FILE, JSON.stringify(cache, null, 2));
@@ -162,7 +162,7 @@ function report(manifest, warnings, missing) {
   console.log('\nИзображения');
 
   if (missing.length) {
-    log(`оригиналов нет: ${missing.length} из ${slides.length} (${missing.slice(0, 3).join(', ')}${missing.length > 3 ? ', …' : ''})`);
+    log(`оригиналов нет: ${missing.length} из ${layers.length} (${missing.slice(0, 3).join(', ')}${missing.length > 3 ? ', …' : ''})`);
   }
   if (!names.length) {
     log('ни одного оригинала не найдено — собираю без фотографий');
@@ -185,13 +185,13 @@ function report(manifest, warnings, missing) {
   for (const w of warnings) log('внимание:', w);
 
   const videoPoster = manifest.og ? manifest.og.size : 0;
-  const firstScreen = slides
+  const firstScreen = layers
     .slice(0, FIRST_SCREEN_SLIDES)
     .reduce((s, sl) => s + representativeSize(manifest.photos[sl.photo]), 0) + videoPoster;
-  const page = slides.reduce((s, sl) => s + representativeSize(manifest.photos[sl.photo]), 0) + videoPoster;
+  const page = layers.reduce((s, sl) => s + representativeSize(manifest.photos[sl.photo]), 0) + videoPoster;
 
   log(`первый экран (${FIRST_SCREEN_SLIDES} кадра + постер): ${bytes(firstScreen)} из ${bytes(BUDGET.firstScreen)}`);
-  log(`вся страница (${slides.length} кадров): ${bytes(page)} из ${bytes(BUDGET.page)}`);
+  log(`вся страница (${layers.length} кадров): ${bytes(page)} из ${bytes(BUDGET.page)}`);
 
   const over = [];
   if (firstScreen > BUDGET.firstScreen) over.push(`первый экран ${bytes(firstScreen)} > ${bytes(BUDGET.firstScreen)}`);

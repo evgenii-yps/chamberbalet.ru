@@ -13,6 +13,9 @@ import { PHOTO_WIDTHS } from './config.mjs';
  *  потребность и браузер берёт слишком мелкий вариант. */
 export const SIZES = 'min(160vw, 2560px)';
 
+/** Заголовок главы содержит <br> — для aria-label его надо снять. */
+export const stripTags = (s) => String(s).replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+
 export const esc = (s) => String(s)
   .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
   .replace(/"/g, '&quot;');
@@ -35,8 +38,8 @@ export function createRenderer({ debug = false, images = { photos: {}, og: null 
   const photoOf = (name) => images.photos?.[name];
 
   /** <picture> с источниками по убыванию предпочтения. */
-  function picture(slide, { eager = false, priority = false } = {}) {
-    const photo = photoOf(slide.photo);
+  function picture(layer, { eager = false, priority = false } = {}) {
+    const photo = photoOf(layer.photo);
     if (!photo) return '';
 
     const byExt = {};
@@ -59,7 +62,7 @@ export function createRenderer({ debug = false, images = { photos: {}, og: null 
       `sizes="${SIZES}"`,
       `width="${largest.width}"`,
       `height="${largest.height}"`,
-      `alt="${esc(slide.alt)}"`,
+      `alt="${esc(layer.alt)}"`,
       eager ? 'decoding="async"' : 'loading="lazy" decoding="async"',
       priority ? 'fetchpriority="high"' : '',
     ].filter(Boolean).join(' ');
@@ -79,81 +82,87 @@ export function createRenderer({ debug = false, images = { photos: {}, og: null 
 
   /* ------------------------------- пролёт ------------------------------- */
 
-  function renderSlide(slide, i) {
-    const inHtml = i < 3;                 // первые три кадра в разметке, дальше — из манифеста
-    const chapter = slide.chapter;
-    const headingId = `slide-${slide.id}-title`;
+  /** Подпись главы. Живёт в своём кадре: так она есть и без JS, и для поиска. */
+  function caption(chapter, number, total) {
+    const id = `chapter-${number + 1}-title`;
+    return [
+      '<div class="layer__caption">',
+      `<p class="layer__kicker">${esc(chapter.kicker)}` +
+        `<span class="layer__no">${String(number + 1).padStart(2, '0')} / ${String(total).padStart(2, '0')}</span></p>`,
+      `<h2 class="layer__title" id="${id}">${chapter.title}</h2>`,
+      `<p class="layer__body">${esc(chapter.body)}</p>`,
+      `<p class="layer__fact">${esc(chapter.fact)}</p>`,
+      '</div>',
+    ].join('');
+  }
 
+  function renderLayer(layer, i) {
+    // Первые три кадра стоят в разметке, остальные — в <noscript>: в пролёте
+    // все слои лежат в области просмотра, и loading="lazy" их бы не удержал
+    const inHtml = i < 3;
     const photoInner = inHtml
-      ? picture(slide, { eager: i < 2, priority: i < 2 })
-      : `<noscript>${picture(slide)}</noscript>`;
+      ? picture(layer, { eager: i < 2, priority: i < 2 })
+      : `<noscript>${picture(layer)}</noscript>`;
 
-    const videoEl = slide.isHero && video.sources?.length
-      ? `<video class="slide__video" muted loop playsinline preload="metadata" aria-hidden="true" tabindex="-1"` +
-        (video.poster?.find((p) => p.ext === 'jpg') ? ` poster="/assets/photo/${video.poster.find((p) => p.ext === 'jpg').file}"` : '') +
-        ` data-sources='${JSON.stringify(video.sources.map((s) => ({ src: `/assets/video/${s.file}`, type: s.mime, width: s.width })))}'></video>`
-      : '';
-
-    let caption = '';
-    if (slide.isHero) {
-      caption = [
-        '<div class="slide__caption">',
-        C.hero.kicker ? `<p class="kicker">${esc(C.hero.kicker)}</p>` : '',
-        `<h1 class="slide__title" id="${headingId}">${esc(C.hero.title)}</h1>`,
-        `<p class="slide__body">${esc(C.hero.lede)}</p>`,
-        '</div>',
-      ].join('');
-    } else if (chapter) {
-      caption = [
-        '<div class="slide__caption">',
-        `<p class="kicker">${esc(chapter.kicker)}</p>`,
-        `<h2 class="slide__title" id="${headingId}">${esc(chapter.title)}</h2>`,
-        `<p class="slide__body">${esc(chapter.body)}</p>`,
-        `<p class="fact">${esc(chapter.fact)}</p>`,
-        '</div>',
-      ].join('');
-    }
-
-    // Объявляем каждый кадр, а не только главы: иначе на кадрах без текста
-    // зритель с экранным диктором не понимает, где он
-    const label = chapter ? `${chapter.kicker}. ${chapter.title}`
-      : slide.isHero ? C.hero.title
-      : slide.alt;
+    const chapter = layer.chapter;
+    const number = chapter ? C.chapters.findIndex((c) => c.index === i) : -1;
+    const label = chapter ? `${chapter.kicker}. ${stripTags(chapter.title)}` : layer.alt;
 
     return [
-      `<article class="slide${slide.isHero ? ' slide--hero' : ''}" style="--i:${i}"`,
-      ` data-index="${i}"`,
-      ` data-chapter="${esc(label)}"`,
-      caption ? ` aria-labelledby="${headingId}"` : ` aria-label="${esc(slide.alt)}"`,
+      `<article class="layer${layer.tall ? ' layer--tall' : ''}" style="--i:${i}"`,
+      ` data-index="${i}" data-chapter="${esc(label)}"`,
+      layer.bright ? ' data-bright' : '',
+      chapter ? ` aria-labelledby="chapter-${number + 1}-title"` : ` aria-label="${esc(layer.alt)}"`,
       '>',
-      '<div class="slide__frame">',
-      `<div class="slide__photo" data-photo="${esc(slide.photo)}">${photoInner}</div>`,
-      videoEl,
-      `<div class="slide__scrim"${slide.scrim === 'strong' ? ' data-scrim="strong"' : ''} aria-hidden="true"></div>`,
-      '</div>',
-      caption,
-      slide.isHero && C.hero.scrollHint ? `<p class="scroll-hint" aria-hidden="true">${esc(C.hero.scrollHint)}</p>` : '',
+      `<div class="layer__photo" data-photo="${esc(layer.photo)}">${photoInner}</div>`,
+      chapter ? caption(chapter, number, C.chapters.length) : '',
       '</article>',
     ].join('');
   }
 
-  function renderFlight() {
-    const slideHtml = C.slides.map(renderSlide).join('');
-
-    const dots = C.slides
-      .map((slide, i) => ({ slide, i }))
-      .filter(({ slide }) => slide.chapter)
-      .map(({ slide, i }, n) =>
-        `<button type="button" class="rail__dot" data-index="${i}" aria-current="false">` +
-        `<span class="visually-hidden">${esc(`${n + 1}. ${slide.chapter.kicker}. ${slide.chapter.title}`)}</span></button>`)
-      .join('');
+  /** Первый экран: фотография, поверх неё видео, если оно собрано. */
+  function renderOpener() {
+    const heroLayer = C.layers.find((l) => l.photo === C.hero.photo) || C.layers[0];
+    const videoEl = video.sources?.length
+      ? `<video class="opener__video" muted loop playsinline preload="metadata" aria-hidden="true" tabindex="-1"` +
+        (video.poster?.find((p) => p.ext === 'jpg')
+          ? ` poster="/assets/photo/${video.poster.find((p) => p.ext === 'jpg').file}"` : '') +
+        ` data-sources='${JSON.stringify(video.sources.map((s) => ({ src: `/assets/video/${s.file}`, type: s.mime, width: s.width })))}'></video>`
+      : '';
 
     return [
-      `<div class="flight" style="--count:${C.slides.length}">`,
-      slideHtml,
-      `<nav class="rail" aria-label="${esc(C.ui.railLabel)}">${dots}</nav>`,
-      `<p class="visually-hidden" id="flight-live" aria-live="polite"></p>`,
+      '<section class="opener" aria-labelledby="opener-title">',
+      '<div class="opener__bg">',
+      picture({ ...heroLayer, alt: '' }, { eager: true, priority: true }),
+      videoEl,
+      `<div class="opener__veil"${heroLayer.bright ? ' data-bright' : ''} aria-hidden="true"></div>`,
       '</div>',
+      '<div class="opener__in">',
+      `<p class="opener__kicker">${esc(C.hero.kicker)}</p>`,
+      `<h1 class="opener__title" id="opener-title">${esc(C.hero.title)}</h1>`,
+      `<p class="opener__lede">${esc(C.hero.lede)}</p>`,
+      '</div>',
+      '</section>',
+    ].join('');
+  }
+
+  function renderFlight() {
+    const layersHtml = C.layers.map(renderLayer).join('');
+    const dots = C.chapters.map((c, n) =>
+      `<button type="button" class="rail__dot" data-stop="${n + 1}" aria-current="false">` +
+      `<span class="visually-hidden">${esc(`${n + 1}. ${c.kicker}. ${stripTags(c.title)}`)}</span></button>`).join('');
+
+    return [
+      renderOpener(),
+      `<div class="flight" style="--count:${C.layers.length}">`,
+      `<div class="flight__world">${layersHtml}</div>`,
+      // Затемнение внутри пролёта: один контекст наложения на кадры,
+      // затемнение и подписи — тогда порядок отрисовки следует числам
+      '<div class="flight__scrim" aria-hidden="true"></div>',
+      '</div>',
+      `<p class="hint">${esc(C.hero.scrollHint)}</p>`,
+      `<nav class="rail" aria-label="${esc(C.ui.railLabel)}">${dots}</nav>`,
+      '<p class="visually-hidden" id="flight-live" aria-live="polite"></p>',
     ].join('');
   }
 
@@ -334,8 +343,8 @@ export function createRenderer({ debug = false, images = { photos: {}, og: null 
       if (face.weight !== 400 || !/cyrillic/.test(face.source || '')) continue;
       out.push(`<link rel="preload" as="font" type="font/woff2" crossorigin href="/assets/fonts/${face.file}">`);
     }
-    for (const slide of C.slides.slice(0, 2)) {
-      const photo = photoOf(slide.photo);
+    for (const layer of C.layers.slice(0, 2)) {
+      const photo = photoOf(layer.photo);
       if (!photo) continue;
       const avif = photo.variants.filter((v) => v.ext === 'avif').sort((a, b) => a.width - b.width);
       if (!avif.length) continue;

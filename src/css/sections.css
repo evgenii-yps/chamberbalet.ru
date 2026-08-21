@@ -2,7 +2,7 @@
 
 .after {
   position: relative;
-  z-index: 2;
+  z-index: var(--z-section);
   background: var(--void);
 }
 

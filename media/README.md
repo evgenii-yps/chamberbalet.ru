@@ -9,20 +9,28 @@
 (поле `photo`), расширение любое из `.jpg .jpeg .png .tif .tiff .webp .avif`:
 
 ```
-01-hero-interior.jpg     08-nutcracker.jpg
-02-format-duet.jpg       09-nutcracker-child.jpg
-03-hall-wide.jpg         10-enfilade.jpg
-04-venue-empty.jpg       11-kirche.jpg
-05-candle-arc.jpg        12-company.jpg
-06-candle-close.jpg      13-tutu.jpg          ← вертикальный
-07-backdrop.jpg          14-evening.jpg
+01-hall-piano.jpg        08-sugarplum-costume.jpg  ← вертикальный
+02-hall-wide.jpg         09-costume-close.jpg
+03-seats-arc.jpg         10-mansion-tree.jpg
+04-candle-arc-top.jpg    11-snow-scene.jpg
+05-backdrop-solo.jpg     12-stage-top.jpg
+06-duet-candles.jpg      13-soloist-ready.jpg
+07-nutcracker-duet.jpg   14-finale.jpg
 ```
+
+Что на каждом кадре — в `alt` в `src/content.js`. Порядок и содержание взяты
+из согласованного прототипа (`prototype/index.html`), там же можно посмотреть
+черновые версии кадров.
+
+Восемь из четырнадцати несут главу, остальные проходные: камера пролетает их
+внутри перехода. Проходной кадр виден меньше секунды, но виден во весь экран —
+требования к нему те же.
 
 Требования:
 
 * минимум **2560 px** по длинной стороне, целевое **3200 px**;
 * без предварительного сжатия, без ресайза, без вотермарков;
-* горизонтальные, кроме помеченных в `content.js` как `orientation: 'portrait'`;
+* горизонтальные, кроме помеченных в `content.js` как `tall: true`;
 * цветовой профиль любой — сборка принудительно приводит к sRGB.
 
 Оригинал меньше 2000 px не роняет сборку, но печатает предупреждение с именем
@@ -42,7 +50,7 @@
 * сюжет спокойный: поверх лежит заголовок.
 
 Ролика может не быть. Тогда сборка печатает «видео не найдено, собираю без
-него», а первый экран живёт на фотографии `01-hero-interior`.
+него», а первый экран живёт на фотографии `01-hall-piano`.
 
 ## `fonts/`
 

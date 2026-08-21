@@ -85,7 +85,7 @@ button {
 .skip-link {
   position: fixed;
   top: .5rem; left: .5rem;
-  z-index: 100;
+  z-index: var(--z-skip);
   padding: .6em 1em;
   background: var(--dark);
   color: var(--cream);
@@ -104,7 +104,7 @@ button {
 .topbar {
   position: absolute;
   top: 0; left: 0; right: 0;
-  z-index: 30;
+  z-index: var(--z-topbar);
   display: flex;
   align-items: baseline;
   justify-content: space-between;
@@ -128,7 +128,7 @@ button {
 .loader {
   position: fixed;
   inset: 0;
-  z-index: 90;
+  z-index: var(--z-loader);
   display: grid;
   place-items: center;
   background: var(--void);
