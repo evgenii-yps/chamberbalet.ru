@@ -35,14 +35,35 @@ npm run build   # результат в dist/
 ## Куда класть исходники
 
 ```
-media/originals/photo/    14 фотографий, имена из src/content.js
+media/originals/incoming/ всё, что пришло со съёмки, как есть
+media/originals/photo/    14 отобранных кадров, имена из src/content.js
 media/originals/video/    hero.<ext>, необязательно
 media/originals/fonts/    .ttf/.otf, необязательно
 ```
 
 Требования к каждому — [`media/README.md`](media/README.md).
 
-Ничего из `media/originals/` в git не попадает. Оригиналы хранятся отдельно.
+**Оригиналы лежат в git.** Это отклонение от первой редакции спецификации,
+принятое осознанно: без них следующий, кто откроет репозиторий, начинает с
+нуля. Четырнадцать кадров весят около 5 МБ — дешевле, чем терять раскладку.
+
+### Как разложить съёмку по слотам
+
+Имена файлов со съёмки **ничего не значат**: числовые префиксы не совпадают с
+порядком показа. Раскладку делает сопоставление по содержимому.
+
+```bash
+# 1. сложить всё присланное в media/originals/incoming/
+# 2. посмотреть таблицу — без копирования
+node scripts/match-originals.mjs
+# 3. если сомнительных слотов нет — разложить
+node scripts/match-originals.mjs media/originals/incoming --apply
+```
+
+Скрипт считает перцептивный хэш каждого кандидата и каждого эталона
+`prototype/assets/photo/NN.jpg`, сводит по минимальному расстоянию и
+**отказывается копировать** слот, если совпадение неуверенное. Правильное
+совпадение даёт 5–16 бит из 256, ближайшее ложное — от 45.
 
 **Оригиналов может не быть.** Сборка это переживает: печатает, чего не хватило,
 и продолжает. Так и задумано — конвейеры написаны раньше, чем сняты кадры.
@@ -60,8 +81,17 @@ media/originals/fonts/    .ttf/.otf, необязательно
 | `npm run fonts` | только шрифты |
 | `npm run check` | инварианты пролёта, затемнения и контраста |
 | `npm run serve` | локальный сервер над `dist/` на http://localhost:4173 |
-| `npm run qa` | проверки в настоящем браузере (нужен `playwright`) |
+| `npm run qa` | 43 проверки в настоящем браузере (нужен `playwright`) |
 | `npm run lighthouse` | Lighthouse на мобильном профиле (нужен `lighthouse`) |
+| `node scripts/check-contrast-photos.mjs` | контраст подписи на боевых кадрах |
+
+`qa` и `lighthouse` ставятся отдельно: `npm i -D playwright lighthouse
+chrome-launcher`. Если Chromium в системе стоит отдельно от playwright,
+укажите его путь:
+
+```bash
+PLAYWRIGHT_CHROMIUM=/путь/к/chrome npm run qa
+```
 
 `npm run images`, `npm run video` и `npm run fonts` кладут результат в
 `.build/assets/` и печатают отчёт — в `dist/` он попадает при `npm run build`.
@@ -155,6 +185,28 @@ npm run build && npm run qa && npm run lighthouse
 ---
 
 ## Деплой на рег.ру
+
+### Что собрать
+
+```bash
+npm ci                 # один раз
+npm run build          # результат — dist/
+npm run check          # инварианты пролёта и затемнения, должно быть «сходится»
+```
+
+Собранное лежит в `dist/`. Заливать нужно **содержимое** этой папки, а не саму
+папку. Внутри:
+
+```
+dist/
+├── index.html         ← отдаётся с no-cache, обновляется на месте
+├── .htaccess          ← кэш, сжатие, HTTPS, www → без www
+├── assets/            ← css, js, шрифты, фотографии; в именах хэш содержимого
+├── favicon.svg, apple-touch-icon.png, site.webmanifest
+└── robots.txt, sitemap.xml
+```
+
+### Что залить
 
 1. `npm run build`
 2. Открыть файловый менеджер панели рег.ру или подключиться по FTP/SFTP.

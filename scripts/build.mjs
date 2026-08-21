@@ -11,7 +11,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import crypto from 'node:crypto';
 import sharp from 'sharp';
-import { ROOT, SRC, DIST, BUILD_ASSETS, bytes } from './config.mjs';
+import { ROOT, SRC, DIST, BUILD, BUILD_ASSETS, bytes } from './config.mjs';
 import { buildImages } from './build-images.mjs';
 import { buildVideo } from './build-video.mjs';
 import { buildFonts } from './build-fonts.mjs';
@@ -203,6 +203,15 @@ async function main() {
   if (left) throw new Error(`в шаблоне остался незаполненный слот: ${left[1]}`);
 
   await fs.writeFile(path.join(DIST, 'index.html'), html);
+
+  // Вес шрифтов и кода — в .build/weights.json: по нему build-images.mjs
+  // считает первую строку бюджета (изображения + шрифты + код).
+  const fontsSize = fonts.faces.reduce((s, f) => s + f.size, 0);
+  const codeAndFonts = css.size + js.total + Buffer.byteLength(html) + fontsSize;
+  await fs.writeFile(
+    path.join(BUILD, 'weights.json'),
+    JSON.stringify({ codeAndFonts, css: css.size, js: js.total, html: Buffer.byteLength(html), fonts: fontsSize }, null, 2),
+  );
 
   console.log('\nСтраница');
   console.log('   index.html      ', bytes(Buffer.byteLength(html)));
