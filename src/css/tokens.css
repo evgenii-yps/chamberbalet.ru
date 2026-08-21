@@ -1,0 +1,61 @@
+/* Дизайн-система. Новых акцентов не вводить. */
+
+:root {
+  /* Цвет */
+  --void:   #070506;   /* пустота */
+  --dark:   #151014;   /* тёмный */
+  --stage:  #0B0709;   /* сцена */
+  --cream:  #F2ECE1;   /* кремовый */
+  --brass:  #C9A063;   /* латунь */
+  --flame:  #F0C070;   /* пламя */
+
+  --cream-70: rgba(242, 236, 225, .70);
+  --cream-55: rgba(242, 236, 225, .55);
+  --brass-40: rgba(201, 160, 99, .40);
+  --brass-20: rgba(201, 160, 99, .20);
+  --rule:     rgba(242, 236, 225, .14);
+
+  /* Шрифт */
+  --display: 'Cormorant Garamond', 'Times New Roman', serif;
+  --text:    'Manrope', system-ui, -apple-system, 'Segoe UI', sans-serif;
+
+  /* Кегль: плавает от 360 до 1600 по ширине окна */
+  --step--1: clamp(.75rem, .70rem + .22vw, .875rem);
+  --step-0:  clamp(.938rem, .88rem + .28vw, 1.063rem);
+  --step-1:  clamp(1.063rem, .97rem + .42vw, 1.25rem);
+  --step-2:  clamp(1.5rem, 1.25rem + 1.1vw, 2rem);
+  --step-3:  clamp(2rem, 1.4rem + 2.8vw, 3.5rem);
+  --step-4:  clamp(2.5rem, 1.5rem + 4.6vw, 5.25rem);
+
+  /* Ритм */
+  --gutter: clamp(1.25rem, 4vw, 4.5rem);
+  --measure: 34ch;
+  --radius: 2px;          /* 2 px или ноль. Арок нет. */
+
+  /* Слои по глубине. Один список на весь проект: раскидывать z-index по
+     файлам — верный способ однажды спрятать подпись под её же кадром. */
+  /* На корневой шкале */
+  --z-section:  1;
+  --z-flight: 100;   /* весь пролёт одним контекстом наложения */
+  --z-opener: 400;
+  --z-rail:   500;
+  --z-topbar: 600;
+  --z-loader: 900;
+  --z-skip:  1000;
+
+  /* Внутри пролёта. Затемнение и подписи лежат ВНУТРИ .flight намеренно:
+     иначе они оказываются в другом контексте наложения, и порядок отрисовки
+     перестаёт следовать числам. */
+  --z-frame:   10;   /* минус номер кадра: ближние поверх дальних */
+  --z-scrim:   50;
+  --z-caption: 60;
+
+  /* Движение */
+  --flight-duration: 1000ms;
+  --flight-ease: cubic-bezier(.65, 0, .35, 1);
+  --reveal: 640ms;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root { --flight-duration: 1ms; --reveal: 1ms; }
+}

@@ -1,0 +1,8 @@
+node_modules/
+dist/
+.build/
+media/originals/photo/*
+media/originals/video/*
+media/originals/fonts/*
+!media/originals/**/.gitkeep
+.DS_Store

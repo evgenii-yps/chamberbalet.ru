@@ -1,0 +1,148 @@
+/* Секции после пролёта. Прокрутка здесь обычная. */
+
+.after {
+  position: relative;
+  z-index: var(--z-section);
+  background: var(--void);
+}
+
+.section {
+  padding: clamp(4rem, 12vh, 9rem) var(--gutter);
+  border-top: 1px solid var(--rule);
+}
+.section:first-child { border-top: 0; }
+
+.section__inner { max-width: 68rem; margin: 0 auto; }
+
+.section__title { font-size: var(--step-3); margin: 0 0 clamp(2rem, 5vh, 3.5rem); }
+.section__lede {
+  color: var(--cream-70);
+  font-size: var(--step-1);
+  max-width: 46ch;
+  margin: -1.5rem 0 clamp(2rem, 5vh, 3.5rem);
+}
+
+/* Требования к залу */
+
+.groups {
+  display: grid;
+  gap: clamp(1.75rem, 4vw, 3rem);
+  grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
+  margin: 0 0 clamp(2.5rem, 6vh, 4rem);
+}
+.group__title {
+  font-family: var(--text);
+  font-size: var(--step--1);
+  font-weight: 500;
+  letter-spacing: .16em;
+  text-transform: uppercase;
+  color: var(--brass);
+  margin: 0 0 .9em;
+  padding-top: .9em;
+  border-top: 1px solid var(--brass-20);
+}
+.group__body { color: var(--cream-70); }
+
+/* Таблица параметров */
+
+.params { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums lining-nums; }
+.params caption { text-align: left; margin-bottom: 1em; color: var(--brass); font-size: var(--step--1); letter-spacing: .16em; text-transform: uppercase; }
+.params th, .params td { padding: .85em 0; border-top: 1px solid var(--rule); text-align: left; vertical-align: baseline; }
+.params th { font-weight: 400; color: var(--cream-70); width: 55%; }
+.params td { color: var(--cream); }
+
+/* Цифры театра */
+
+.figures { display: grid; gap: clamp(1.5rem, 4vw, 3rem); grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr)); }
+.figure__value { font-family: var(--display); font-size: var(--step-3); line-height: 1; font-variant-numeric: lining-nums; }
+.figure__label { font-size: var(--step--1); letter-spacing: .14em; text-transform: uppercase; color: var(--cream-55); margin-top: .7em; }
+
+/* Репертуар */
+
+.repertoire { list-style: none; margin: 0; padding: 0; }
+.repertoire li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: .5em 2em;
+  padding: 1.2em 0;
+  border-top: 1px solid var(--rule);
+}
+.repertoire li:last-child { border-bottom: 1px solid var(--rule); }
+.repertoire__title { font-family: var(--display); font-size: var(--step-2); }
+.repertoire__period { color: var(--cream-55); font-size: var(--step--1); letter-spacing: .1em; text-transform: uppercase; }
+.repertoire__note { margin-top: 1.5em; color: var(--cream-70); }
+
+/* Три модели: колонки со строго совпадающими строками */
+
+.models { width: 100%; border-collapse: collapse; text-align: left; }
+.models th, .models td { padding: 1em .9em; border-top: 1px solid var(--rule); vertical-align: baseline; }
+.models thead th {
+  border-top: 0;
+  font-family: var(--display);
+  font-weight: 400;
+  font-size: var(--step-1);
+  color: var(--cream);
+  border-bottom: 1px solid var(--brass-20);
+}
+.models tbody th {
+  font-weight: 400;
+  font-size: var(--step--1);
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--brass);
+  white-space: nowrap;
+}
+.models td { color: var(--cream-70); }
+.models__closing { margin-top: 2em; color: var(--cream-70); max-width: 52ch; }
+
+/* Узкий экран: таблица разбирается в три блока, строки остаются те же */
+@media (max-width: 46rem) {
+  .models, .models thead, .models tbody, .models tr, .models th, .models td { display: block; }
+  .models thead { display: none; }
+  .models tbody tr { border-top: 1px solid var(--rule); padding: .4em 0; }
+  .models tbody th { border: 0; padding: 1em 0 .3em; }
+  .models tbody td { border: 0; padding: .2em 0; display: flex; gap: .8em; justify-content: space-between; }
+  .models tbody td::before {
+    content: attr(data-column);
+    color: var(--cream-55);
+    font-size: var(--step--1);
+    letter-spacing: .06em;
+  }
+}
+
+/* Контакт */
+
+.contact__title { font-size: var(--step-3); margin: 0 0 .6em; max-width: 18ch; }
+.contact__body { color: var(--cream-70); font-size: var(--step-1); }
+.contact__note { color: var(--cream-55); max-width: 48ch; margin-top: 2.5rem; }
+
+.contact__list { display: grid; gap: 1.4rem 3rem; grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr)); margin: clamp(2rem, 5vh, 3rem) 0 0; }
+.contact__list dt { font-size: var(--step--1); letter-spacing: .14em; text-transform: uppercase; color: var(--brass); }
+.contact__list dd { margin: .4em 0 0; font-size: var(--step-1); }
+.contact__list a { text-decoration: none; border-bottom: 1px solid var(--brass-40); }
+.contact__list a:hover { border-bottom-color: var(--brass); }
+
+/* Подвал */
+
+.footer {
+  padding: 2.5rem var(--gutter);
+  border-top: 1px solid var(--rule);
+  color: var(--cream-55);
+  font-size: var(--step--1);
+  display: flex;
+  flex-wrap: wrap;
+  gap: .8em 2em;
+  justify-content: space-between;
+}
+
+/* Появление секций */
+
+.reveal { opacity: 0; transform: translateY(14px); }
+.reveal.is-in { opacity: 1; transform: none; transition: opacity var(--reveal) ease, transform var(--reveal) var(--flight-ease); }
+html:not(.js) .reveal { opacity: 1; transform: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  .reveal { opacity: 1; transform: none; }
+}

@@ -1,0 +1,321 @@
+/* Пролёт: камера идёт вперёд сквозь стопку полноэкранных кадров.
+ *
+ * Два режима.
+ *   Статический — по умолчанию. Без JS и при prefers-reduced-motion страница
+ *   остаётся обычной прокручиваемой стопкой кадров с подписями.
+ *   Пролёт — раскладка включается классом js с первой отрисовки, поведением
+ *   управляет main.js.
+ *
+ * Анимируются исключительно transform и opacity.
+ */
+
+.flight { position: relative; background: var(--void); }
+
+.layer { position: relative; height: 100svh; min-height: 26rem; margin: 0; overflow: hidden; }
+
+.layer__photo { position: absolute; inset: 0; background: var(--stage); }
+
+/* <picture> — обёртка без собственной высоты. Если её не растянуть,
+   height: 100% у картинки не к чему привязать, и кадр складывается до
+   своих пропорций вместо того, чтобы закрыть экран. */
+.layer__photo picture { position: absolute; inset: 0; display: block; }
+
+.layer__photo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+/* Вертикальный оригинал кадрируем по верхней трети: там лицо и костюм */
+.layer--tall .layer__photo img { object-position: 50% 28%; }
+
+/* ------------------------------------------------------------------ *
+ *  Затемнение
+ *
+ *  Блок ниже подставляется при сборке из констант SCRIM в
+ *  scripts/check-scrim.mjs — там же, где считается плотность. Править числа
+ *  нужно там, после правки — `npm run check`.
+ * ------------------------------------------------------------------ */
+
+/*{{scrim}}*/
+
+/* ------------------------------------------------------------------ *
+ *  Подпись главы
+ *
+ *  Живёт внутри своего кадра — так она остаётся в разметке для страницы без
+ *  JS и для поиска. В пролёте выносится на фиксированное место внизу слева,
+ *  одинаковое для всех глав, и показывается ровно одна.
+ * ------------------------------------------------------------------ */
+
+.layer__caption {
+  position: absolute;
+  left: var(--gutter);
+  bottom: clamp(2.25rem, 6vh, 4.5rem);
+  width: min(45rem, 90vw - var(--gutter));
+}
+
+.layer__kicker {
+  display: flex;
+  align-items: center;
+  gap: .75em;
+  font-size: var(--step--1);
+  font-weight: 500;
+  letter-spacing: .24em;
+  text-transform: uppercase;
+  color: var(--brass);
+  margin: 0 0 1.1em;
+}
+.layer__kicker::before {
+  content: '';
+  flex: 0 0 auto;
+  width: 26px;
+  height: 1px;
+  background: var(--brass);
+}
+.layer__no { color: var(--cream-55); letter-spacing: .18em; font-variant-numeric: tabular-nums lining-nums; }
+
+.layer__title {
+  font-size: var(--step-3);
+  line-height: 1.02;
+  margin: 0;
+  text-shadow: 0 2px 40px rgba(7, 5, 6, .9);
+}
+.layer__body {
+  margin: 1em 0 0;
+  color: var(--cream-70);
+  max-width: 44ch;
+  text-shadow: 0 1px 24px rgba(7, 5, 6, .95);
+}
+.layer__fact {
+  margin: 1.25em 0 0;
+  padding-top: .85em;
+  border-top: 1px solid var(--brass-40);
+  font-size: var(--step--1);
+  letter-spacing: .05em;
+  color: var(--flame);
+  max-width: 46ch;
+  font-variant-numeric: tabular-nums lining-nums;
+  text-shadow: 0 1px 20px rgba(7, 5, 6, .95);
+}
+
+/* ------------------------------------------------------------------ *
+ *  Первый экран
+ *
+ *  В пролёте это отдельный слой поверх стопки: он держится плотным, пока под
+ *  ним не встанет первый кадр, и только потом растворяется.
+ * ------------------------------------------------------------------ */
+
+.opener {
+  position: relative;
+  height: 100svh;
+  min-height: 26rem;
+  display: flex;
+  align-items: center;
+  padding: 0 var(--gutter);
+  overflow: hidden;
+}
+.opener__bg { position: absolute; inset: 0; background: var(--stage); }
+.opener__bg picture { position: absolute; inset: 0; display: block; }
+.opener__bg img, .opener__video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.opener__video { opacity: 0; transition: opacity 1s var(--flight-ease); }
+.opener__video.is-ready { opacity: 1; }
+
+.opener__in { position: relative; max-width: min(48rem, 90vw); }
+.opener__kicker {
+  display: flex;
+  align-items: center;
+  gap: .75em;
+  font-size: var(--step--1);
+  font-weight: 500;
+  letter-spacing: .26em;
+  text-transform: uppercase;
+  color: var(--brass);
+  margin: 0 0 1.6em;
+}
+.opener__kicker::before {
+  content: '';
+  flex: 0 0 auto;
+  width: 26px;
+  height: 1px;
+  background: var(--brass);
+}
+.opener__title {
+  font-size: var(--step-4);
+  line-height: 1;
+  margin: 0;
+  text-shadow: 0 2px 60px rgba(7, 5, 6, .9);
+}
+.opener__lede {
+  margin: 1.1em 0 0;
+  font-size: var(--step-1);
+  color: var(--cream-70);
+  max-width: 42ch;
+  text-shadow: 0 1px 24px rgba(7, 5, 6, .9);
+}
+
+/* ------------------------------------------------------------------ *
+ *  Подсказка прокрутки и рельс глав
+ * ------------------------------------------------------------------ */
+
+.hint {
+  position: absolute;
+  left: 50%;
+  bottom: clamp(1rem, 3vh, 2rem);
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: .7em;
+  margin: 0;
+  font-size: var(--step--1);
+  letter-spacing: .2em;
+  text-transform: uppercase;
+  color: var(--cream-55);
+  transition: opacity 400ms ease;
+}
+.hint::after {
+  content: '';
+  width: 1px;
+  height: 2.2em;
+  background: linear-gradient(to bottom, var(--brass), transparent);
+}
+
+.rail {
+  position: fixed;
+  right: clamp(.75rem, 2.2vw, 1.75rem);
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: var(--z-rail);
+  display: none;
+  flex-direction: column;
+  gap: clamp(.6rem, 1.4vh, 1rem);
+  transition: opacity 350ms ease;
+}
+
+.rail__dot {
+  display: grid;
+  place-items: center;
+  width: 1.5rem;
+  height: 1.5rem;
+}
+.rail__dot::before {
+  content: '';
+  width: 7px;
+  height: 7px;
+  border: 1px solid var(--brass-40);
+  transition: background 300ms ease, border-color 300ms ease, transform 300ms ease;
+}
+.rail__dot:hover::before { border-color: var(--brass); }
+.rail__dot[aria-current='true']::before {
+  background: var(--flame);
+  border-color: var(--flame);
+  transform: scale(1.6);
+}
+
+/* ------------------------------------------------------------------ *
+ *  Раскладка пролёта
+ *
+ *  Применяется с первой отрисовки — по классу js, который ставит инлайновый
+ *  скрипт в <head>, а не по классу от main.js. Иначе страница успевает
+ *  нарисоваться стопкой в пятнадцать экранов и затем схлопывается в один:
+ *  это сдвиг макета величиной со всю страницу.
+ *
+ *  Условие «не reduced-motion» в форме not (…) истинно и там, где браузер
+ *  вовсе не знает этой возможности, — ровно как matchMedia в main.js.
+ * ------------------------------------------------------------------ */
+
+@media not (prefers-reduced-motion: reduce) {
+  /* Пролёт — один контекст наложения. Кадры, затемнение и подписи лежат
+     внутри и упорядочены между собой; наружу торчит только сам .flight.
+     Раскидывать их по разным контекстам нельзя: числа перестают работать,
+     и подпись однажды уже уезжала под собственный кадр. */
+  html.js .flight { position: fixed; inset: 0; height: 100svh; z-index: var(--z-flight); }
+  html.js .flight__world { position: absolute; inset: 0; }
+
+  html.js .layer { position: absolute; inset: 0; height: 100%; }
+
+  html.js .layer__photo {
+    opacity: 0;
+    visibility: hidden;            /* из потока не выкидываем, только гасим */
+    will-change: auto;
+    /* ближние кадры лежат поверх дальних: камера уходит вперёд, верхний слой
+       растворяется, под ним уже стоит следующий */
+    z-index: calc(var(--z-frame) - var(--i));
+  }
+  /* will-change держим только на живых слоях: на четырнадцати сразу это
+     утечка памяти */
+  html.js .layer__photo[data-live] { will-change: transform, opacity; }
+
+  /* Подпись выносится на общее место и не участвует в движении камеры */
+  html.js .layer__caption {
+    position: fixed;
+    left: var(--gutter);
+    bottom: clamp(2.25rem, 6vh, 4.5rem);
+    z-index: var(--z-caption);
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+  }
+  html.js .layer[data-in] .layer__caption { opacity: 1; visibility: visible; }
+
+  /* Ступенчатое появление, одновременный уход */
+  html.js .layer__caption > * {
+    opacity: 0;
+    transform: translateY(14px);
+    transition: opacity .5s var(--flight-ease), transform .5s var(--flight-ease);
+  }
+  html.js .layer[data-in] .layer__caption > * { opacity: 1; transform: none; }
+  html.js .layer[data-in] .layer__caption > :nth-child(2) { transition-delay: .07s; }
+  html.js .layer[data-in] .layer__caption > :nth-child(3) { transition-delay: .14s; }
+  html.js .layer[data-in] .layer__caption > :nth-child(4) { transition-delay: .21s; }
+  html.js .layer:not([data-in]) .layer__caption > * { transition-duration: .22s; transition-delay: 0s; }
+
+  html.js .opener {
+    position: fixed;
+    inset: 0;
+    height: 100svh;
+    z-index: var(--z-opener);
+    pointer-events: none;
+    will-change: opacity, transform;
+  }
+  html.js .hint { position: fixed; z-index: var(--z-rail); }
+  html.js .rail { display: flex; }
+
+  /* Пролёт закончен: страница отпущена, остаётся последний кадр */
+  html.js .flight.is-done { position: relative; height: 100svh; }
+  html.js .flight.is-done .layer:not([data-live-frame]) { display: none; }
+  /* Класс ставит main.js при выходе из пролёта. Через body:not(.is-flight)
+     сделать нельзя: до запуска скрипта его тоже нет, и первый экран пропал бы
+     с первой отрисовки. */
+  html.flight-done .opener,
+  html.flight-done .rail,
+  html.flight-done .hint { display: none; }
+}
+
+/* Без JS первый экран и кадры идут обычной стопкой, подсказка не нужна */
+html:not(.js) .hint { display: none; }
+html:not(.js) .rail { display: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  .opener__video { display: none; }
+  .hint, .rail { display: none; }
+}
+
+/* Узкий экран: текст не должен подлезать под рельс глав, а рубрика в две
+   строки не должна разъезжаться со своей чертой. */
+@media (max-width: 34rem) {
+  .opener { padding-right: calc(var(--gutter) + 2.25rem); }
+  .layer__caption { width: min(45rem, 100% - var(--gutter) - 2.25rem); }
+  .opener__kicker::before, .layer__kicker::before { display: none; }
+  .opener__kicker { letter-spacing: .18em; }
+}
+
+/* Мелкая высота: подпись не должна упираться в край */
+@media (max-height: 520px) {
+  .layer__caption { bottom: 1.25rem; }
+  .layer__body { display: none; }
+}

@@ -1,0 +1,1008 @@
+<!DOCTYPE html>
+<html lang="ru"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Камерный театр балета — балет при свечах</title>
+<meta name="description" content="Балет при свечах в зале без сцены. Привозим свет, костюмы, декорации и покрытие; игровую площадку размечаем электрическими свечами прямо в интерьере.">
+<meta name="theme-color" content="#070506">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Камерный театр балета — балет при свечах">
+<meta property="og:description" content="Балет при свечах в зале без сцены. 70 минут, 5–7 артистов, площадка от 8 × 8 м.">
+<meta property="og:image" content="assets/photo/01-hero-interior.jpg">
+<meta property="og:locale" content="ru_RU">
+
+<style>
+/* ЗАПОЛНИТЬ: assets/fonts/ —
+   CormorantGaramond-Regular.woff2 (400, только прямое начертание, курсив не подключать)
+   Manrope-Regular.woff2 (400), Manrope-Medium.woff2 (500) */
+@font-face{font-family:'Cormorant Garamond';font-style:normal;font-weight:400;font-display:swap;
+  src:local('Cormorant Garamond')}
+@font-face{font-family:'Manrope';font-style:normal;font-weight:400;font-display:swap;
+  src:local('Manrope')}
+@font-face{font-family:'Manrope';font-style:normal;font-weight:500;font-display:swap;
+  src:local('Manrope Medium')}
+
+:root{
+  --void:#070506; --ink:#151014; --stage:#0B0709;
+  --cream:#F2ECE1; --brass:#C9A063; --flame:#F0C070;
+  --c1:rgba(242,236,225,.96); --c2:rgba(242,236,225,.78); --c3:rgba(242,236,225,.5);
+  --pad:clamp(20px,4.5vw,64px);
+  --font-h:'Cormorant Garamond','Times New Roman',Georgia,serif;
+  --font-b:'Manrope',system-ui,-apple-system,'Segoe UI',sans-serif;
+  --ease:cubic-bezier(.22,.61,.36,1);
+}
+*,*::before,*::after{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%;background:var(--void)}
+body{
+  margin:0;background:var(--void);color:var(--cream);
+  font-family:var(--font-b);font-size:16px;line-height:1.65;
+  -webkit-font-smoothing:antialiased;overflow-x:hidden;
+}
+h1,h2,h3,.h{font-family:var(--font-h);font-weight:400;margin:0;line-height:1.05}
+p{margin:0;text-wrap:pretty}
+img{display:block}
+a{color:inherit;text-decoration:none}
+a:hover{color:var(--cream)}
+:focus-visible{outline:2px solid var(--brass);outline-offset:4px}
+.num{font-variant-numeric:tabular-nums}
+
+/* ═══════ ЭКРАН ЗАГРУЗКИ ═══════ */
+
+.load{
+  position:fixed;inset:0;z-index:90;background:var(--void);
+  display:flex;align-items:center;justify-content:center;
+  transition:opacity .7s var(--ease);
+}
+.load[data-off]{opacity:0;pointer-events:none}
+.load .mark{width:min(52vw,320px);text-align:center}
+.load .track{height:1px;background:rgba(201,160,99,.2)}
+.load .track i{display:block;height:100%;background:var(--brass);transform:scaleX(0);transform-origin:0 50%;
+  transition:transform .55s var(--ease);will-change:transform}
+.load .cap{margin-top:20px;font-size:10px;letter-spacing:.28em;text-transform:uppercase;color:var(--c3)}
+
+/* ═══════ ПРОЛЁТ ═══════ */
+
+.flight{position:relative;background:var(--void)}
+.view{
+  position:sticky;top:0;height:100svh;overflow:hidden;
+  background:radial-gradient(120% 100% at 50% 50%,#0d0a0c 0%,var(--void) 70%);
+}
+.world{position:absolute;inset:0;transform:translateZ(0)}
+
+.lyr{
+  position:absolute;left:50%;top:50%;
+  width:100vw;height:100svh;margin:-50svh 0 0 -50vw;
+  will-change:transform,opacity;backface-visibility:hidden;
+  visibility:hidden;
+}
+.lyr img{width:100%;height:100%;object-fit:cover}
+.lyr--tall img{object-position:50% 28%}
+/* затемнение — отдельный экранный слой .scrim, к кадру не привязано */
+
+.scrim{
+  position:fixed;inset:0;z-index:54;pointer-events:none;opacity:0;
+  background:
+    linear-gradient(to top right,rgba(7,5,6,.56) 0%,rgba(7,5,6,.30) 34%,rgba(7,5,6,0) 62%),
+    radial-gradient(125% 115% at 50% 48%,rgba(7,5,6,0) 54%,rgba(7,5,6,.25) 100%),
+    rgba(7,5,6,.34);
+  transition:opacity .35s var(--ease);
+}
+.scrim[data-on]{opacity:1}
+.scrim[data-bright]{background:
+    linear-gradient(to top right,rgba(7,5,6,.52) 0%,rgba(7,5,6,.28) 34%,rgba(7,5,6,0) 62%),
+    radial-gradient(125% 115% at 50% 48%,rgba(7,5,6,0) 54%,rgba(7,5,6,.25) 100%),
+    rgba(7,5,6,.43);}
+html[data-flat] .scrim{display:none}
+
+/* ═══════ HUD ═══════ */
+
+.bar{
+  position:fixed;top:0;left:0;right:0;z-index:60;isolation:isolate;
+  display:flex;align-items:center;justify-content:space-between;gap:16px;
+  padding:18px var(--pad);
+  font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--c3);
+  text-shadow:0 1px 18px rgba(7,5,6,.9);
+}
+.bar::before{content:"";position:absolute;inset:0;z-index:-1;pointer-events:none;
+  background:linear-gradient(180deg,rgba(7,5,6,.92) 0%,rgba(7,5,6,.6) 55%,rgba(7,5,6,0) 100%)}
+.bar>div{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.bar b{font-weight:400;color:var(--c2)}
+.bar a{border-bottom:1px solid transparent;transition:color .25s,border-color .25s}
+.bar a:hover{color:var(--cream);border-bottom-color:var(--brass)}
+
+.prog{
+  position:fixed;top:0;left:0;right:0;height:1px;z-index:61;
+  background:rgba(242,236,225,.12);transition:opacity .4s var(--ease);
+}
+.prog i{
+  display:block;height:100%;background:var(--brass);
+  transform:scaleX(0);transform-origin:0 50%;will-change:transform;
+}
+
+/* первый экран — пауза перед движением */
+.opener{
+  position:fixed;inset:0;z-index:56;display:flex;align-items:center;
+  padding:0 var(--pad);pointer-events:none;will-change:opacity,transform;overflow:hidden;
+}
+.opener .bg{position:absolute;inset:0}
+.opener .bg img,.opener .bg video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.opener .bg video{opacity:0;transition:opacity 1s var(--ease)}
+.opener .bg video[data-on]{opacity:1}
+.opener .veil{
+  position:absolute;inset:0;
+  background:
+    linear-gradient(to top right,rgba(7,5,6,.56) 0%,rgba(7,5,6,.30) 34%,rgba(7,5,6,0) 62%),
+    radial-gradient(125% 115% at 50% 48%,rgba(7,5,6,0) 54%,rgba(7,5,6,.25) 100%),
+    rgba(7,5,6,.34);
+}
+.opener .in{position:relative;max-width:min(760px,90vw)}
+.opener .kick{
+  font-size:11px;letter-spacing:.26em;text-transform:uppercase;color:var(--brass);
+  display:flex;align-items:center;gap:12px;margin-bottom:22px;
+}
+.opener .kick i{width:26px;height:1px;background:var(--brass);display:block}
+.opener h1{font-size:clamp(38px,7.4vw,104px);line-height:1;text-shadow:0 2px 60px rgba(7,5,6,.9)}
+.opener p{
+  margin-top:22px;font-size:clamp(15px,1.3vw,19px);color:var(--c2);max-width:42ch;
+  text-shadow:0 1px 24px rgba(7,5,6,.9);
+}
+
+.hud{
+  position:fixed;left:0;bottom:0;z-index:55;
+  padding:0 var(--pad) clamp(34px,6vh,72px);
+  width:min(720px,90vw);pointer-events:none;
+}
+/* подложка под текстом убрана: плотность держит .scrim */
+.hud .ch{
+  font-size:11px;letter-spacing:.24em;text-transform:uppercase;color:var(--brass);
+  display:flex;align-items:center;gap:12px;margin-bottom:16px;
+}
+.hud .ch i{width:26px;height:1px;background:var(--brass);display:block;font-style:normal;flex:0 0 auto}
+.hud .ch .no{color:var(--c3);letter-spacing:.18em}
+.hud h2{font-size:clamp(27px,4.3vw,54px);line-height:1.02;text-shadow:0 2px 40px rgba(7,5,6,.9)}
+.hud p{
+  margin-top:16px;font-size:clamp(14px,1.15vw,17px);color:var(--c2);
+  max-width:44ch;text-shadow:0 1px 24px rgba(7,5,6,.95);
+}
+.hud .f{
+  margin-top:20px;padding-top:14px;border-top:1px solid rgba(201,160,99,.4);
+  font-variant-numeric:tabular-nums;font-size:clamp(12px,.95vw,14px);
+  letter-spacing:.05em;color:var(--flame);max-width:46ch;
+  text-shadow:0 1px 20px rgba(7,5,6,.95);
+}
+/* ступенчатое появление, одновременный уход */
+.hud .st{opacity:0;transform:translateY(14px);
+  transition:opacity .5s var(--ease),transform .5s var(--ease)}
+.hud[data-in] .st{opacity:1;transform:none}
+.hud[data-in] .st:nth-child(2){transition-delay:.07s}
+.hud[data-in] .st:nth-child(3){transition-delay:.14s}
+.hud[data-in] .st:nth-child(4){transition-delay:.21s}
+.hud:not([data-in]) .st{transition-duration:.22s;transition-delay:0s}
+
+.rail{
+  position:fixed;right:var(--pad);top:50%;transform:translateY(-50%);z-index:57;
+  display:flex;flex-direction:column;gap:4px;
+  transition:opacity .4s var(--ease);
+}
+.rail button{
+  -webkit-appearance:none;appearance:none;background:none;border:0;margin:0;
+  padding:7px 2px;display:flex;align-items:center;justify-content:flex-end;gap:12px;
+  cursor:pointer;color:var(--c3);font:inherit;
+}
+.rail i{
+  display:block;width:5px;height:5px;border-radius:50%;flex:0 0 auto;
+  background:rgba(242,236,225,.24);transition:background .4s var(--ease),transform .4s var(--ease);
+}
+.rail button:hover i{background:var(--c1)}
+.rail button[data-on] i{background:var(--flame);transform:scale(1.7)}
+.rail b{
+  font-weight:400;font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;
+  white-space:nowrap;opacity:0;transform:translateX(6px);
+  transition:opacity .3s var(--ease),transform .3s var(--ease);
+  text-shadow:0 1px 14px rgba(7,5,6,.95);
+}
+.rail button:hover b,.rail button:focus-visible b{opacity:1;transform:none;color:var(--cream)}
+
+.hint{
+  position:fixed;left:50%;bottom:18px;transform:translateX(-50%);z-index:55;
+  font-size:10px;letter-spacing:.26em;text-transform:uppercase;color:var(--c3);
+  transition:opacity .5s var(--ease);pointer-events:none;
+}
+
+/* ═══════ ПОСЛЕ ПРОЛЁТА ═══════ */
+
+.sec{position:relative;padding:clamp(96px,15vh,190px) 0;background:var(--void)}
+.wrap{max-width:1240px;margin:0 auto;padding:0 var(--pad)}
+.eyebrow{
+  font-size:11px;letter-spacing:.24em;text-transform:uppercase;color:var(--brass);
+  display:flex;align-items:center;gap:12px;margin-bottom:30px;
+}
+.eyebrow i{width:26px;height:1px;background:var(--brass);display:block}
+.h-sec{font-size:clamp(34px,5.6vw,74px)}
+.lead{font-size:clamp(16px,1.35vw,21px);color:var(--c2);max-width:52ch;margin-top:26px}
+
+.rv{opacity:0;transform:translateY(18px);transition:opacity .9s var(--ease),transform .9s var(--ease)}
+.rv.in{opacity:1;transform:none}
+
+.grid{display:grid;gap:clamp(30px,3.4vw,58px);grid-template-columns:repeat(auto-fit,minmax(250px,1fr));margin-top:clamp(50px,7vw,90px)}
+.card{border-top:1px solid rgba(201,160,99,.28);padding-top:24px}
+.card h3{font-size:clamp(22px,2.2vw,30px);margin-bottom:14px}
+.card p{font-size:15.5px;color:var(--c2)}
+
+/* таблица параметров с направляющими */
+.specs{margin-top:clamp(50px,7vw,90px)}
+.specs>div{
+  display:flex;align-items:baseline;gap:14px;
+  padding:18px 0;border-top:1px solid rgba(201,160,99,.2);
+}
+.specs dt{color:var(--c3);letter-spacing:.03em;font-size:15.5px;flex:0 0 auto;white-space:nowrap}
+.specs dd{margin:0;flex:1 1 auto;display:flex;align-items:baseline;gap:14px;justify-content:flex-end;color:var(--c1)}
+.specs .ldr{flex:1 1 auto;min-width:20px;border-bottom:1px dotted rgba(201,160,99,.36);transform:translateY(-5px)}
+.specs dd span{flex:0 0 auto;font-size:clamp(16px,1.5vw,22px)}
+
+/* три модели — строки строго совпадают */
+.models{
+  margin-top:clamp(50px,7vw,90px);
+  display:grid;grid-template-columns:repeat(3,1fr);gap:clamp(26px,3.2vw,54px);
+  grid-template-rows:auto auto auto auto auto auto auto;
+}
+.model{display:flex;flex-direction:column;border-top:2px solid var(--brass);padding-top:20px}
+@supports (grid-template-rows:subgrid){
+  .model{display:grid;grid-row:span 7;grid-template-rows:subgrid;align-content:start}
+}
+.model .rn{font-family:var(--font-h);font-size:22px;color:var(--brass);line-height:1;font-variant-numeric:tabular-nums}
+.model h3{font-family:var(--font-h);font-size:clamp(23px,2.3vw,32px);margin:10px 0 12px;align-self:start}
+.model>p{font-size:15.5px;color:var(--c2);margin-bottom:20px}
+.model .pr{
+  display:flex;justify-content:space-between;align-items:baseline;gap:12px;
+  padding:12px 0;border-top:1px solid rgba(201,160,99,.16);font-size:14px;
+}
+.model .pr span{color:var(--c3)}
+.model .pr b{font-weight:400;text-align:right;color:var(--c1)}
+
+/* слоты с цифрами — ЗАПОЛНИТЬ */
+.slots{display:grid;gap:clamp(24px,3vw,48px);grid-template-columns:repeat(auto-fit,minmax(180px,1fr));margin-top:clamp(50px,7vw,90px)}
+.slot{border-top:1px solid rgba(201,160,99,.28);padding-top:20px}
+.slot .v{display:inline-block;min-width:2.4em;font-family:var(--font-h);font-size:clamp(38px,4.4vw,60px);line-height:1.1;color:var(--brass);font-variant-numeric:tabular-nums}
+.slot .l{margin-top:12px;font-size:13px;letter-spacing:.05em;color:var(--c3)}
+.todo{display:block;margin-top:6px;font-size:10px;letter-spacing:.22em;text-transform:uppercase;color:var(--brass);opacity:.75}
+
+/* полноэкранный кадр между секциями */
+.plate{position:relative;height:min(92svh,860px);overflow:hidden;background:var(--stage);margin:0}
+.plate img{width:100%;height:100%;object-fit:cover;transform:scale(1.09);will-change:transform}
+.plate::after{
+  content:"";position:absolute;inset:0;pointer-events:none;z-index:1;
+  background:
+    linear-gradient(to top right,rgba(7,5,6,.56) 0%,rgba(7,5,6,.30) 34%,rgba(7,5,6,0) 62%),
+    radial-gradient(125% 115% at 50% 48%,rgba(7,5,6,0) 54%,rgba(7,5,6,.25) 100%),
+    rgba(7,5,6,.34);
+}
+.plate figcaption{
+  position:absolute;left:0;right:0;bottom:0;z-index:2;padding:clamp(50px,9vh,110px) var(--pad) clamp(30px,5vh,56px);
+  background:linear-gradient(180deg,rgba(7,5,6,0),rgba(7,5,6,.92));
+}
+.plate .t{font-family:var(--font-h);font-size:clamp(28px,4vw,52px);max-width:24ch;line-height:1.04}
+.plate .s{margin-top:14px;font-size:15.5px;color:var(--c2);max-width:52ch}
+
+.btn{
+  display:inline-block;border:1px solid var(--brass);border-radius:2px;
+  padding:17px 34px;font-size:13px;letter-spacing:.09em;text-transform:uppercase;
+  color:var(--c1);white-space:nowrap;
+  transition:background .3s var(--ease),color .3s var(--ease);
+}
+.btn:hover{background:var(--brass);color:var(--ink)}
+.btn--q{border-color:rgba(242,236,225,.3)}
+.btn--q:hover{background:rgba(242,236,225,.14);color:var(--cream)}
+.btns{display:flex;flex-wrap:wrap;gap:14px;margin-top:clamp(36px,5vw,56px)}
+
+.link{color:var(--brass);border-bottom:1px solid rgba(201,160,99,.4);transition:color .25s,border-color .25s}
+.link:hover{color:var(--cream);border-bottom-color:var(--cream)}
+
+.contact{display:flex;flex-wrap:wrap;gap:clamp(30px,5vw,90px);align-items:flex-start;margin-top:clamp(44px,5vw,70px)}
+.contact .col{flex:1 1 260px;display:flex;flex-direction:column;gap:10px;align-items:flex-start}
+.contact .lbl{font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--c3);margin-bottom:6px;white-space:nowrap}
+.contact .nm{font-family:var(--font-h);font-size:30px}
+.tbf{color:var(--brass);border-bottom:1px dashed currentColor;white-space:nowrap}
+
+.foot{
+  max-width:1240px;margin:clamp(70px,10vh,130px) auto 0;padding:22px var(--pad) 46px;
+  border-top:1px solid rgba(201,160,99,.16);
+  display:flex;flex-wrap:wrap;justify-content:space-between;gap:14px;
+  font-size:12.5px;color:var(--c3);
+}
+
+/* ═══════ статичная деградация ═══════ */
+
+.flat{display:none}
+.flat figure{position:relative;margin:0;height:100svh;overflow:hidden}
+.flat img{width:100%;height:100%;object-fit:cover}
+.flat figcaption{
+  position:absolute;left:0;right:0;bottom:0;padding:clamp(50px,10vh,120px) var(--pad) clamp(34px,6vh,64px);
+  background:linear-gradient(180deg,rgba(7,5,6,0),rgba(7,5,6,.94));
+}
+.flat .k{font-size:11px;letter-spacing:.24em;text-transform:uppercase;color:var(--brass);margin-bottom:14px}
+.flat .t{font-family:var(--font-h);font-size:clamp(30px,6vw,56px);line-height:1.04}
+.flat .s{margin-top:14px;font-size:15.5px;color:var(--c2);max-width:44ch}
+.flat .f{margin-top:18px;padding-top:12px;border-top:1px solid rgba(201,160,99,.4);
+  font-variant-numeric:tabular-nums;font-size:13px;color:var(--flame);max-width:46ch}
+
+html[data-flat] .flight,html[data-flat] .rail,html[data-flat] .hud,
+html[data-flat] .hint,html[data-flat] .opener,html[data-flat] .prog{display:none}
+html[data-flat] .flat{display:block}
+
+html[data-nav]{touch-action:none;overscroll-behavior:none}
+
+@media (max-width:760px){
+  body{font-size:15px}
+  .hud{width:100%;padding-bottom:clamp(44px,9vh,84px)}
+  .rail{display:none}
+  .models{display:block}
+  .model{margin-bottom:44px}
+  @supports (grid-template-rows:subgrid){.model{display:flex}}
+  .specs>div{flex-wrap:wrap}
+  .specs .ldr{display:none}
+  .specs dd{justify-content:flex-start}
+  .specs dt{white-space:normal}
+  .hide-s{display:none}
+  .bar{padding:14px var(--pad);font-size:10px}
+}
+@media (prefers-reduced-motion:reduce){
+  *{animation:none!important;transition:none!important}
+  .rv{opacity:1;transform:none}
+}
+</style>
+
+</head>
+<body id="top">
+
+<!--
+  ЗАПОЛНИТЬ: имя ответственного, телефон, почта, Telegram.
+  ЗАПОЛНИТЬ: четыре слота с цифрами в блоке «Театр» (спектаклей сыграно, площадок,
+  сезон в прокате, артистов в труппе) и год начала проката — claim снят, стоит слот.
+  ПРОВЕРИТЬ: 8 × 8 м, 5–7 артистов, 4 ч монтажа / 1,5 ч демонтажа, 70 мин, посадка 80–200,
+  две розеточные линии, две гримёрные.
+  ФОТО: права не подтверждены. До подтверждения ссылку площадкам не отправлять.
+-->
+
+<div class="load" id="load" aria-hidden="true">
+  <div class="mark">
+    <div class="track"><i id="loadbar"></i></div>
+    <div class="cap">Камерный театр балета</div>
+  </div>
+</div>
+
+<div class="bar">
+  <div><b>Камерный театр балета</b><span class="hide-s"> · Санкт-Петербург</span></div>
+  <a href="#contact">Связаться</a>
+</div>
+<div class="prog" id="prog" aria-hidden="true"><i></i></div>
+
+<!-- ═══ ПРОЛЁТ ═══ -->
+<div class="flight" id="flight">
+  <div class="view" id="view">
+    <div class="world" id="world">
+
+
+      <div class="lyr lyr--art" data-bright="" data-ch="Формат" data-t="Балет при свечах&lt;br&gt;без сцены" data-p="Привозим свет, костюмы, декорации и танцевальное покрытие. Игровую площадку размечаем свечами прямо в интерьере." data-f="70 минут · без антракта · 5–7 артистов"><img src="assets/photo/01.jpg" alt="Зал особняка: рояль, ёлка и электрические свечи по краю игровой площадки" fetchpriority="high"></div>
+
+      <div class="lyr lyr--art"><img src="assets/photo/02.jpg" alt="Общий план зала со свечной дугой"></div>
+
+
+      <div class="lyr lyr--art" data-ch="Зал" data-t="Зал без сцены&lt;br&gt;и кулис" data-p="Историческому интерьеру отказывают из-за отсутствия сцены, света и кулис. Мы работаем именно с такими залами." data-f="посадка 80–200 · площадка от 8 × 8 м"><img src="assets/photo/03.jpg" alt="Зрительские кресла поставлены по дуге вплотную к игровой площадке"></div>
+
+      <div class="lyr lyr--art" data-ch="Разметка" data-t="Свечная дуга&lt;br&gt;вместо рампы" data-p="Дуга очерчивает игровую площадку и отделяет её от зрителя. Ставится за час, следов на паркете не оставляет." data-f="электрические свечи · открытого огня нет · согласование с МЧС не требуется"><img src="assets/photo/04.jpg" alt="Вид сверху: свечная дуга очерчивает игровую площадку"></div>
+
+
+      <div class="lyr lyr--art" data-bright="" data-ch="Декорация" data-t="Задник ставим&lt;br&gt;под название" data-p="Живописный или проекционный задник, покрытие поверх паркета, партитура света на свечах. Постановочная часть целиком на нас." data-f="свет, задник, покрытие и костюмы — наши"><img src="assets/photo/05.jpg" alt="Солист на фоне живописного задника"></div>
+
+      <div class="lyr lyr--art" data-bright=""><img src="assets/photo/06.jpg" alt="Две балерины на свечной площадке"></div>
+
+
+      <div class="lyr lyr--art" data-bright="" data-ch="Зимний спектакль" data-t="«Щелкунчик»&lt;br&gt;при свечах" data-p="Сокращённая редакция на 70 минут под зал без сцены. Дроссельмейер ведёт вечер, детские партии есть." data-f="декабрь — январь · даты бронируются с сентября"><img src="assets/photo/07.jpg" alt="Дуэт на фоне задника «Щелкунчика»"></div>
+
+      <div class="lyr lyr--art lyr--tall" data-bright=""><img src="assets/photo/08.jpg" alt="Партия Феи Драже, костюм крупным планом"></div>
+
+      <div class="lyr lyr--art" data-bright=""><img src="assets/photo/09.jpg" alt="Костюм крупным планом при свечах"></div>
+
+
+      <div class="lyr lyr--art" data-ch="Интерьеры" data-t="Особняки, анфилады,&lt;br&gt;кирхи, оранжереи" data-p="Работаем в исторических залах: аккуратны к покрытиям, лепнине и режиму доступа. Монтаж в незнакомом зале для нас рабочая ситуация." data-f="особняки · анфилады · кирхи · оранжереи"><img src="assets/photo/10.jpg" alt="Сцена у ёлки в интерьере особняка"></div>
+
+      <div class="lyr lyr--art"><img src="assets/photo/11.jpg" alt="Снежная картина спектакля"></div>
+
+      <div class="lyr lyr--art"><img src="assets/photo/12.jpg" alt="Вид сверху на игровую площадку во время спектакля"></div>
+
+
+      <div class="lyr lyr--art" data-ch="Труппа" data-t="Кто приедет&lt;br&gt;в ваш зал" data-p="Постоянная труппа и штатная постановочная группа. Художественный руководитель и хореограф — Олеся Гапиенко." data-f="постоянная труппа · свой репетиционный зал"><img src="assets/photo/13.jpg" alt="Солист в костюме перед выходом"></div>
+
+      <div class="lyr lyr--art" data-ch="Вечер" data-t="Один вечер,&lt;br&gt;один зал" data-p="Приезжаем днём, играем вечером, к ночи зал свободен. Ниже — требования к помещению и модели работы." data-f="монтаж 4 часа · демонтаж 1,5 часа"><img src="assets/photo/14.jpg" alt="Финал спектакля, вся труппа на площадке"></div>
+
+    </div>
+  </div>
+</div>
+
+<div class="scrim" id="scrim" aria-hidden="true"></div>
+
+<div class="opener" id="opener">
+  <div class="bg">
+    <img src="assets/photo/01.jpg" alt="" aria-hidden="true">
+    <video id="hero" muted="" loop="" playsinline="" autoplay="" preload="auto" aria-hidden="true" tabindex="-1">
+      <source src="assets/video/hero.webm" type="video/webm">
+      <source src="assets/video/hero.mp4" type="video/mp4">
+    </video>
+    <div class="veil"></div>
+  </div>
+  <div class="in">
+    <div class="kick"><i></i><span>Камерный театр балета · Санкт-Петербург</span></div>
+    <h1>Балет при свечах</h1>
+    <p>Готовый спектакль для зала без сцены. Свет, костюмы, декорации и танцевальное покрытие привозим с собой.</p>
+  </div>
+</div>
+
+<div class="hud" id="hud" aria-live="polite">
+  <div class="ch st"><i></i><span id="hud-ch"></span><span class="no num" id="hud-n"></span></div>
+  <h2 class="st" id="hud-t"></h2>
+  <p class="st" id="hud-p"></p>
+  <div class="f st" id="hud-f"></div>
+</div>
+
+<div class="rail" id="rail" aria-label="Главы"></div>
+<div class="hint" id="hint">Прокрутите</div>
+
+<!-- статичная деградация: стопка полноэкранных кадров -->
+<div class="flat">
+  <figure><img loading="lazy" src="assets/photo/01.jpg" alt="Зал особняка со свечами"><figcaption><div class="k">Формат</div><div class="t">Балет при свечах без сцены</div><div class="s">Привозим свет, костюмы, декорации и танцевальное покрытие. Игровую площадку размечаем свечами прямо в интерьере.</div><div class="f num">70 минут · без антракта · 5–7 артистов</div></figcaption></figure>
+  <figure><img loading="lazy" src="assets/photo/03.jpg" alt="Зрительный зал"><figcaption><div class="k">Зал</div><div class="t">Зал без сцены и кулис</div><div class="s">Историческому интерьеру отказывают из-за отсутствия сцены, света и кулис. Мы работаем именно с такими залами.</div><div class="f num">посадка 80–200 · площадка от 8 × 8 м</div></figcaption></figure>
+  <figure><img loading="lazy" src="assets/photo/04.jpg" alt="Свечная дуга"><figcaption><div class="k">Разметка</div><div class="t">Свечная дуга вместо рампы</div><div class="s">Дуга очерчивает игровую площадку и отделяет её от зрителя.</div><div class="f num">электрические свечи · открытого огня нет · согласование с МЧС не требуется</div></figcaption></figure>
+  <figure><img loading="lazy" src="assets/photo/05.jpg" alt="Солист на фоне задника"><figcaption><div class="k">Декорация</div><div class="t">Задник ставим под название</div><div class="s">Живописный или проекционный задник, покрытие поверх паркета, партитура света на свечах.</div><div class="f num">свет, задник, покрытие и костюмы — наши</div></figcaption></figure>
+  <figure><img loading="lazy" src="assets/photo/07.jpg" alt="«Щелкунчик» при свечах"><figcaption><div class="k">Зимний спектакль</div><div class="t">«Щелкунчик» при свечах</div><div class="s">Сокращённая редакция на 70 минут под зал без сцены.</div><div class="f num">декабрь — январь · даты бронируются с сентября</div></figcaption></figure>
+  <figure><img loading="lazy" src="assets/photo/10.jpg" alt="Сцена в интерьере особняка"><figcaption><div class="k">Интерьеры</div><div class="t">Особняки, анфилады, кирхи, оранжереи</div><div class="s">Работаем в исторических залах: аккуратны к покрытиям, лепнине и режиму доступа.</div><div class="f num">особняки · анфилады · кирхи · оранжереи</div></figcaption></figure>
+  <figure><img loading="lazy" src="assets/photo/13.jpg" alt="Солист в костюме"><figcaption><div class="k">Труппа</div><div class="t">Кто приедет в ваш зал</div><div class="s">Постоянная труппа и штатная постановочная группа. Художественный руководитель и хореограф — Олеся Гапиенко.</div><div class="f num">постоянная труппа · свой репетиционный зал</div></figcaption></figure>
+  <figure><img loading="lazy" src="assets/photo/14.jpg" alt="Финал спектакля"><figcaption><div class="k">Вечер</div><div class="t">Один вечер, один зал</div><div class="s">Приезжаем днём, играем вечером, к ночи зал свободен.</div><div class="f num">монтаж 4 часа · демонтаж 1,5 часа</div></figcaption></figure>
+</div>
+
+<!-- ═══ ТЕХРАЙДЕР ═══ -->
+<section class="sec" id="rider">
+  <div class="wrap">
+    <div class="eyebrow rv"><i></i><span>Требования</span></div>
+    <h2 class="h-sec rv">Что нужно<br>от зала</h2>
+    <p class="lead rv">Полный техрайдер отправляем письмом. Здесь — минимум, по которому за минуту видно, подходит ли помещение.</p>
+    <div class="grid">
+      <div class="card rv"><h3>Пол</h3><p>Игровая площадка от 8 × 8 м, ровное покрытие без порогов, ступеней и ковра. Своё танцевальное покрытие привозим и стелем поверх.</p></div>
+      <div class="card rv"><h3>Электрика и подъезд</h3><p>Две независимые розеточные линии рядом с игровой зоной. Подъезд для разгрузки, лифт или путь до зала без лестничных маршей.</p></div>
+      <div class="card rv"><h3>Артисты</h3><p>Две гримёрные с зеркалами и питьевой водой, доступ в зал за четыре часа до начала.</p></div>
+    </div>
+    <dl class="specs rv">
+      <div><dt>Продолжительность</dt><dd><i class="ldr"></i><span class="num">70 минут без антракта</span></dd></div>
+      <div><dt>Состав</dt><dd><i class="ldr"></i><span class="num">5–7 артистов, концертмейстер</span></dd></div>
+      <div><dt>Зрителей</dt><dd><i class="ldr"></i><span class="num">80–200</span></dd></div>
+      <div><dt>Игровая площадка</dt><dd><i class="ldr"></i><span class="num">от 8 × 8 м</span></dd></div>
+      <div><dt>Монтаж / демонтаж</dt><dd><i class="ldr"></i><span class="num">4 часа / 1,5 часа</span></dd></div>
+      <div><dt>Согласование с МЧС</dt><dd><i class="ldr"></i><span>не требуется</span></dd></div>
+    </dl>
+  </div>
+</section>
+
+<figure class="plate" data-plate="">
+  <img loading="lazy" src="assets/photo/06.jpg" alt="Игровая площадка в анфиладе, свечи по краю">
+  <figcaption>
+    <div class="t">Репертуар адаптируется под конкретный зал</div>
+    <div class="s">«Щелкунчик» при свечах — декабрь и январь. Вечер классической хореографии и «Балет и фортепиано» — круглый год.</div>
+  </figcaption>
+</figure>
+
+<!-- ═══ МОДЕЛИ ═══ -->
+<section class="sec">
+  <div class="wrap">
+    <div class="eyebrow rv"><i></i><span>Сотрудничество</span></div>
+    <h2 class="h-sec rv">Три модели<br>на выбор</h2>
+    <p class="lead rv">Различаются не ценой, а тем, кто продаёт билеты и кто несёт риск незаполненного зала. Условия считаем под ваш зал и дату и присылаем сметой в ответ на письмо.</p>
+    <div class="models">
+      <div class="model rv">
+        <div class="rn">I</div>
+        <h3>Аренда зала</h3>
+        <p>Театр арендует площадку на вечер и работает как обычный арендатор.</p>
+        <div class="pr"><span>Билеты продаёт</span><b>театр</b></div>
+        <div class="pr"><span>Продвижение</span><b>театр</b></div>
+        <div class="pr"><span>Риск зала</span><b>театр</b></div>
+        <div class="pr"><span>Расчёт</span><b>аренда зала</b></div>
+      </div>
+      <div class="model rv">
+        <div class="rn">II</div>
+        <h3>Гонорар за вечер</h3>
+        <p>Площадка ставит спектакль в свою афишу и продаёт билеты сама.</p>
+        <div class="pr"><span>Билеты продаёт</span><b>площадка</b></div>
+        <div class="pr"><span>Продвижение</span><b>площадка</b></div>
+        <div class="pr"><span>Риск зала</span><b>площадка</b></div>
+        <div class="pr"><span>Расчёт</span><b>гонорар театру</b></div>
+      </div>
+      <div class="model rv">
+        <div class="rn">III</div>
+        <h3>Совместный прокат</h3>
+        <p>Делим расходы и сбор. Имеет смысл на серии дат, а не на одном вечере.</p>
+        <div class="pr"><span>Билеты продаёт</span><b>по договорённости</b></div>
+        <div class="pr"><span>Продвижение</span><b>обе стороны</b></div>
+        <div class="pr"><span>Риск зала</span><b>делится</b></div>
+        <div class="pr"><span>Расчёт</span><b>доля от сбора</b></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<figure class="plate" data-plate="">
+  <img loading="lazy" src="assets/photo/08.jpg" alt="Дуэт в свете свечей, крупный план">
+  <figcaption>
+    <div class="t">Спектакль монтируется за один день</div>
+    <div class="s">Приезжаем к полудню, играем вечером, к ночи зал свободен.</div>
+  </figcaption>
+</figure>
+
+<!-- ═══ ТЕАТР ═══ -->
+<section class="sec" id="theatre">
+  <div class="wrap">
+    <div class="eyebrow rv"><i></i><span>Театр</span></div>
+    <h2 class="h-sec rv">Труппа и<br>постановочная часть</h2>
+    <p class="lead rv">Постоянная труппа, свой репетиционный зал и штатная постановочная группа. Художественный руководитель и хореограф — Олеся Гапиенко. В прокате с <span class="tbf">год — заполнить</span>.</p>
+    <div class="slots">
+      <!-- ЗАПОЛНИТЬ: четыре слота с цифрами -->
+      <div class="slot rv"><div class="v">—</div><div class="l">спектаклей сыграно<span class="todo">Заполнить</span></div></div>
+      <div class="slot rv"><div class="v">—</div><div class="l">площадок<span class="todo">Заполнить</span></div></div>
+      <div class="slot rv"><div class="v">—</div><div class="l">сезон в прокате<span class="todo">Заполнить</span></div></div>
+      <div class="slot rv"><div class="v">—</div><div class="l">артистов в труппе<span class="todo">Заполнить</span></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ КОНТАКТ ═══ -->
+<section class="sec" id="contact">
+  <div class="wrap">
+    <div class="eyebrow rv"><i></i><span>Контакт</span></div>
+    <h2 class="h-sec rv">Пришлём даты,<br>техрайдер и смету</h2>
+    <p class="lead rv">Ответим в течение рабочего дня. Если зал в принципе подходит, приедем на осмотр до подписания чего-либо: смотрим пол, розетки, подъезд и путь до зала.</p>
+    <div class="contact rv">
+      <div class="col">
+        <span class="lbl">Прокат и даты</span>
+        <!-- ЗАПОЛНИТЬ: имя ответственного -->
+        <div class="nm"><span class="tbf">Имя Фамилия</span><span class="todo">Заполнить</span></div>
+      </div>
+      <div class="col">
+        <span class="lbl">Связь</span>
+        <!-- ЗАПОЛНИТЬ: телефон, почта, Telegram -->
+        <a class="link num" href="tel:+70000000000">+7 000 000-00-00</a>
+        <a class="link" href="mailto:hello@chamberbalet.ru">hello@chamberbalet.ru</a>
+        <a class="link" href="https://t.me/">Telegram</a>
+        <span class="todo">Телефон, почта и Telegram — заполнить</span>
+      </div>
+    </div>
+    <div class="btns rv">
+      <a class="btn" href="mailto:hello@chamberbalet.ru?subject=%D0%97%D0%B0%D0%BF%D1%80%D0%BE%D1%81%20%D0%BF%D0%BE%20%D0%BF%D1%80%D0%BE%D0%BA%D0%B0%D1%82%D1%83">Написать письмо</a>
+      <a class="btn btn--q" href="#top">В начало</a>
+    </div>
+  </div>
+  <div class="foot">
+    <div>chamberbalet.ru</div>
+    <div>Камерный театр балета · Санкт-Петербург</div>
+  </div>
+</section>
+
+<script>
+(function(){
+  'use strict';
+  var reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var touch = matchMedia('(hover: none), (pointer: coarse)').matches;
+  if (reduced) document.documentElement.setAttribute('data-flat','');
+
+  /* ── экран загрузки: арка прорисовывается по первым 4 фото ── */
+  var load = document.getElementById('load');
+  var loadbar = document.getElementById('loadbar');
+  (function(){
+    var first = [].slice.call(document.querySelectorAll('.lyr img')).slice(0,4);
+    var need = first.length || 1, got = 0, gone = false;
+    function step(){
+      got++;
+      loadbar.style.transform = 'scaleX(' + Math.min(1, got/need).toFixed(3) + ')';
+      if (got >= need) setTimeout(off, 420);
+    }
+    function off(){
+      if (gone) return; gone = true;
+      loadbar.style.transform = 'scaleX(1)';
+      load.setAttribute('data-off','');
+      setTimeout(function(){ load.style.display = 'none'; }, 800);
+    }
+    first.forEach(function(im){
+      if (im.complete) step();
+      else { im.addEventListener('load', step, {once:true}); im.addEventListener('error', step, {once:true}); }
+    });
+    setTimeout(off, 4500);
+  })();
+
+  /* ── видеофон первого экрана: только если файл есть и движение разрешено ── */
+  var hero = document.getElementById('hero');
+  function dropHero(){
+    if (!hero) return;
+    var v = hero; hero = null;
+    try { v.pause(); } catch(e){}
+    v.removeAttribute('src');
+    if (v.parentNode) v.parentNode.removeChild(v);
+  }
+  if (reduced) dropHero();
+  else if (hero) {
+    hero.addEventListener('loadeddata', function(){ if (hero) hero.setAttribute('data-on',''); }, {once:true});
+    hero.addEventListener('error', dropHero);
+    [].forEach.call(hero.querySelectorAll('source'), function(s){ s.addEventListener('error', function(){
+      if (hero && hero.networkState === 3) dropHero();      // ни один источник не подошёл
+    }); });
+    var pl = hero.play();
+    if (pl && pl.catch) pl.catch(dropHero);
+    setTimeout(function(){ if (hero && !hero.videoWidth) dropHero(); }, 6000);
+  }
+
+  /* ── появление секций ── */
+  var rv = [].slice.call(document.querySelectorAll('.rv'));
+  if (!('IntersectionObserver' in window) || reduced) { rv.forEach(function(e){e.classList.add('in')}); }
+  else {
+    var io = new IntersectionObserver(function(es){
+      es.forEach(function(e){ if(e.isIntersecting){ e.target.classList.add('in'); io.unobserve(e.target); } });
+    },{threshold:.12,rootMargin:'0px 0px -8% 0px'});
+    rv.forEach(function(e){io.observe(e)});
+    setTimeout(function(){rv.forEach(function(e){e.classList.add('in')})},7000);
+  }
+
+  /* ── лёгкий параллакс на полноэкранных кадрах ── */
+  var plates = [].slice.call(document.querySelectorAll('[data-plate]'));
+  if (plates.length && !reduced){
+    var pRaf = 0;
+    function plateStep(){
+      pRaf = 0;
+      plates.forEach(function(pl){
+        var r = pl.getBoundingClientRect();
+        if (r.bottom < -100 || r.top > innerHeight + 100) return;
+        var k = (r.top + r.height/2 - innerHeight/2) / innerHeight;
+        pl.firstElementChild.style.transform = 'scale(1.09) translate3d(0,' + (k * -34).toFixed(1) + 'px,0)';
+      });
+    }
+    addEventListener('scroll', function(){ if(!pRaf) pRaf = requestAnimationFrame(plateStep); }, {passive:true});
+    plateStep();
+  }
+
+  var flight = document.getElementById('flight');
+  if (!flight || reduced) return;
+
+  var doc = document.documentElement;
+  var layers = [].slice.call(document.querySelectorAll('.lyr'));
+  var N = layers.length;
+  var hud   = document.getElementById('hud');
+  var hudCh = document.getElementById('hud-ch');
+  var hudT  = document.getElementById('hud-t');
+  var hudP  = document.getElementById('hud-p');
+  var hudF  = document.getElementById('hud-f');
+  var hudN  = document.getElementById('hud-n');
+  var hint  = document.getElementById('hint');
+  var opener= document.getElementById('opener');
+  var rail  = document.getElementById('rail');
+  var prog  = document.getElementById('prog');
+  var scrim = document.getElementById('scrim');
+  var progI = prog.firstElementChild;
+
+  function clamp(v,a,b){ return v<a?a:(v>b?b:v); }
+
+  /* масштаб: кадр рождается уже во весь экран (1.04), на главе ~1.15,
+     к уходу ~2.6. softplus сглаживает излом — до главы почти плоско. */
+  var S0 = 1.04, ACC = 0.8, SOFT = 0.18;
+  function scaleAt(t){ return S0 * Math.exp(ACC * SOFT * Math.log(1 + Math.exp(t / SOFT))); }
+
+  var chapters = [], kind = [];
+  layers.forEach(function(el,i){
+    kind[i] = el.dataset.t ? 'chap' : 'pass';
+    if (el.dataset.t) chapters.push({i:i, ch:el.dataset.ch, t:el.dataset.t, p:el.dataset.p, f:el.dataset.f, b:el.hasAttribute('data-bright')});
+  });
+
+  /* слайды: 0 — первый экран, далее по главе на слайд */
+  var STOPS = [-1.05].concat(chapters.map(function(c){ return c.i; }));
+  var LAST = STOPS.length - 1;
+
+  /* пролёт не распределяет скролл — он ровно на один экран */
+  flight.style.height = '100svh';
+
+  /* ── дрейф кадров: привязан к базовому масштабу, чёрных краёв не даёт ── */
+  var drift = layers.map(function(el,i){
+    var a = i * 2.399963;
+    return {x: Math.cos(a), y: Math.sin(a) * 0.6, amp: 0.008 + (i % 3) * 0.003};
+  });
+  var vw = innerWidth, vh = innerHeight;
+
+  /* ── догрузка кадров ── */
+  var lazy = [], seen = 0;
+  layers.forEach(function(el,i){
+    var im = el.querySelector('img');
+    if (!im) return;
+    seen++;
+    if (seen > 4){ lazy[i] = im; im.dataset.src = im.getAttribute('src'); im.removeAttribute('src'); }
+  });
+  function ensure(p){
+    var upto = Math.min(N-1, Math.floor(p) + 5);
+    for (var i=0;i<=upto;i++){
+      var im = lazy[i];
+      if (im){ im.setAttribute('src', im.dataset.src); lazy[i] = null; }
+    }
+  }
+
+  var cur = STOPS[0], idx = 0;
+
+  /* растворение обязано закончиться до того, как встанет следующая остановка:
+     окно считается от фактического расстояния до неё по карте остановок. */
+  var IN0 = -1.00, IN1 = -0.70, OUT0 = 0.20;
+  var OUT1 = layers.map(function(el,i){
+    var next = i + 1;
+    while (next < N && kind[next] !== 'chap') next++;
+    var gap = (next < N ? next : i + 1) - i;             // расстояние до следующей остановки
+    return Math.min(0.70, gap * 0.70);
+  });
+
+  function paint(p){
+    for (var i=0;i<N;i++){
+      var el = layers[i], t = p - i, out1 = OUT1[i];
+      if (t <= IN0 || t >= out1){
+        if (el.style.visibility !== 'hidden'){ el.style.visibility = 'hidden'; el.style.opacity = 0; }
+        continue;
+      }
+      el.style.visibility = 'visible';
+      var s = scaleAt(t);
+      var o = 1;
+      if (t < IN1) o = (t - IN0) / (IN1 - IN0);           // проявление под предыдущим кадром
+      else if (t > OUT0) o = 1 - (t - OUT0) / (out1 - OUT0);
+      el.style.opacity = clamp(o,0,1).toFixed(3);
+      var d = drift[i], k = clamp(t,-1,1);
+      var dx = d.x * d.amp * k * vw, dy = d.y * d.amp * k * vh;
+      el.style.transform = 'translate3d(' + dx.toFixed(1) + 'px,' + dy.toFixed(1) + 'px,0) scale(' + s.toFixed(4) + ')';
+      el.style.zIndex = 500 - i;
+    }
+  }
+
+  function openerAt(p){
+    var op = clamp(1 - (p + 1.05) / 0.55, 0, 1);
+    opener.style.opacity = op.toFixed(3);
+    opener.style.transform = 'scale(' + (1 + (1-op) * 0.06).toFixed(4) + ')';
+    opener.style.visibility = op < 0.01 ? 'hidden' : 'visible';
+    if (hero){
+      if (op < 0.02){ if (!hero.paused) hero.pause(); }
+      else if (hero.paused){ var r = hero.play(); if (r && r.catch) r.catch(function(){}); }
+    }
+  }
+
+  /* ── HUD и рельс ── */
+  var swap = 0, shown = -2;
+  function setChapter(k){
+    dots.forEach(function(d,j){ j===k ? d.setAttribute('data-on','') : d.removeAttribute('data-on'); });
+    if (k === shown) return;
+    shown = k;
+    clearTimeout(swap);
+    hud.removeAttribute('data-in');
+    if (k < 0) return;
+    var c = chapters[k];
+    swap = setTimeout(function(){
+      hudCh.textContent = c.ch || '';
+      hudT.innerHTML = c.t || '';
+      hudP.textContent = c.p || '';
+      hudF.textContent = c.f || '';
+      hudN.textContent = ('0' + (k+1)).slice(-2) + ' / ' + ('0' + chapters.length).slice(-2);
+      if (c.b){ hud.setAttribute('data-bright',''); scrim.setAttribute('data-bright',''); }
+      else { hud.removeAttribute('data-bright'); scrim.removeAttribute('data-bright'); }
+      hud.setAttribute('data-in','');
+    }, 240);
+  }
+
+  var dots = [];
+  chapters.forEach(function(c,k){
+    var b = document.createElement('button');
+    b.type = 'button';
+    b.setAttribute('aria-label', 'Глава ' + (k+1) + ' — ' + c.ch);
+    b.innerHTML = '<b>' + c.ch + '</b><i></i>';
+    b.addEventListener('click', function(){ if (!engaged) attach(k+1); else goTo(k+1); });
+    rail.appendChild(b);
+    dots.push(b);
+  });
+
+  /* ── карта темпа внутри одного перехода: глава дорогая, проходной кадр дешёвый ── */
+  function buildPath(a,b){
+    var n = 48, cum = [0], tot = 0;
+    for (var k=0;k<n;k++){
+      var p = a + (b-a) * (k + 0.5) / n;
+      var i = clamp(Math.round(p), 0, N-1);
+      tot += (kind[i] === 'chap') ? 1 : 0.45;
+      cum.push(tot);
+    }
+    return {a:a, b:b, cum:cum, tot:tot, n:n};
+  }
+  function posOn(path, u){
+    var x = u * path.tot, lo = 0, hi = path.n, m;
+    while (hi - lo > 1){ m = (lo+hi) >> 1; if (path.cum[m] <= x) lo = m; else hi = m; }
+    var seg = path.cum[hi] - path.cum[lo];
+    var f = seg ? (x - path.cum[lo]) / seg : 0;
+    return path.a + (path.b - path.a) * ((lo + f) / path.n);
+  }
+
+  /* cubic-bezier(.65,0,.35,1) */
+  function bez(t){
+    var x1=.65, x2=.35, u=t;
+    for (var k=0;k<6;k++){
+      var mt=1-u, x=3*mt*mt*u*x1 + 3*mt*u*u*x2 + u*u*u;
+      var dx=3*mt*mt*x1 + 6*mt*u*(x2-x1) + 3*u*u*(1-x2);
+      if (dx < 1e-6) break;
+      u -= (x - t) / dx;
+      u = clamp(u,0,1);
+    }
+    var mu=1-u;
+    return 3*mu*u*u*1 + u*u*u;   // y1=0, y2=1
+  }
+
+  var DUR = 1000, path = null, t0 = 0, animating = false, raf = 0;
+
+  function step(now){
+    raf = 0;
+    var u = DUR ? clamp((now - t0) / DUR, 0, 1) : 1;
+    cur = posOn(path, bez(u));
+    paint(cur); openerAt(cur);
+    if (u < 1) raf = requestAnimationFrame(step);
+    else { animating = false; cur = path.b; paint(cur); openerAt(cur); unlockSoon(); }
+  }
+
+  function goTo(n){
+    n = clamp(n, 0, LAST);
+    if (n === idx && !animating) return;
+    idx = n;
+    setChapter(idx - 1);
+    setProg();
+    if (hint) hint.style.opacity = idx > 0 ? 0 : 1;
+    ensure(STOPS[n] + 1);
+    path = buildPath(cur, STOPS[n]);
+    t0 = performance.now();
+    animating = true;
+    lock();
+    if (!raf) raf = requestAnimationFrame(step);
+  }
+  function jump(n){                      // без анимации
+    idx = clamp(n,0,LAST); cur = STOPS[idx];
+    setChapter(idx - 1); setProg(); ensure(cur + 1);
+    paint(cur); openerAt(cur);
+  }
+
+  /* ── замок ввода ── */
+  var locked = false, unlockT = 0, wheelAcc = 0;
+  function lock(){ locked = true; clearTimeout(unlockT); }
+  function unlockSoon(){ clearTimeout(unlockT); unlockT = setTimeout(function(){ locked = false; wheelAcc = 0; }, 150); }
+
+  /* ── переход между режимами ── */
+  var engaged = false, detachedAt = 0;
+  function attach(n){
+    engaged = true;
+    doc.setAttribute('data-nav','');
+    doc.style.overflow = 'hidden'; document.body.style.overflow = 'hidden';
+    scrollTo(0,0);
+    hud.style.opacity = ''; rail.style.opacity = ''; prog.style.opacity = '';
+    scrim.setAttribute('data-on','');
+    if (typeof n === 'number') goTo(n);
+  }
+  function detach(){
+    if (!engaged) return;
+    engaged = false; detachedAt = performance.now();
+    doc.removeAttribute('data-nav');
+    doc.style.overflow = ''; document.body.style.overflow = '';
+    hud.style.opacity = 0; rail.style.opacity = 0;
+    scrim.removeAttribute('data-on');
+    clearTimeout(unlockT); locked = false; wheelAcc = 0;
+  }
+  function leaveDown(){
+    var to = document.getElementById('rider');
+    detach();
+    scrollTo({top: to ? to.offsetTop : innerHeight, behavior: 'smooth'});
+  }
+  function go(dir){
+    if (dir > 0){
+      if (idx >= LAST) leaveDown(); else goTo(idx + 1);
+    } else if (idx > 0) goTo(idx - 1);
+  }
+
+  /* ── ввод ── */
+  addEventListener('wheel', function(e){
+    if (!engaged) return;
+    e.preventDefault();
+    if (locked){                                  // инерция тачпада: держим замок
+      clearTimeout(unlockT);
+      if (!animating) unlockT = setTimeout(function(){ locked = false; wheelAcc = 0; }, 180);
+      return;
+    }
+    wheelAcc += e.deltaY;
+    if (Math.abs(wheelAcc) >= 45){ var d = wheelAcc > 0 ? 1 : -1; wheelAcc = 0; go(d); }
+  }, {passive:false});
+
+  var keyDown = false;
+  addEventListener('keyup', function(){ keyDown = false; });
+  addEventListener('keydown', function(e){
+    var k = e.key;
+    if (k === 'Escape'){
+      var c = document.getElementById('contact');
+      detach(); if (c) scrollTo({top:c.offsetTop, behavior:'smooth'});
+      return;
+    }
+    if (!engaged) return;
+    var t = e.target;
+    if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA')) return;
+    var next = (k === ' ' && !e.shiftKey) || k === 'PageDown' || k === 'ArrowDown' || k === 'ArrowRight';
+    var prev = (k === ' ' && e.shiftKey) || k === 'PageUp' || k === 'ArrowUp' || k === 'ArrowLeft';
+    if (!next && !prev && k !== 'Home' && k !== 'End') return;
+    e.preventDefault();
+    if (keyDown || locked) return;                // без автоповтора
+    keyDown = true;
+    if (k === 'Home') goTo(0);
+    else if (k === 'End') goTo(LAST);
+    else go(next ? 1 : -1);
+  });
+
+  var tsY = 0, tsX = 0, tActive = false;
+  addEventListener('touchstart', function(e){
+    if (!engaged || e.touches.length !== 1) return;
+    tActive = true; tsY = e.touches[0].clientY; tsX = e.touches[0].clientX;
+  }, {passive:true});
+  addEventListener('touchmove', function(e){
+    if (engaged) e.preventDefault();
+  }, {passive:false});
+  addEventListener('touchend', function(e){
+    if (!engaged || !tActive) return;
+    tActive = false;
+    var t = e.changedTouches[0];
+    var dy = tsY - t.clientY, dx = tsX - t.clientX;
+    if (Math.abs(dx) > Math.abs(dy)) return;       // горизонтальные жесты игнорируем
+    if (Math.abs(dy) < 60 || locked) return;
+    go(dy > 0 ? 1 : -1);
+  }, {passive:true});
+
+  /* ── прогресс и возврат в пролёт ── */
+  function setProg(){
+    var frac;
+    if (engaged || !detachedAt) frac = idx / (LAST + 1);
+    else {
+      var span = Math.max(1, document.body.scrollHeight - innerHeight - innerHeight);
+      frac = (LAST + clamp(((scrollY || pageYOffset) - innerHeight) / span, 0, 1)) / (LAST + 1);
+    }
+    progI.style.transform = 'scaleX(' + frac.toFixed(4) + ')';
+  }
+  addEventListener('scroll', function(){
+    if (engaged) return;
+    setProg();
+    var y = scrollY || pageYOffset;
+    if (y < 30 && performance.now() - detachedAt > 900) attach(LAST);
+  }, {passive:true});
+
+  /* ── якоря работают из любой точки ── */
+  [].forEach.call(document.querySelectorAll('a[href^="#"]'), function(a){
+    a.addEventListener('click', function(e){
+      var id = a.getAttribute('href').slice(1);
+      if (id === 'top'){ e.preventDefault(); detach(); scrollTo(0,0); attach(0); return; }
+      var el = document.getElementById(id);
+      if (!el) return;
+      e.preventDefault();
+      detach();
+      scrollTo({top: el.offsetTop, behavior: 'smooth'});
+    });
+  });
+
+  addEventListener('resize', function(){
+    vw = innerWidth; vh = innerHeight;
+    if (engaged){ scrollTo(0,0); paint(cur); }
+  });
+
+  /* ── старт ── */
+  jump(0);
+  if (location.hash && location.hash !== '#top'){
+    detachedAt = performance.now();
+    hud.style.opacity = 0; rail.style.opacity = 0; scrim.removeAttribute('data-on');
+  } else {
+    attach();
+    setTimeout(function(){ if (engaged) scrollTo(0,0); }, 60);
+  }
+})();
+</script>
+
+
+
+</body></html>
