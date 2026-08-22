@@ -1,170 +1,122 @@
 /**
- * Демонстрационные сборки темпа пролёта.
+ * Демонстрационные сборки перехода.
  *
  *   npm run build && node scripts/build-demo.mjs
  *
- * Результат — .build/demo/: витрина и четыре варианта (как сейчас, A, B, C).
- * Папка самодостаточная и переносимая: пути внутри относительные, ложится в
- * любой подкаталог хостинга (например /demo/) и открывается с телефона.
+ * Результат — .build/demo/: витрина и три страницы, каждая самодостаточная и
+ * переносимая. Стили, шрифты, скрипты и фотографии зашиты в документ, ни
+ * одного внешнего запроса: страница открывается двойным щелчком с диска,
+ * уходит в мессенджер целиком и живёт в любом подкаталоге хостинга.
+ *
+ *   duration.html   2000 / 2400 / 2800 / 3200 мс — только длительность
+ *   curve.html      2400 мс, прежняя кривая против принятой
+ *   depth.html      2400 мс, прежняя глубина против принятой
  *
  * ЧТО ЭТО НЕ ТРОГАЕТ
  *
  * Ни src/, ни dist/. Демонстрации собираются ИЗ готового dist/ — та же
  * страница, те же фотографии, тот же CSS, — и правится в них ровно один файл:
- * flight.js. Правка одна и та же на все четыре варианта; различаются они
- * только числами в window.__PACE. Значит сравнение честное: разница на экране
- * — это разница чисел, а не разного кода.
+ * flight.js. Правка одна и та же во всех сборках; различаются они только
+ * числами в window.__PACE. Значит сравнение честное: разница на экране — это
+ * разница чисел, а не разного кода.
  *
  * Числа берутся из scripts/pace-variants.mjs — оттуда же, откуда их берёт
- * scripts/measure-pace.mjs, а функции задержки переносятся в браузер прямо
- * из этого модуля, исходным текстом. Замер и то, что видно глазами, не могут
- * разойтись.
+ * scripts/measure-pace.mjs. Замер и то, что видно глазами, не могут разойтись.
+ *
+ * Кадры берём в 1280 avif: на телефоне это ровно то, что покажет боевая
+ * страница, на десктопе — мягче. Темп от разрешения не зависит, а файл
+ * остаётся в мегабайт вместо двадцати.
  */
 import fs from 'node:fs/promises';
+import fss from 'node:fs';
 import path from 'node:path';
 import { ROOT, DIST, BUILD } from './config.mjs';
 import {
-  VARIANTS, ORDER, CAP_VARIANTS, CAP_ORDER,
-  smoothstep, dwellRate, dwellSpan, dwellAdded, dwellSchedule, advance,
+  BASE_CURVE, BASE_SCALE,
+  DURATION_VARIANTS, DURATION_ORDER,
+  CURVE_VARIANTS, CURVE_ORDER,
+  DEPTH_VARIANTS, DEPTH_ORDER,
+  SOURCE_GUARDS,
 } from './pace-variants.mjs';
 
 const OUT = path.join(BUILD, 'demo');
+const DATA_WIDTH = 1280;
 
 /* ------------------------------------------------------------------ *
- *  Правка flight.js: числа снаружи и микрозадержка
+ *  Правка flight.js: числа снаружи
  * ------------------------------------------------------------------ */
 
-/** Функции задержки уезжают в браузер исходным текстом из pace-variants.mjs. */
-const SHARED = [
-  `const smoothstep = ${smoothstep.toString()};`,
-  dwellRate.toString(),
-  `const dwellSpan = ${dwellSpan.toString()};`,
-  `const dwellAdded = ${dwellAdded.toString()};`,
-  dwellSchedule.toString(),
-  advance.toString(),
-].join('\n\n');
-
 const PACE_BLOCK = `
-/* ── ДЕМО: темп задаётся снаружи ──────────────────────────────────────
+/* ── ДЕМО: длительность, кривая и глубина задаются снаружи ────────────
  * Вставка scripts/build-demo.mjs. В боевом коде этого блока нет: там
- * длительность стоит в main.js, цена проходного кадра — выше в этом файле,
- * а микрозадержки нет вовсе. Здесь числа читаются из window.__PACE на каждом
- * переходе, поэтому вариант переключается прямо на странице.
+ * длительность стоит в main.js, а кривая и пресет масштаба — константами
+ * выше в этом файле. Здесь они читаются из window.__PACE на каждом кадре
+ * отрисовки, поэтому вариант переключается прямо на странице.
  */
-const PACE_DEFAULT = { duration: 1000, passCost: PASS_COST, dwell: null };
+const PACE_DEFAULT = { duration: 2400, curve: [0.33, 0.18], scale: SCALE };
 const pace = () => ({ ...PACE_DEFAULT, ...(globalThis.__PACE || {}) });
-
-${SHARED}
-
-/** Обратная развёртка кривой: какому времени отвечает доля пути. */
-function bezierInverse(y) {
-  let lo = 0, hi = 1;
-  for (let k = 0; k < 40; k++) {
-    const mid = (lo + hi) / 2;
-    if (bezier(mid) < y) lo = mid; else hi = mid;
-  }
-  return (lo + hi) / 2;
-}
-
-/**
- * Виртуальные времена, в которые камера стоит ровно на проходном кадре: там
- * он закрывает экран целиком при масштабе 1,15 — как глава на остановке.
- */
-function dwellCenters(path, isChapter, count, duration) {
-  const lo = Math.min(path.from, path.to), hi = Math.max(path.from, path.to);
-  const forward = path.to > path.from;
-  const out = [];
-  for (let i = Math.ceil(lo); i <= Math.floor(hi); i++) {
-    // Первый экран стоит на −1,05, и целые точки до нулевого кадра — не кадры:
-    // придержать там значит замереть на пустом месте.
-    if (i < 0 || i >= count || i <= lo || i >= hi || isChapter(i)) continue;
-    let a = 0, b = 1;
-    for (let k = 0; k < 40; k++) {
-      const mid = (a + b) / 2;
-      if (forward ? positionOn(path, mid) < i : positionOn(path, mid) > i) a = mid; else b = mid;
-    }
-    out.push(bezierInverse((a + b) / 2) * duration);
-  }
-  return out.sort((p, q) => p - q);
-}
 `;
 
 /** Точные куски исходника. Разойдётся — сборка демонстраций упадёт, а не соврёт. */
 const PATCHES = [
-  ['export const PASS_COST = 0.45;', 'export const PASS_COST = 0.45;\n' + PACE_BLOCK],
+  ['export const SCALE = { base: 1.04, accel: 1.31, soft: 0.111 };',
+   'export const SCALE = { base: 1.04, accel: 1.31, soft: 0.111 };\n' + PACE_BLOCK],
 
-  ['    total += isChapter(i) ? 1 : PASS_COST;',
-   '    total += isChapter(i) ? 1 : pace().passCost;'],
+  [`export function scaleAt(t) {
+  return SCALE.base * Math.exp(SCALE.accel * softplus(t, SCALE.soft));
+}`,
+   `export function scaleAt(t) {
+  const S = pace().scale;
+  return S.base * Math.exp(S.accel * softplus(t, S.soft));
+}`],
 
-  ['  let path = null, startedAt = 0, animating = false, raf = 0;',
-   '  let path = null, startedAt = 0, animating = false, raf = 0;\n' +
-   '  let virtual = 0, lastNow = 0, plan = [], dwellNext = 0, dwellClock = -1;'],
+  ['  const x1 = 0.33, x2 = 0.18;', '  const x1 = pace().curve[0], x2 = pace().curve[1];'],
 
-  [`  function step(now) {
-    raf = 0;
-    const u = duration <= 1 ? 1 : clamp((now - startedAt) / duration, 0, 1);
-    position = positionOn(path, bezier(u));`,
-   `  function step(now) {
-    raf = 0;
-    const total = pace().duration;
-    const dt = Math.min(64, now - lastNow);        // вкладка была в фоне — не прыгаем
-    lastNow = now;
-
-    const moved = advance({ virtual, next: dwellNext, clock: dwellClock }, dt, plan);
-    virtual = moved.virtual;
-    dwellNext = moved.next;
-    dwellClock = moved.clock;
-
-    const u = total <= 1 ? 1 : clamp(virtual / total, 0, 1);
-    position = positionOn(path, bezier(u));`],
-
-  ['    if (u < 1) { raf = requestAnimationFrame(step); return; }',
-   '    if (u < 1 || dwellClock >= 0) { raf = requestAnimationFrame(step); return; }'],
+  ['    const u = duration <= 1 ? 1 : clamp((now - startedAt) / duration, 0, 1);',
+   '    const total = pace().duration;\n' +
+   '    const u = total <= 1 ? 1 : clamp((now - startedAt) / total, 0, 1);'],
 
   ['    if (immediate || duration <= 1) {', '    if (immediate || pace().duration <= 1) {'],
-
-  [`    path = buildPath(position, stops[target], isChapter, count);
-    startedAt = performance.now();
-    animating = true;`,
-   `    path = buildPath(position, stops[target], isChapter, count);
-    const cfg = pace();
-    plan = dwellSchedule(dwellCenters(path, isChapter, count, cfg.duration), cfg.duration, cfg.dwell);
-    dwellNext = 0;
-    dwellClock = -1;
-    virtual = 0;
-    startedAt = performance.now();
-    lastNow = startedAt;
-    animating = true;`],
 ];
 
-function patchFlight(source) {
+/**
+ * Подпись главы подменяется через CAPTION_SWAP после действия зрителя. В
+ * боевом коде это доля длительности (0,24), и в демонстрациях она обязана
+ * считаться от ТЕКУЩЕГО варианта, иначе сравнение врёт: при 3200 мс подпись
+ * встала бы почти на секунду раньше камеры и это списали бы на длительность.
+ */
+const MAIN_PATCHES = [
+  ['const CAPTION_SWAP = Math.round(DURATION * 0.24);',
+   'const captionSwap = () => Math.round(((globalThis.__PACE || {}).duration || DURATION) * 0.24);'],
+  ['    }, CAPTION_SWAP);', '    }, captionSwap());'],
+];
+
+function patchWith(source, patches, what) {
   let code = source;
-  for (const [from, to] of PATCHES) {
+  for (const [from, to] of patches) {
     if (!code.includes(from)) {
-      throw new Error(`исходник flight.js разошёлся с правкой демонстраций:\n${from.slice(0, 70)}…`);
+      throw new Error(`исходник ${what} разошёлся с правкой демонстраций:\n${from.slice(0, 70)}…`);
     }
     code = code.replace(from, to);
   }
   return code;
 }
 
+const patchFlight = (source) => patchWith(source, PATCHES, 'flight.js');
+const patchMain = (source) => patchWith(source, MAIN_PATCHES, 'main.js');
+
 /* ------------------------------------------------------------------ *
- *  Значок варианта и переключатель
+ *  Плашка переключения
  * ------------------------------------------------------------------ */
 
-const num = (v) => String(v).replace('.', ',');
-
-const SHORT = { base: 'сейчас', none: 'без потолка' };
-
-function badge(active, set = VARIANTS, order = ORDER) {
-  const label = (key) => SHORT[key] || (key.startsWith('cap') ? key.slice(3) : key.toUpperCase());
+function badge(set, order, active, caption) {
   const links = order.map((key) =>
     `<button type="button" data-pace="${key}"` +
-    `${key === active ? ' aria-current="true"' : ''}>${label(key)}</button>`).join('');
+    `${key === active ? ' aria-current="true"' : ''}>${set[key].title}</button>`).join('');
 
   const config = JSON.stringify(Object.fromEntries(order.map((key) => {
-    const { duration, passCost, dwell, title, note } = set[key];
-    return [key, { duration, passCost, dwell, title, note }];
+    const { duration, curve, scale, title, note } = set[key];
+    return [key, { duration, curve, scale, title, note }];
   })));
 
   return `
@@ -190,21 +142,24 @@ function badge(active, set = VARIANTS, order = ORDER) {
   border: 1px solid rgb(240 192 112 / .3); border-radius: .25rem; padding: .2rem .5rem;
 }
 .pace-demo button[aria-current='true'] { background: #F0C070; color: #070506; border-color: #F0C070; }
-@media (max-width: 34rem) { .pace-demo { font-size: 10px; gap: .5rem; padding: .35rem .5rem; } }
+@media (max-width: 46rem) {
+  .pace-demo { flex-direction: column; align-items: stretch; gap: .35rem; font-size: 10px; padding: .35rem .5rem; }
+  .pace-demo__now { white-space: normal; text-align: center; }
+}
 </style>
 <script>
 (function () {
   var CONF = ${config};
+  var CAPTION = ${JSON.stringify(caption)};
   var box = document.getElementById('pace-demo');
   var now = box.querySelector('.pace-demo__now');
   function apply(key, push) {
     var v = CONF[key];
     if (!v) return;
-    window.__PACE = { duration: v.duration, passCost: v.passCost, dwell: v.dwell };
+    window.__PACE = { duration: v.duration, curve: v.curve, scale: v.scale };
     now.innerHTML = '<b>' + v.title + '</b> · ' + v.note;
     box.querySelectorAll('button').forEach(function (b) {
-      if (b.dataset.pace === key) b.setAttribute('aria-current', 'true');
-      else b.setAttribute('aria-current', 'false');
+      b.setAttribute('aria-current', b.dataset.pace === key ? 'true' : 'false');
     });
     if (push) { try { history.replaceState(null, '', '#' + key); } catch (e) { /* песочница */ } }
   }
@@ -212,47 +167,22 @@ function badge(active, set = VARIANTS, order = ORDER) {
     var b = e.target.closest('button');
     if (b) apply(b.dataset.pace, true);
   });
+  box.title = CAPTION;
   apply((location.hash || '').slice(1) in CONF ? location.hash.slice(1) : '${active}', false);
 })();
 </script>`;
 }
 
 /* ------------------------------------------------------------------ *
- *  Сборка
+ *  Одна страница — одним файлом
  * ------------------------------------------------------------------ */
-
-/** Абсолютные пути dist/ переводим в относительные: папку можно класть куда угодно. */
-function relativise(html, prefix) {
-  return html
-    .replaceAll('href="/assets/', `href="${prefix}assets/`)
-    .replaceAll('src="/assets/', `src="${prefix}assets/`)
-    .replaceAll('href="/favicon', `href="${prefix}favicon`)
-    .replaceAll('href="/apple-touch-icon', `href="${prefix}apple-touch-icon`)
-    .replaceAll('href="/site.webmanifest"', `href="${prefix}site.webmanifest"`);
-}
-
-
-/* ------------------------------------------------------------------ *
- *  Всё одним файлом
- *
- *  Та же страница и те же четыре набора чисел, но без единого внешнего
- *  запроса: стили, шрифты, скрипты и фотографии зашиты в документ. Такой
- *  файл открывается двойным щелчком с диска и уходит в мессенджер целиком —
- *  для «посмотреть глазами» этого достаточно.
- *
- *  Кадры берём в 1280 avif: на телефоне это ровно то, что покажет боевая
- *  страница, на десктопе — мягче. Темп от разрешения не зависит, а файл
- *  остаётся в полтора мегабайта вместо двадцати четырёх.
- * ------------------------------------------------------------------ */
-
-const DATA_WIDTH = 1280;
 
 async function dataUri(file, mime) {
   return `data:${mime};base64,${(await fs.readFile(file)).toString('base64')}`;
 }
 
-async function inlineOne(template, jsDir, jsFiles, flightFile, opts = {}) {
-  const { set = VARIANTS, order = ORDER, active = order[0], title = 'Темп проходных кадров' } = opts;
+async function inlineOne(template, jsDir, jsFiles, flightFile, opts) {
+  const { set, order, active = order[0], title, caption } = opts;
   const photoDir = path.join(DIST, 'assets', 'photo');
   const photos = await fs.readdir(photoDir);
   const pick = async (slug) => {
@@ -275,6 +205,7 @@ async function inlineOne(template, jsDir, jsFiles, flightFile, opts = {}) {
     const file = jsFiles.find((f) => f.startsWith(prefix));
     let code = await fs.readFile(path.join(jsDir, file), 'utf8');
     if (file === flightFile) code = patchFlight(code);
+    if (file.startsWith('main.')) code = patchMain(code);
     code = code.replace(/^import[^;]+;$/gm, '').replace(/^export /gm, '');
     parts.push(code);
   }
@@ -305,24 +236,55 @@ async function inlineOne(template, jsDir, jsFiles, flightFile, opts = {}) {
     `<style>${css}</style>`,
     "<script>document.documentElement.classList.add('js');</script>",
     body,
-    badge(active, set, order),
+    badge(set, order, active, caption),
     `<script type="module">${js}</script>`,
   ].join('\n');
 }
+
+/* ------------------------------------------------------------------ *
+ *  Сборка
+ * ------------------------------------------------------------------ */
+
+const PAGES = [
+  {
+    file: 'duration.html',
+    title: 'Длительность перехода',
+    caption: 'Одна и та же механика, четыре длительности перехода.',
+    set: DURATION_VARIANTS, order: DURATION_ORDER, active: 'd2400',
+    about: 'Кривая и глубина как в src/, меняется только длительность. Принято 2400 мс.',
+  },
+  {
+    file: 'curve.html',
+    title: 'Кривая разгона',
+    caption: 'Одна длительность, две кривые разгона: прежняя и принятая.',
+    set: CURVE_VARIANTS, order: CURVE_ORDER, active: 'current',
+    about: 'Переход 2400 мс. Уверенная кривая трогается раньше и дольше садится на главу; ' +
+           'пик скорости при этом не выше прежнего. Принята и стоит в src/.',
+  },
+  {
+    file: 'depth.html',
+    title: 'Глубина прохода',
+    caption: 'Одна длительность и кривая, два пресета масштаба: прежний и принятый.',
+    set: DEPTH_VARIANTS, order: DEPTH_ORDER, active: 'current',
+    about: 'Переход 2400 мс. Опорные точки пресета те же (1,04 и 1,15), резче только колено: ' +
+           'кадр дольше стоит на крупности главы и уходит вперёд до 2,6, а не до 1,83. ' +
+           'Принято и стоит в src/.',
+  },
+];
 
 async function main() {
   try { await fs.access(path.join(DIST, 'index.html')); }
   catch { throw new Error('нет dist/ — сначала npm run build'); }
 
+  for (const guard of SOURCE_GUARDS) {
+    const source = fss.readFileSync(path.join(ROOT, guard.file), 'utf8');
+    if (!source.includes(guard.text)) {
+      throw new Error(`${guard.file} разошёлся с pace-variants.mjs: не найдено «${guard.text}»`);
+    }
+  }
+
   await fs.rm(OUT, { recursive: true, force: true });
   await fs.mkdir(OUT, { recursive: true });
-
-  // Общие медиа, стили и шрифты — одной копией на все варианты
-  await fs.cp(path.join(DIST, 'assets'), path.join(OUT, 'assets'), { recursive: true });
-  await fs.rm(path.join(OUT, 'assets', 'js'), { recursive: true, force: true });
-  for (const file of ['favicon.svg', 'favicon.ico', 'apple-touch-icon.png', 'site.webmanifest']) {
-    await fs.copyFile(path.join(DIST, file), path.join(OUT, file)).catch(() => {});
-  }
 
   const jsDir = path.join(DIST, 'assets', 'js');
   const jsFiles = await fs.readdir(jsDir);
@@ -331,47 +293,24 @@ async function main() {
 
   const template = await fs.readFile(path.join(DIST, 'index.html'), 'utf8');
 
-  for (const key of ORDER) {
-    const dir = path.join(OUT, key);
-    await fs.mkdir(path.join(dir, 'js'), { recursive: true });
-    for (const file of jsFiles) {
-      const code = await fs.readFile(path.join(jsDir, file), 'utf8');
-      await fs.writeFile(path.join(dir, 'js', file), file === flightFile ? patchFlight(code) : code);
-    }
-    let html = relativise(template, '../');
-    html = html.replaceAll('src="../assets/js/', 'src="js/');
-    html = html.replace('</body>', `${badge(key)}\n</body>`);
-    await fs.writeFile(path.join(dir, 'index.html'), html);
+  console.log('\nДемонстрации перехода');
+  for (const page of PAGES) {
+    const html = await inlineOne(template, jsDir, jsFiles, flightFile, page);
+    await fs.writeFile(path.join(OUT, page.file), html);
+    console.log(`   ${path.join(OUT, page.file)}   ${page.title}, ` +
+                `${(Buffer.byteLength(html) / 1048576).toFixed(1)} МБ`);
   }
-
   await fs.writeFile(path.join(OUT, 'index.html'), showcase());
-  const single = await inlineOne(template, jsDir, jsFiles, flightFile);
-  await fs.writeFile(path.join(OUT, 'pace-demo.html'), single);
-  const budget = await inlineOne(template, jsDir, jsFiles, flightFile, {
-    set: CAP_VARIANTS, order: CAP_ORDER, active: 'cap2000',
-    title: 'Потолок на дальний прыжок',
-  });
-  await fs.writeFile(path.join(OUT, 'pace-budget.html'), budget);
-
-  console.log('\nДемонстрации темпа');
-  for (const key of ORDER) console.log(`   ${OUT}/${key}/index.html   ${VARIANTS[key].title}`);
-  console.log(`   ${OUT}/index.html   витрина`);
-  console.log(`   ${OUT}/pace-demo.html   всё одним файлом, ` +
-              `${(Buffer.byteLength(single) / 1048576).toFixed(1)} МБ`);
-  console.log(`   ${OUT}/pace-budget.html   C с тремя потолками, ` +
-              `${(Buffer.byteLength(budget) / 1048576).toFixed(1)} МБ\n`);
+  console.log(`   ${path.join(OUT, 'index.html')}   витрина\n`);
 }
 
 function showcase() {
-  const rows = ORDER.map((key) => {
-    const v = VARIANTS[key];
-    const label = key === 'base' ? 'сейчас' : key.toUpperCase();
-    return `<li><a href="${key}/"><b>${label}</b> ${v.title}</a><span>${v.note}</span></li>`;
-  }).join('');
+  const rows = PAGES.map((p) =>
+    `<li><a href="${p.file}"><b>${p.title}</b></a><span>${p.about}</span></li>`).join('');
   return `<!doctype html>
 <html lang="ru"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Темп проходных кадров — демонстрации</title>
+<title>Переход между главами — демонстрации</title>
 <style>
   body { margin: 0; padding: 2.5rem 1.25rem; background: #070506; color: #F2ECE1;
          font: 16px/1.5 system-ui, sans-serif; }
@@ -381,13 +320,14 @@ function showcase() {
   ul { list-style: none; padding: 0; margin: 2rem 0 0; display: grid; gap: .75rem; }
   li { border: 1px solid #F0C07040; border-radius: .5rem; }
   a { display: block; padding: .9rem 1rem .3rem; color: #F2ECE1; text-decoration: none; }
-  a b { color: #F0C070; margin-right: .5rem; }
+  a b { color: #F0C070; }
   span { display: block; padding: 0 1rem .9rem; color: #F2ECE1A0; font-size: .85rem; }
 </style></head>
 <body><main>
-  <h1>Темп проходных кадров</h1>
-  <p>Одна и та же страница, четыре набора чисел. Вариант переключается и прямо
-     на странице — плашкой сверху, без перезагрузки.</p>
+  <h1>Переход между главами</h1>
+  <p>Восемь кадров, восемь глав, проходных кадров нет. Одна и та же страница
+     и одна и та же механика; вариант переключается плашкой сверху, без
+     перезагрузки.</p>
   <ul>${rows}</ul>
 </main></body></html>`;
 }

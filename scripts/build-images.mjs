@@ -17,8 +17,7 @@ import sharp from 'sharp';
 import {
   ORIGINALS, BUILD, BUILD_ASSETS, PHOTO_FORMATS, OG_IMAGE,
   MIN_ORIGINAL_LONG_SIDE, BUDGET, BUDGET_WIDTH, FIRST_SCREEN_SLIDES, bytes,
-  widthsFor, PASSTHROUGH_PHOTOS, PHOTO_WIDTHS, requestWidthAt, CODE_FONTS_FALLBACK,
-  TRIM_PASSTHROUGH,
+  widthsFor, requestWidthAt, CODE_FONTS_FALLBACK,
 } from './config.mjs';
 import { layers } from '../src/content.js';
 
@@ -61,7 +60,7 @@ async function renderVariant(pipeline, basename, width, format) {
 async function processPhoto(basename, source, cache) {
   const stat = await fs.stat(source);
   const widths = widthsFor(basename);
-  // Лесенка входит в ключ: без неё отключение 2560 отдало бы кадры из кэша.
+  // Лесенка входит в ключ: смена лесенки не должна отдавать кадры из кэша.
   const key = `${basename}:${stat.size}:${Math.round(stat.mtimeMs)}:${widths.join('/')}`;
   if (cache[basename]?.key === key) {
     const files = cache[basename].variants.map((v) => path.join(PHOTO_OUT, v.file));
@@ -229,30 +228,10 @@ function report(manifest, warnings, missing, extra, videoBytes) {
   log(`  1. изображения + шрифты и код: ${bytes(photos)} + ${bytes(codeFonts)}${measured ? '' : ' (резерв, полной сборки ещё не было)'} = ${bytes(page)} из ${bytes(BUDGET.page)}`);
   log(`  2. видео:                      ${bytes(videoBytes)} из ${bytes(BUDGET.video)}${videoBytes ? '' : ' — видео не снято'}`);
 
-  // Средство против перерасхода: отключить 2560 у проходных кадров. Считаем
-  // выигрыш всегда — и когда включено, и когда нет, чтобы решение было с цифрой.
-  const passthrough = layers.filter((sl) => PASSTHROUGH_PHOTOS.has(sl.photo));
-  if (passthrough.length) {
-    const gain = passthrough.reduce((s, sl) => {
-      const p = manifest.photos[sl.photo];
-      if (!p) return s;
-      const avif = p.variants.filter((v) => v.ext === 'avif').sort((a, b) => b.width - a.width);
-      const top = avif[0];
-      if (!top) return s;
-      // Вариант 2560 есть — выигрыш это разница до следующей ступени.
-      if (top.width > 1920) {
-        const next = avif.find((v) => v.width <= 1920);
-        return s + (next ? top.size - next.size : 0);
-      }
-      // Его нет (оригинал не дотягивает) — отключать уже нечего.
-      return s;
-    }, 0);
-    if (TRIM_PASSTHROUGH) {
-      log(`  2560 отключён у ${passthrough.length} проходных кадров (TRIM_PASSTHROUGH=1)`);
-    } else if (gain) {
-      log(`  запас: отключение 2560 у ${passthrough.length} проходных кадров дало бы ${bytes(gain)} (TRIM_PASSTHROUGH=1)`);
-    }
-  }
+  // Запас до потолка первой строки — в мегабайтах и в кадрах: по нему видно,
+  // сколько ещё кадров пролёт выдержит, если главы когда-нибудь добавятся.
+  const perPhoto = photos / layers.length;
+  log(`  запас строки 1: ${bytes(BUDGET.page - page)} — это ещё ${Math.floor((BUDGET.page - page) / perPhoto)} кадр(ов) того же веса`);
 
   const over = [];
   if (firstScreen > BUDGET.firstScreen) over.push(`первый экран ${bytes(firstScreen)} > ${bytes(BUDGET.firstScreen)}`);
@@ -261,10 +240,7 @@ function report(manifest, warnings, missing, extra, videoBytes) {
   if (over.length) {
     console.error('\nБюджет превышен:');
     over.forEach((o) => console.error('  ', o));
-    if (!TRIM_PASSTHROUGH) {
-      console.error('   потолок не поднимаем. Первое средство — отключить 2560');
-      console.error('   у проходных кадров: TRIM_PASSTHROUGH=1 npm run images');
-    }
+    console.error('   потолок не поднимаем: режем лесенку или кадры, а не бюджет.');
     process.exitCode = 1;
     throw new Error('бюджет веса превышен');
   }

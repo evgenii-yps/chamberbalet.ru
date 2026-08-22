@@ -2,11 +2,14 @@
  * Инварианты пролёта. Проверяем числом то, что в приёмке записано словами.
  * Считаем по тем же функциям, что работают в браузере, — не по их копии.
  */
+import fs from 'node:fs';
+import path from 'node:path';
 import {
   scaleAt, opacityAt, fadeOutEnd, buildPath, positionOn,
   driftOf, SCALE, FADE, OPENER_AT, OPENER_FADE, OPENER_HOLD, openerOpacityAt,
 } from '../src/js/flight.js';
 import { layers, chapters } from '../src/content.js';
+import { ROOT } from './config.mjs';
 
 const problems = [];
 const ok = (name, pass) => { console.log('  ', pass ? '·' : '×', name); if (!pass) problems.push(name); };
@@ -84,14 +87,46 @@ for (let n = 0; n < STOPS.length - 1; n++) {
 ok(`в переходе чёрного провала нет (минимум плотности ${(worst * 100).toFixed(2)} % при p = ${worstAt.toFixed(2)})`,
    worst >= 0.999);
 
-/* 8. Проходные кадры действительно пролетаются быстрее глав. */
-const sample = buildPath(STOPS[1], STOPS[2], isChapter, N);
-const passInside = [];
-for (let i = Math.ceil(STOPS[1]); i <= Math.floor(STOPS[2]); i++) if (!isChapter(i)) passInside.push(i);
-ok(`карта темпа построена: проходной кадр стоит ${(0.45).toFixed(2)} против 1 у главы`,
-   sample.total > 0 && passInside.length >= 0);
+/* 8. Один кадр — одна глава: кадров без главы в стопке нет, остановки идут
+ *    подряд, и переход всегда ведёт к соседнему кадру. */
+const passthrough = layers.filter((l) => !l.chapter);
+ok(`кадров без главы нет (кадров ${N}, глав ${chapters.length})`, passthrough.length === 0);
 
-/* 9. Остановиться между главами невозможно — обеспечивается округлением в goTo. */
+const spans = [];
+for (let n = 1; n < STOPS.length - 1; n++) spans.push(STOPS[n + 1] - STOPS[n]);
+ok(`переход между главами — ровно один кадр (${[...new Set(spans)].join(', ')})`,
+   spans.every((v) => Math.abs(v - 1) < 1e-9));
+
+/* 9. Карта темпа равномерна: цена у всех кадров одна, поэтому доля пути равна
+ *    доле расстояния и движение задаёт одна кривая. */
+let evenPace = true;
+for (let n = 0; n < STOPS.length - 1; n++) {
+  const path = buildPath(STOPS[n], STOPS[n + 1], isChapter, N);
+  for (let u = 0; u <= 1; u += 0.01) {
+    const want = STOPS[n] + (STOPS[n + 1] - STOPS[n]) * u;
+    if (Math.abs(positionOn(path, u) - want) > 0.02) evenPace = false;
+  }
+}
+ok('карта темпа равномерна: доля пути равна доле расстояния', evenPace);
+
+/* 10. Окно ухода у всех кадров одно и то же: ближайшая глава впереди всегда
+ *     на расстоянии 1, поэтому outEnd упирается в потолок FADE.outMax. */
+ok(`окно ухода у всех кадров ${FADE.outMax.toFixed(2)}`,
+   outEnd.every((v) => Math.abs(v - FADE.outMax) < 1e-9));
+
+/* 11. Кривая перехода в CSS и в скрипте — одна и та же.
+ *     По --flight-ease идут проявление секций и подпись главы, по копии в
+ *     flight.js — сам пролёт. Разойдутся — на одной странице окажутся два
+ *     разных движения, и заметить это глазами почти невозможно. */
+const read = (file) => fs.readFileSync(path.join(ROOT, file), 'utf8');
+const cssCurve = /--flight-ease:\s*cubic-bezier\(([^)]+)\)/.exec(read('src/css/tokens.css'))?.[1];
+const jsCurve = /const x1 = ([\d.]+), x2 = ([\d.]+);/.exec(read('src/js/flight.js'));
+const same = cssCurve && jsCurve &&
+  cssCurve.split(',').map(Number).join() === [Number(jsCurve[1]), 0, Number(jsCurve[2]), 1].join();
+ok(`кривая перехода одна: CSS cubic-bezier(${cssCurve ?? '—'}) и flight.js ` +
+   `(${jsCurve ? `${jsCurve[1]}, 0, ${jsCurve[2]}, 1` : '—'})`, Boolean(same));
+
+/* 12. Остановиться между главами невозможно — обеспечивается округлением в goTo. */
 
 if (problems.length) {
   console.error('\nНе сходится:');

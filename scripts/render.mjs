@@ -338,7 +338,7 @@ export function createRenderer({ debug = false, images = { photos: {}, og: null 
   }
 
   /**
-   * Первые два кадра просим заранее и с высоким приоритетом; вместе с ними —
+   * Нулевой кадр просим заранее и с высоким приоритетом; вместе с ним —
    * кириллические начертания, которыми набран первый экран. Без этого swap
    * успевает перерисовать заголовок и даёт сдвиг макета.
    */
@@ -348,9 +348,9 @@ export function createRenderer({ debug = false, images = { photos: {}, og: null 
       if (face.weight !== 400 || !/cyrillic/.test(face.source || '')) continue;
       out.push(`<link rel="preload" as="font" type="font/woff2" crossorigin href="/assets/fonts/${face.file}">`);
     }
-    // Предзагружаем только нулевой кадр: второй теперь появляется в DOM уже
-    // после отрисовки первого экрана, и его предзагрузка отняла бы полосу
-    // у кадра LCP ровно тогда, когда она нужнее всего.
+    // Предзагружаем только нулевой кадр — он же фон первого экрана. Остальные
+    // семь появляются в DOM уже после его отрисовки, и предзагрузка отняла бы
+    // полосу у кадра LCP ровно тогда, когда она нужнее всего.
     for (const layer of C.layers.slice(0, 1)) {
       const photo = photoOf(layer.photo);
       if (!photo) continue;
