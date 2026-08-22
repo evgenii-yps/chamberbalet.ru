@@ -23,7 +23,7 @@ import {
   opacityAt, fadeOutEnd, scaleAt, buildPath, positionOn, OPENER_AT, PASS_COST,
 } from '../src/js/flight.js';
 import { layers, chapters } from '../src/content.js';
-import { VARIANTS, ORDER, dwellSchedule, advance } from './pace-variants.mjs';
+import { VARIANTS, ORDER, CAPS, dwellSchedule, advance } from './pace-variants.mjs';
 
 const clamp = (v, lo, hi) => (v < lo ? lo : v > hi ? hi : v);
 
@@ -201,6 +201,91 @@ function report(variant) {
   return { worst, avg, best, longest, jump };
 }
 
+
+/* ---------------------- потолок на дальние прыжки ---------------------- */
+
+/**
+ * Все переходы, какие вообще возможны по рельсу: любая пара остановок, а не
+ * только соседние. Группируем по числу проходных кадров внутри — именно оно
+ * решает, упрётся переход в потолок или нет.
+ */
+function transitionsByPassCount() {
+  const groups = new Map();
+  for (let i = 0; i < STOPS.length; i++) {
+    for (let j = i + 1; j < STOPS.length; j++) {
+      let k = 0;
+      for (let f = Math.ceil(STOPS[i]); f <= Math.floor(STOPS[j]); f++) {
+        if (f >= 0 && f < N && f > STOPS[i] && f < STOPS[j] && !isChapter(f)) k++;
+      }
+      if (!groups.has(k)) groups.set(k, []);
+      groups.get(k).push([STOPS[i], STOPS[j], i, j]);
+    }
+  }
+  return groups;
+}
+
+function budgetTable(dwell) {
+  const groups = transitionsByPassCount();
+  const counts = [...groups.keys()].sort((a, b) => a - b).filter((k) => k > 0);
+  const run = (from, to, cap) =>
+    runTransition(from, to, { duration: 1000, passCost: 0.45, dwell: { ...dwell, cap } });
+
+  console.log('\nПотолок на переход: не отключение, а сжатие');
+  console.log(`   задержка ${dwell.hold} мс, скаты ${dwell.ramp} мс, базовый переход 1000 мс`);
+
+  /* Соседние главы — то, что видно при обычной прокрутке. Их потолок не
+     касается ни при одном из трёх значений: проверяем это числом. */
+  console.log('\n   Соседние главы (послайдовая прокрутка)');
+  console.log('   ' + '─'.repeat(74));
+  for (const cap of [null, ...CAPS]) {
+    const spans = [];
+    let lo = Infinity, hi = 0;
+    for (let n = 0; n < STOPS.length - 1; n++) {
+      const r = run(STOPS[n], STOPS[n + 1], cap);
+      spans.push(r.total);
+      for (let i = 0; i < N; i++) {
+        if (isChapter(i)) continue;
+        const row = r.held.get(i);
+        if (!row || row[0] <= 0) continue;
+        lo = Math.min(lo, row[0]); hi = Math.max(hi, row[0]);
+      }
+    }
+    console.log(`   ${(cap ? `потолок ${cap} мс` : 'без потолка').padEnd(18)}` +
+      `переходы ${ms(Math.min(...spans))}–${ms(Math.max(...spans))} мс · ` +
+      `кадр ${Math.round(lo)}–${Math.round(hi)} мс`);
+  }
+
+  /* Прыжки: любая пара остановок, сгруппированная по числу проходных. */
+  console.log('\n   Все переходы по числу проходных кадров внутри');
+  console.log('   ' + '─'.repeat(74));
+  console.log('   проходных  переходов   ' + CAPS.map((c) => `потолок ${c}`.padEnd(20)).join(''));
+  for (const k of counts) {
+    const cells = CAPS.map((cap) => {
+      let span = 0, lo = Infinity, hi = 0;
+      for (const [from, to] of groups.get(k)) {
+        const r = run(from, to, cap);
+        span = Math.max(span, r.total);
+        for (let i = 0; i < N; i++) {
+          if (isChapter(i)) continue;
+          const row = r.held.get(i);
+          if (!row || row[0] <= 0) continue;
+          lo = Math.min(lo, row[0]); hi = Math.max(hi, row[0]);
+        }
+      }
+      return { span, lo, hi };
+    });
+    console.log(`   ${String(k).padStart(6)}     ${String(groups.get(k).length).padStart(6)}      ` +
+      cells.map((c) => `${ms(c.span)} мс`.padEnd(20)).join(''));
+    console.log(`   ${''.padEnd(6)}     ${''.padEnd(6)}      ` +
+      cells.map((c) => `${Math.round(c.lo)}–${Math.round(c.hi)} мс на кадр`.padEnd(20)).join(''));
+  }
+  console.log('   ' + '─'.repeat(74));
+  console.log('   верхняя строка — длительность самого длинного такого перехода,');
+  console.log('   нижняя — сколько кадр держит экран целиком');
+  console.log('   один и два проходных бывают и у соседних глав, и у прыжков:');
+  console.log('   у прыжка кадры разнесены и скаты не укорачиваются, поэтому он длиннее');
+}
+
 /* ------------------------------ запуск ------------------------------ */
 
 {
@@ -218,6 +303,12 @@ const arg = (name) => {
 
 console.log(`\nКадров ${N}, остановок ${STOPS.length}, проходных ${N - chapters.length}.`);
 console.log(`Пороги доли экрана: целиком ≥ ${SHARES[0]}, преобладает ≥ ${SHARES[1]}, виден ≥ ${SHARES[2]}.`);
+
+if (process.argv.includes('--budget')) {
+  budgetTable({ hold: 240, ramp: 130 });
+  console.log('');
+  process.exit(0);
+}
 
 const custom = arg('duration') || arg('pass-cost') || arg('hold');
 if (custom) {

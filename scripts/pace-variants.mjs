@@ -34,11 +34,31 @@ export const VARIANTS = {
   c: {
     key: 'c', title: 'C — микрозадержка на проходном',
     note: 'переход 1000 мс, остановка 240 мс на полном заполнении экрана',
-    duration: 1000, passCost: 0.45, dwell: { hold: 240, ramp: 130 },
+    duration: 1000, passCost: 0.45, dwell: { hold: 240, ramp: 130, cap: 2000 },
   },
 };
 
 export const ORDER = ['base', 'a', 'b', 'c'];
+
+/** Потолки на длительность перехода — для сравнения глазами и в замере. */
+export const CAPS = [1800, 2000, 2200];
+
+/** Тот же C с разными потолками. Соседние главы во всех трёх одинаковы:
+ *  потолок вступает в дело только на прыжках через три и больше проходных. */
+export const CAP_VARIANTS = Object.fromEntries([
+  ['none', null], ...CAPS.map((cap) => [`cap${cap}`, cap]),
+].map(([key, cap]) => [key, {
+  key,
+  title: cap ? `C · потолок ${cap} мс` : 'C · без потолка',
+  note: cap
+    ? `переход 1000 мс, остановка 240 мс, дальний прыжок не длиннее ${cap} мс`
+    : 'переход 1000 мс, остановка 240 мс, прыжок через весь пролёт — 2865 мс',
+  duration: 1000,
+  passCost: 0.45,
+  dwell: { hold: 240, ramp: 130, ...(cap ? { cap } : {}) },
+}]));
+
+export const CAP_ORDER = ['none', ...CAPS.map((cap) => `cap${cap}`)];
 
 /** Плавная ступенька: 0 → 1 без излома скорости на концах. */
 export const smoothstep = (x) => (x <= 0 ? 0 : x >= 1 ? 1 : x * x * (3 - 2 * x));
@@ -57,6 +77,10 @@ export function dwellRate(tau, { hold, rampIn, rampOut }) {
 
 export const dwellSpan = ({ hold, rampIn, rampOut }) => rampIn + hold + rampOut;
 
+/** Сколько миллисекунд задержки добавляют к переходу сверх его длительности. */
+export const dwellAdded = (plan) =>
+  plan.reduce((sum, e) => sum + e.hold + (e.rampIn + e.rampOut) / 2, 0);
+
 /**
  * Расписание микрозадержек на один переход.
  *
@@ -70,17 +94,55 @@ export const dwellSpan = ({ hold, rampIn, rampOut }) => rampIn + hold + rampOut;
  * камера встала бы уже на растворяющемся. Поэтому скат между соседями
  * укорачивается до зазора — камера переползает от кадра к кадру, ни разу не
  * выходя на полную скорость.
+ *
+ *
+ * ПОТОЛОК НА ПЕРЕХОД
+ *
+ * Между соседними главами проходных кадров один-два, и полная задержка на
+ * каждом стоит недорого. Но щелчок по дальней точке рельса, Home и End — это
+ * один переход через все шесть, и полные задержки растянули бы его почти до
+ * трёх секунд.
+ *
+ * `dwell.cap` — потолок длительности перехода целиком. Когда полные задержки
+ * в него не влезают, они не отключаются, а СЖИМАЮТСЯ: hold и ramp умножаются
+ * на общий множитель, подобранный так, чтобы переход уложился ровно в
+ * потолок. Отсюда два свойства, ради которых это и сделано:
+ *
+ *   деградация плавная — множитель уходит от единицы непрерывно, порога, на
+ *     котором поведение скачком меняется, нет вовсе;
+ *   короткий прыжок никогда не медленнее длинного — длительность равна
+ *     duration + min(полные задержки, запас), а это неубывающая функция от
+ *     числа проходных кадров.
+ *
+ * Множитель ищется делением пополам: добавка растёт по нему монотонно
+ * (hold линейно, скаты линейно до упора в зазор), решать аналитически незачем.
  */
 export function dwellSchedule(centers, duration, dwell) {
   if (!dwell || !centers.length) return [];
-  const { hold, ramp } = dwell;
-  const gap = (k) => (k === 0 ? centers[0] : centers[k] - centers[k - 1]);
-  return centers.map((at, k) => ({
-    at,
-    hold,
-    rampIn: Math.max(0, Math.min(ramp, gap(k))),
-    rampOut: Math.max(0, Math.min(ramp, k + 1 < centers.length ? gap(k + 1) : duration - at)),
-  }));
+
+  const build = (scale) => {
+    const hold = dwell.hold * scale;
+    const ramp = dwell.ramp * scale;
+    const gap = (k) => (k === 0 ? centers[0] : centers[k] - centers[k - 1]);
+    return centers.map((at, k) => ({
+      at,
+      hold,
+      rampIn: Math.max(0, Math.min(ramp, gap(k))),
+      rampOut: Math.max(0, Math.min(ramp, k + 1 < centers.length ? gap(k + 1) : duration - at)),
+    }));
+  };
+
+  const full = build(1);
+  const allowance = (dwell.cap ?? Infinity) - duration;
+  if (dwellAdded(full) <= allowance) return full;
+  if (allowance <= 0) return [];
+
+  let lo = 0, hi = 1;
+  for (let k = 0; k < 24; k++) {
+    const mid = (lo + hi) / 2;
+    if (dwellAdded(build(mid)) > allowance) hi = mid; else lo = mid;
+  }
+  return build(lo);
 }
 
 /**

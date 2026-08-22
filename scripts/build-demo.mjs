@@ -24,7 +24,8 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { ROOT, DIST, BUILD } from './config.mjs';
 import {
-  VARIANTS, ORDER, smoothstep, dwellRate, dwellSpan, dwellSchedule, advance,
+  VARIANTS, ORDER, CAP_VARIANTS, CAP_ORDER,
+  smoothstep, dwellRate, dwellSpan, dwellAdded, dwellSchedule, advance,
 } from './pace-variants.mjs';
 
 const OUT = path.join(BUILD, 'demo');
@@ -38,6 +39,7 @@ const SHARED = [
   `const smoothstep = ${smoothstep.toString()};`,
   dwellRate.toString(),
   `const dwellSpan = ${dwellSpan.toString()};`,
+  `const dwellAdded = ${dwellAdded.toString()};`,
   dwellSchedule.toString(),
   advance.toString(),
 ].join('\n\n');
@@ -152,16 +154,16 @@ function patchFlight(source) {
 
 const num = (v) => String(v).replace('.', ',');
 
-function badge(active) {
-  const links = ORDER.map((key) => {
-    const v = VARIANTS[key];
-    const label = key === 'base' ? 'сейчас' : key.toUpperCase();
-    return `<button type="button" data-pace="${key}"` +
-           `${key === active ? ' aria-current="true"' : ''}>${label}</button>`;
-  }).join('');
+const SHORT = { base: 'сейчас', none: 'без потолка' };
 
-  const config = JSON.stringify(Object.fromEntries(ORDER.map((key) => {
-    const { duration, passCost, dwell, title, note } = VARIANTS[key];
+function badge(active, set = VARIANTS, order = ORDER) {
+  const label = (key) => SHORT[key] || (key.startsWith('cap') ? key.slice(3) : key.toUpperCase());
+  const links = order.map((key) =>
+    `<button type="button" data-pace="${key}"` +
+    `${key === active ? ' aria-current="true"' : ''}>${label(key)}</button>`).join('');
+
+  const config = JSON.stringify(Object.fromEntries(order.map((key) => {
+    const { duration, passCost, dwell, title, note } = set[key];
     return [key, { duration, passCost, dwell, title, note }];
   })));
 
@@ -249,7 +251,8 @@ async function dataUri(file, mime) {
   return `data:${mime};base64,${(await fs.readFile(file)).toString('base64')}`;
 }
 
-async function inlineOne(template, jsDir, jsFiles, flightFile) {
+async function inlineOne(template, jsDir, jsFiles, flightFile, opts = {}) {
+  const { set = VARIANTS, order = ORDER, active = order[0], title = 'Темп проходных кадров' } = opts;
   const photoDir = path.join(DIST, 'assets', 'photo');
   const photos = await fs.readdir(photoDir);
   const pick = async (slug) => {
@@ -266,9 +269,9 @@ async function inlineOne(template, jsDir, jsFiles, flightFile) {
   }
 
   /* скрипты: пять модулей в один, импорты и экспорты снимаются */
-  const order = ['flight.', 'nav.', 'hero-video.', 'reveal.', 'main.'];
+  const modules = ['flight.', 'nav.', 'hero-video.', 'reveal.', 'main.'];
   const parts = [];
-  for (const prefix of order) {
+  for (const prefix of modules) {
     const file = jsFiles.find((f) => f.startsWith(prefix));
     let code = await fs.readFile(path.join(jsDir, file), 'utf8');
     if (file === flightFile) code = patchFlight(code);
@@ -298,11 +301,11 @@ async function inlineOne(template, jsDir, jsFiles, flightFile) {
   body = body.replace(/<script type="module"[^>]*><\/script>/, '');
 
   return [
-    '<title>Темп проходных кадров</title>',
+    `<title>${title}</title>`,
     `<style>${css}</style>`,
     "<script>document.documentElement.classList.add('js');</script>",
     body,
-    badge('base'),
+    badge(active, set, order),
     `<script type="module">${js}</script>`,
   ].join('\n');
 }
@@ -344,12 +347,19 @@ async function main() {
   await fs.writeFile(path.join(OUT, 'index.html'), showcase());
   const single = await inlineOne(template, jsDir, jsFiles, flightFile);
   await fs.writeFile(path.join(OUT, 'pace-demo.html'), single);
+  const budget = await inlineOne(template, jsDir, jsFiles, flightFile, {
+    set: CAP_VARIANTS, order: CAP_ORDER, active: 'cap2000',
+    title: 'Потолок на дальний прыжок',
+  });
+  await fs.writeFile(path.join(OUT, 'pace-budget.html'), budget);
 
   console.log('\nДемонстрации темпа');
   for (const key of ORDER) console.log(`   ${OUT}/${key}/index.html   ${VARIANTS[key].title}`);
   console.log(`   ${OUT}/index.html   витрина`);
   console.log(`   ${OUT}/pace-demo.html   всё одним файлом, ` +
-              `${(Buffer.byteLength(single) / 1048576).toFixed(1)} МБ\n`);
+              `${(Buffer.byteLength(single) / 1048576).toFixed(1)} МБ`);
+  console.log(`   ${OUT}/pace-budget.html   C с тремя потолками, ` +
+              `${(Buffer.byteLength(budget) / 1048576).toFixed(1)} МБ\n`);
 }
 
 function showcase() {
