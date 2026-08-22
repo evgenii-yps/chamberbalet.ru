@@ -97,11 +97,16 @@ export function createRenderer({ debug = false, images = { photos: {}, og: null 
   }
 
   function renderLayer(layer, i) {
-    // Первые три кадра стоят в разметке, остальные — в <noscript>: в пролёте
-    // все слои лежат в области просмотра, и loading="lazy" их бы не удержал
-    const inHtml = i < 3;
+    // В разметке стоит только нулевой кадр, остальные — в <noscript>: в пролёте
+    // все слои лежат в области просмотра, и loading="lazy" их бы не удержал.
+    //
+    // Нулевой оставлен инлайном не ради пролёта, а потому что это тот же файл,
+    // что и фон первого экрана: разведи их — и одна загрузка станет двумя.
+    // Остальные кадры пролёта до первого действия пользователя не нужны, а
+    // весом соревнуются с кадром LCP; их поднимает main.js после отрисовки.
+    const inHtml = i < 1;
     const photoInner = inHtml
-      ? picture(layer, { eager: i < 2, priority: i < 2 })
+      ? picture(layer, { eager: true, priority: true })
       : `<noscript>${picture(layer)}</noscript>`;
 
     const chapter = layer.chapter;
@@ -343,7 +348,10 @@ export function createRenderer({ debug = false, images = { photos: {}, og: null 
       if (face.weight !== 400 || !/cyrillic/.test(face.source || '')) continue;
       out.push(`<link rel="preload" as="font" type="font/woff2" crossorigin href="/assets/fonts/${face.file}">`);
     }
-    for (const layer of C.layers.slice(0, 2)) {
+    // Предзагружаем только нулевой кадр: второй теперь появляется в DOM уже
+    // после отрисовки первого экрана, и его предзагрузка отняла бы полосу
+    // у кадра LCP ровно тогда, когда она нужнее всего.
+    for (const layer of C.layers.slice(0, 1)) {
       const photo = photoOf(layer.photo);
       if (!photo) continue;
       const avif = photo.variants.filter((v) => v.ext === 'avif').sort((a, b) => a.width - b.width);
