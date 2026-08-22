@@ -76,6 +76,7 @@ node scripts/match-originals.mjs media/originals/incoming --apply
 |---|---|
 | `npm run build` | полная сборка в `dist/` — то, что заливаем |
 | `npm run build:debug` | то же, но незаполненные значения видны пометкой |
+| `ROBOTS=deny npm run build` | то же, но `robots.txt` запрещает индексацию целиком — пока сайт не должен попадать в поиск |
 | `npm run images` | только фотографии, с таблицей весов и проверкой бюджета |
 | `npm run video` | только видео |
 | `npm run fonts` | только шрифты |
