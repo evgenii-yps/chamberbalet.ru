@@ -78,6 +78,99 @@ const readState = (page) => page.evaluate(() => {
   };
 });
 
+/** Доля светлых точек в снимке. Тот же порог, что у проверки подписи. */
+async function brightShare(shot) {
+  const { data } = await sharp(shot).greyscale().raw().toBuffer({ resolveWithObject: true });
+  let bright = 0;
+  for (const v of data) if (v > 170) bright++;
+  return { bright, total: data.length, share: bright / data.length };
+}
+
+/**
+ * Рисует ли подпись главы хоть что-нибудь в текстовых секциях.
+ *
+ * Подпись вынесена в position: fixed и живёт поверх всей страницы, поэтому
+ * забытый data-in оставляет её висеть над секциями. Проверять это по
+ * вычисленным стилям бесполезно: ровно так проверка уже один раз прошла на
+ * сломанной странице.
+ *
+ * Считаем по пикселям. Просто «нет светлых точек» в области HUD не годится:
+ * там стоит и собственный текст секции, он светлый по замыслу. Поэтому
+ * снимаем область дважды — как есть и с вырезанными из документа подписями —
+ * и требуем, чтобы снимки совпали до последней точки. Совпали — значит в
+ * области HUD нет ни одной светлой точки, привнесённой подписью.
+ *
+ * Подпись фиксирована и вне потока: её удаление не может сдвинуть ничего
+ * другого, поэтому любое расхождение снимков — это и есть нарисованный HUD.
+ */
+async function hudPaint(page) {
+  // Первая текстовая секция на экран целиком
+  await page.evaluate(() => {
+    const first = document.querySelector('.after .section');
+    first?.scrollIntoView({ block: 'start', behavior: 'auto' });
+  });
+  await page.waitForTimeout(900);                 // проявление секции успевает закончиться
+
+  const zone = await page.evaluate(() => {
+    // Область HUD: где подпись стоит в пролёте. Берём её собственную рамку,
+    // а если разметка изменится — нижние две трети левой половины экрана.
+    const cap = document.querySelector('.layer__caption');
+    const r = cap?.getBoundingClientRect();
+    const known = r && r.width > 1 && r.height > 1;
+    const w = known ? Math.min(window.innerWidth, r.right + 8) : window.innerWidth * 0.6;
+    return {
+      x: 0,
+      y: Math.round(window.innerHeight * 0.3),
+      width: Math.max(8, Math.round(w)),
+      height: Math.round(window.innerHeight * 0.7) - 1,
+      section: document.querySelector('.after .section')?.id || '',
+    };
+  });
+  const clip = { x: zone.x, y: zone.y, width: zone.width, height: zone.height };
+
+  const asIs = await page.screenshot({ clip });
+  await page.evaluate(() => {
+    const style = document.createElement('style');
+    style.id = 'qa-hud-off';
+    style.textContent = '.layer__caption { display: none !important; }';
+    document.head.append(style);
+  });
+  const without = await page.screenshot({ clip });
+  await page.evaluate(() => document.getElementById('qa-hud-off')?.remove());
+
+  const a = await sharp(asIs).greyscale().raw().toBuffer();
+  const b = await sharp(without).greyscale().raw().toBuffer();
+  let differ = 0;
+  for (let i = 0; i < a.length; i++) if (a[i] !== b[i]) differ++;
+  const lit = await brightShare(asIs);
+  const litWithout = await brightShare(without);
+
+  return {
+    section: zone.section,
+    differ,
+    extraBright: lit.bright - litWithout.bright,
+    // Заодно вычисленные стили: подпись не должна быть видимой и по ним тоже
+    styled: await page.evaluate(() => [...document.querySelectorAll('.layer__caption')]
+      .filter((c) => getComputedStyle(c).visibility === 'visible' &&
+                     Number(getComputedStyle(c).opacity) > 0.01).length),
+  };
+}
+
+/**
+ * Свайп пальцем. Настоящие touch-события через CDP: послайдовая навигация на
+ * телефоне живёт на них, и проверять её мышью бессмысленно.
+ */
+async function swipe(cdp, page, fromY, toY, x = 160) {
+  const steps = 8;
+  await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x, y: fromY }] });
+  for (let i = 1; i <= steps; i++) {
+    await cdp.send('Input.dispatchTouchEvent',
+      { type: 'touchMove', touchPoints: [{ x, y: fromY + (toY - fromY) * (i / steps) }] });
+    await page.waitForTimeout(16);
+  }
+  await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+}
+
 const coverage = (page, selector) => page.evaluate((sel) => {
   const img = document.querySelector(sel);
   if (!img) return null;
@@ -135,11 +228,7 @@ const coverage = (page, selector) => page.evaluate((sel) => {
   });
   let painted = null;
   if (titleBox && titleBox.width > 0 && titleBox.height > 0) {
-    const shot = await page.screenshot({ clip: titleBox });
-    const { data } = await sharp(shot).greyscale().raw().toBuffer({ resolveWithObject: true });
-    let bright = 0;
-    for (const v of data) if (v > 170) bright++;
-    painted = { bright, total: data.length, share: bright / data.length };
+    painted = await brightShare(await page.screenshot({ clip: titleBox }));
   }
   check('подпись действительно нарисована поверх кадра и затемнения',
     painted !== null && painted.share > 0.02,
@@ -201,6 +290,35 @@ const coverage = (page, selector) => page.evaluate((sel) => {
   await page.waitForTimeout(700);
   check('секции листаются нативно', await page.evaluate(() => window.scrollY > 500));
   await page.screenshot({ path: `${SHOTS}/03-contact.png` });
+
+  /* ------- подпись главы не переживает выход из пролёта ------- */
+  let hud = await hudPaint(page);
+  check('в первой текстовой секции подпись главы не рисует ни одной точки',
+    hud.differ === 0,
+    `секция #${hud.section}: расхождение ${hud.differ} точек, светлых сверх фона ${hud.extraBright}`);
+  check('в текстовых секциях подпись погашена и по вычисленным стилям', hud.styled === 0,
+    `видимых подписей ${hud.styled}`);
+  await page.screenshot({ path: `${SHOTS}/06-after-hud.png` });
+
+  /* ------- назад в пролёт и снова вперёд: подпись возвращается и уходит ------- */
+  await page.evaluate(() => window.scrollTo(0, 0));
+  await page.waitForTimeout(250);
+  await page.mouse.wheel(0, -120);
+  await page.waitForTimeout(1000);
+  const back = await page.evaluate(() => ({
+    locked: document.body.classList.contains('is-flight'),
+    captions: [...document.querySelectorAll('.layer__caption')]
+      .filter((c) => getComputedStyle(c).visibility === 'visible' && Number(getComputedStyle(c).opacity) > 0.5).length,
+  }));
+  check('возврат в пролёт наверху страницы: подпись последней главы снова на месте',
+    back.locked && back.captions === 1, `пролёт ${back.locked}, подписей ${back.captions}`);
+
+  await page.keyboard.press('PageDown');
+  await page.waitForTimeout(1600);
+  hud = await hudPaint(page);
+  check('после возврата и повторного выхода подпись снова не рисует ни одной точки',
+    hud.differ === 0 && hud.styled === 0,
+    `расхождение ${hud.differ} точек, видимых подписей ${hud.styled}`);
 
   /* ------- семантика ------- */
   const semantics = await page.evaluate(() => {
@@ -309,6 +427,49 @@ const coverage = (page, selector) => page.evaluate((sel) => {
     !cov || (cov.w >= cov.vw - 1 && cov.h >= cov.vh - 1),
     cov ? `${Math.round(cov.w)}×${Math.round(cov.h)} при экране ${cov.vw}×${cov.vh}` : 'оригиналов нет');
   await page.screenshot({ path: `${SHOTS}/05-mobile.png` });
+
+  /* ------- послайдовая навигация пальцем и выход из пролёта ------- */
+  const cdp = await ctx.newCDPSession(page);
+  await swipe(cdp, page, 640, 300);
+  await page.waitForTimeout(1600);
+  check('мобильный: один свайп = одна остановка',
+    (await readState(page)).current === 1, `остановка ${(await readState(page)).current}`);
+
+  await page.keyboard.press('End');
+  await page.waitForTimeout(1800);
+  await swipe(cdp, page, 640, 300);              // с последней главы — в секции
+  await page.waitForTimeout(1600);
+  check('мобильный: после пролёта прокрутка обычная',
+    !(await page.evaluate(() => document.body.classList.contains('is-flight'))));
+
+  let mhud = await hudPaint(page);
+  check('мобильный: в первой текстовой секции подпись главы не рисует ни одной точки',
+    mhud.differ === 0,
+    `секция #${mhud.section}: расхождение ${mhud.differ} точек, светлых сверх фона ${mhud.extraBright}`);
+  check('мобильный: в текстовых секциях подпись погашена и по вычисленным стилям',
+    mhud.styled === 0, `видимых подписей ${mhud.styled}`);
+  await page.screenshot({ path: `${SHOTS}/07-mobile-after-hud.png` });
+
+  /* ------- свайп вниз наверху страницы возвращает в пролёт ------- */
+  await page.evaluate(() => window.scrollTo(0, 0));
+  await page.waitForTimeout(250);
+  await swipe(cdp, page, 300, 640);
+  await page.waitForTimeout(1000);
+  const mback = await page.evaluate(() => ({
+    locked: document.body.classList.contains('is-flight'),
+    captions: [...document.querySelectorAll('.layer__caption')]
+      .filter((c) => getComputedStyle(c).visibility === 'visible' && Number(getComputedStyle(c).opacity) > 0.5).length,
+  }));
+  check('мобильный: свайп вниз наверху страницы возвращает в пролёт с подписью',
+    mback.locked && mback.captions === 1, `пролёт ${mback.locked}, подписей ${mback.captions}`);
+
+  await swipe(cdp, page, 640, 300);
+  await page.waitForTimeout(1600);
+  mhud = await hudPaint(page);
+  check('мобильный: после возврата и повторного выхода подпись снова не рисует ни одной точки',
+    mhud.differ === 0 && mhud.styled === 0,
+    `расхождение ${mhud.differ} точек, видимых подписей ${mhud.styled}`);
+
   await ctx.close();
 }
 
