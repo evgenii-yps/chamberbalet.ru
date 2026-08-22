@@ -260,7 +260,12 @@
     visibility: hidden;
     pointer-events: none;
   }
-  html.js .layer[data-in] .layer__caption { opacity: 1; visibility: visible; }
+  /* Подпись видна только в самом пролёте. Условие не декоративное: подпись
+     вынесена в position: fixed, и без него любой data-in, переживший выход,
+     оставляет её висеть поверх текстовых секций. Состояние снимает
+     clearChapter() в main.js — здесь оно закрыто ещё и структурно, потому
+     что цена ошибки тут не «мигнуло», а «HUD лёг на «Репертуар». */
+  html.js:not(.flight-done) .layer[data-in] .layer__caption { opacity: 1; visibility: visible; }
 
   /* Ступенчатое появление, одновременный уход */
   html.js .layer__caption > * {
@@ -268,10 +273,10 @@
     transform: translateY(14px);
     transition: opacity .5s var(--flight-ease), transform .5s var(--flight-ease);
   }
-  html.js .layer[data-in] .layer__caption > * { opacity: 1; transform: none; }
-  html.js .layer[data-in] .layer__caption > :nth-child(2) { transition-delay: .07s; }
-  html.js .layer[data-in] .layer__caption > :nth-child(3) { transition-delay: .14s; }
-  html.js .layer[data-in] .layer__caption > :nth-child(4) { transition-delay: .21s; }
+  html.js:not(.flight-done) .layer[data-in] .layer__caption > * { opacity: 1; transform: none; }
+  html.js:not(.flight-done) .layer[data-in] .layer__caption > :nth-child(2) { transition-delay: .07s; }
+  html.js:not(.flight-done) .layer[data-in] .layer__caption > :nth-child(3) { transition-delay: .14s; }
+  html.js:not(.flight-done) .layer[data-in] .layer__caption > :nth-child(4) { transition-delay: .21s; }
   html.js .layer:not([data-in]) .layer__caption > * { transition-duration: .22s; transition-delay: 0s; }
 
   html.js .opener {

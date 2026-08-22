@@ -202,6 +202,24 @@ function init() {
     }, CAPTION_SWAP);
   }
 
+  /**
+   * Подпись главы принадлежит пролёту и обязана уходить вместе с ним.
+   *
+   * Чистим здесь всё состояние подписи разом: снятый data-in гасит её,
+   * снятая отложенная подмена не даёт ей вернуться через CAPTION_SWAP уже
+   * после выхода, а сброшенный shownChapter возвращает setChapter право
+   * поставить ту же самую главу заново при возврате в пролёт — без сброса
+   * он посчитал бы её показанной и подпись не вернулась бы никогда.
+   */
+  function clearChapter() {
+    clearTimeout(swapTimer);
+    swapTimer = 0;
+    shownChapter = -2;
+    layerEls.forEach((el) => el.removeAttribute('data-in'));
+    scrim?.removeAttribute('data-bright');
+    if (live) live.textContent = '';
+  }
+
   function markRail(stop) {
     for (const dot of railDots) {
       dot.setAttribute('aria-current', Number(dot.dataset.stop) === stop ? 'true' : 'false');
@@ -229,6 +247,7 @@ function init() {
     if (!active) return;
     active = false;
     // Остаётся последний кадр: страница отпущена, дальше обычная прокрутка
+    clearChapter();
     layerEls.forEach((el, i) => el.toggleAttribute('data-live-frame', i === stopIndexes.at(-1)));
     flightEl.classList.add('is-done');
     document.documentElement.classList.add('flight-done');
