@@ -27,7 +27,7 @@ import {
 } from '../src/js/flight.js';
 import { layers, chapters } from '../src/content.js';
 import {
-  BASE_CURVE, BASE_SCALE, DURATION_VARIANTS, DURATION_ORDER,
+  BASE_CURVE, BASE_SCALE, BASE_DURATION, DURATION_VARIANTS, DURATION_ORDER,
   CURVE_VARIANTS, CURVE_ORDER, DEPTH_VARIANTS, DEPTH_ORDER,
   bezierWith, scaleWith, SOURCE_GUARDS,
 } from './pace-variants.mjs';
@@ -201,7 +201,7 @@ console.log(`Пороги доли экрана: целиком ≥ ${SHARES[0]}
 
 if (arg('duration') || arg('curve')) {
   const curve = arg('curve') ? arg('curve').split(',').map(Number) : BASE_CURVE;
-  const duration = Number(arg('duration') ?? 2800);
+  const duration = Number(arg('duration') ?? BASE_DURATION);
   report({
     title: 'Замер',
     note: `переход ${duration} мс, кривая cubic-bezier(${curve[0]}, 0, ${curve[1]}, 1)`,

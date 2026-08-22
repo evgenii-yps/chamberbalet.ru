@@ -9,8 +9,8 @@
  * уходит в мессенджер целиком и живёт в любом подкаталоге хостинга.
  *
  *   duration.html   2000 / 2400 / 2800 / 3200 мс — только длительность
- *   curve.html      2800 мс, базовая кривая против уверенной
- *   depth.html      2800 мс, базовая глубина против резкого колена
+ *   curve.html      2400 мс, прежняя кривая против принятой
+ *   depth.html      2400 мс, прежняя глубина против принятой
  *
  * ЧТО ЭТО НЕ ТРОГАЕТ
  *
@@ -53,14 +53,14 @@ const PACE_BLOCK = `
  * выше в этом файле. Здесь они читаются из window.__PACE на каждом кадре
  * отрисовки, поэтому вариант переключается прямо на странице.
  */
-const PACE_DEFAULT = { duration: 1000, curve: [0.65, 0.35], scale: SCALE };
+const PACE_DEFAULT = { duration: 2400, curve: [0.33, 0.18], scale: SCALE };
 const pace = () => ({ ...PACE_DEFAULT, ...(globalThis.__PACE || {}) });
 `;
 
 /** Точные куски исходника. Разойдётся — сборка демонстраций упадёт, а не соврёт. */
 const PATCHES = [
-  ['export const SCALE = { base: 1.04, accel: 0.8, soft: 0.18 };',
-   'export const SCALE = { base: 1.04, accel: 0.8, soft: 0.18 };\n' + PACE_BLOCK],
+  ['export const SCALE = { base: 1.04, accel: 1.31, soft: 0.111 };',
+   'export const SCALE = { base: 1.04, accel: 1.31, soft: 0.111 };\n' + PACE_BLOCK],
 
   [`export function scaleAt(t) {
   return SCALE.base * Math.exp(SCALE.accel * softplus(t, SCALE.soft));
@@ -70,7 +70,7 @@ const PATCHES = [
   return S.base * Math.exp(S.accel * softplus(t, S.soft));
 }`],
 
-  ['  const x1 = 0.65, x2 = 0.35;', '  const x1 = pace().curve[0], x2 = pace().curve[1];'],
+  ['  const x1 = 0.33, x2 = 0.18;', '  const x1 = pace().curve[0], x2 = pace().curve[1];'],
 
   ['    const u = duration <= 1 ? 1 : clamp((now - startedAt) / duration, 0, 1);',
    '    const total = pace().duration;\n' +
@@ -80,17 +80,14 @@ const PATCHES = [
 ];
 
 /**
- * Подпись главы подменяется через CAPTION_SWAP после действия зрителя — сейчас
- * это 240 мс при переходе 1000 мс, то есть 0,24 длительности. Оставить 240 мс
- * при переходе 2800 мс значит показать текст новой главы за две секунды до
- * того, как камера на неё приедет: подпись стоит на месте, а кадр под ней ещё
- * едет. Держим ту же долю, что и в согласованном, — правится число, а не
- * устройство подписи.
+ * Подпись главы подменяется через CAPTION_SWAP после действия зрителя. В
+ * боевом коде это доля длительности (0,24), и в демонстрациях она обязана
+ * считаться от ТЕКУЩЕГО варианта, иначе сравнение врёт: при 3200 мс подпись
+ * встала бы почти на секунду раньше камеры и это списали бы на длительность.
  */
 const MAIN_PATCHES = [
-  ['const CAPTION_SWAP = 240;',
-   'const CAPTION_SWAP = 240;\n' +
-   'const captionSwap = () => Math.round(((globalThis.__PACE || {}).duration || 1000) * 0.24);'],
+  ['const CAPTION_SWAP = Math.round(DURATION * 0.24);',
+   'const captionSwap = () => Math.round(((globalThis.__PACE || {}).duration || DURATION) * 0.24);'],
   ['    }, CAPTION_SWAP);', '    }, captionSwap());'],
 ];
 
@@ -253,24 +250,25 @@ const PAGES = [
     file: 'duration.html',
     title: 'Длительность перехода',
     caption: 'Одна и та же механика, четыре длительности перехода.',
-    set: DURATION_VARIANTS, order: DURATION_ORDER, active: 'd2800',
-    about: 'Кривая и глубина как в согласованном, меняется только длительность.',
+    set: DURATION_VARIANTS, order: DURATION_ORDER, active: 'd2400',
+    about: 'Кривая и глубина как в src/, меняется только длительность. Принято 2400 мс.',
   },
   {
     file: 'curve.html',
     title: 'Кривая разгона',
-    caption: 'Одна длительность, две кривые разгона.',
-    set: CURVE_VARIANTS, order: CURVE_ORDER, active: 'confident',
-    about: 'Переход 2800 мс. Уверенная кривая трогается раньше и дольше садится на главу; ' +
-           'пик скорости при этом не выше базового.',
+    caption: 'Одна длительность, две кривые разгона: прежняя и принятая.',
+    set: CURVE_VARIANTS, order: CURVE_ORDER, active: 'current',
+    about: 'Переход 2400 мс. Уверенная кривая трогается раньше и дольше садится на главу; ' +
+           'пик скорости при этом не выше прежнего. Принята и стоит в src/.',
   },
   {
     file: 'depth.html',
     title: 'Глубина прохода',
-    caption: 'Одна длительность и кривая, два пресета масштаба.',
-    set: DEPTH_VARIANTS, order: DEPTH_ORDER, active: 'deep',
-    about: 'Переход 2800 мс. Опорные точки пресета те же (1,04 и 1,15), резче только колено: ' +
-           'кадр дольше стоит на крупности главы и уходит вперёд до 2,6, а не до 1,83.',
+    caption: 'Одна длительность и кривая, два пресета масштаба: прежний и принятый.',
+    set: DEPTH_VARIANTS, order: DEPTH_ORDER, active: 'current',
+    about: 'Переход 2400 мс. Опорные точки пресета те же (1,04 и 1,15), резче только колено: ' +
+           'кадр дольше стоит на крупности главы и уходит вперёд до 2,6, а не до 1,83. ' +
+           'Принято и стоит в src/.',
   },
 ];
 

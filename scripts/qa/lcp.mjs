@@ -136,7 +136,11 @@ console.log(`\nLCP, мобильный профиль · ${rounds} прогон(
 console.log('   ' + '─'.repeat(58));
 
 for (let round = 1; round <= rounds; round++) {
-  for (const build of builds) {
+  // Порядок сборок внутри круга чередуется. Иначе одна из них всегда меряется
+  // второй — сразу после того, как погас чужой Chrome, — и «разница сборок»
+  // оказывается разницей позиций в круге. На это уже один раз попались.
+  const inRound = round % 2 ? builds : [...builds].reverse();
+  for (const build of inRound) {
     if (direct) {
       const { lcp, el } = await measureDirect(build);
       build.lcp.push(lcp);

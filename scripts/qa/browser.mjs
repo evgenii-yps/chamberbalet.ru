@@ -19,6 +19,21 @@ const DIST = path.join(ROOT, 'dist');
 const SHOTS = path.join(ROOT, '.build', 'shots');
 await fs.mkdir(SHOTS, { recursive: true });
 
+/**
+ * Сколько ждать остановки — считаем от боевой длительности, а не зашиваем
+ * числом. Проверки, где ожидание короче перехода, не падают, а тихо начинают
+ * проверять не то: состояние читается посреди движения, и «на остановке ровно
+ * один плотный слой» превращается в «посреди перехода их два». Поэтому число
+ * берётся из src/js/main.js — поменяется длительность, поменяются и ожидания.
+ */
+const DURATION = Number(
+  /const DURATION = (\d+);/.exec(await fs.readFile(path.join(ROOT, 'src', 'js', 'main.js'), 'utf8'))?.[1]);
+if (!Number.isFinite(DURATION)) throw new Error('не удалось прочитать DURATION из src/js/main.js');
+/** Переход плюс пауза ввода (150 мс) и запас на медленную машину. */
+const SETTLE = DURATION + 600;
+/** Заведомо ВНУТРИ перехода: для проверок «нажатие посреди перехода». */
+const MIDWAY = Math.round(DURATION * 0.35);
+
 const TYPES = { '.html':'text/html; charset=utf-8', '.css':'text/css', '.js':'text/javascript',
   '.json':'application/json', '.svg':'image/svg+xml', '.png':'image/png', '.jpg':'image/jpeg',
   '.webp':'image/webp', '.avif':'image/avif', '.woff2':'font/woff2', '.ico':'image/x-icon',
@@ -182,7 +197,7 @@ const coverage = (page, selector) => page.evaluate((sel) => {
 {
   const { ctx, page, noise, external, failed } = await openPage();
   await page.goto(URL, { waitUntil: 'networkidle' });
-  await page.waitForTimeout(1400);
+  await page.waitForTimeout(SETTLE);
 
   check('консоль чистая', noise.length === 0, noise.slice(0, 3).join(' | '));
   check('ноль внешних запросов', external.length === 0, external.slice(0, 3).join(' | '));
@@ -208,7 +223,7 @@ const coverage = (page, selector) => page.evaluate((sel) => {
 
   /* ------- колесо: очередь мелких дельт = одна остановка ------- */
   for (let i = 0; i < 12; i++) { await page.mouse.wheel(0, 12); await page.waitForTimeout(12); }
-  await page.waitForTimeout(1800);
+  await page.waitForTimeout(SETTLE);
   st = await readState(page);
   check('очередь из 12 мелких дельт тачпада = одна остановка', st.current === 1, `остановка ${st.current}`);
   check('на остановке ровно один плотный слой', st.full === 1 && st.lit === 1,
@@ -243,23 +258,23 @@ const coverage = (page, selector) => page.evaluate((sel) => {
   /* ------- один щелчок колеса = одна остановка ------- */
   const before = (await readState(page)).current;
   await page.mouse.wheel(0, 120);
-  await page.waitForTimeout(1800);
+  await page.waitForTimeout(SETTLE);
   check('один щелчок колеса = одна остановка', (await readState(page)).current - before === 1);
 
   /* ------- удержание клавиши не пролистывает подряд ------- */
   const b2 = (await readState(page)).current;
   await page.keyboard.down('PageDown');
-  await page.waitForTimeout(900);
+  await page.waitForTimeout(MIDWAY);            // клавиша держится, пока идёт переход
   await page.keyboard.up('PageDown');
-  await page.waitForTimeout(1600);
+  await page.waitForTimeout(SETTLE);
   check('удержание клавиши не пролистывает подряд', (await readState(page)).current - b2 === 1);
 
   /* ------- нажатие посреди перехода не считается ------- */
   const b3 = (await readState(page)).current;
   await page.keyboard.press('PageDown');
-  await page.waitForTimeout(300);
+  await page.waitForTimeout(MIDWAY);            // второе нажатие приходится на середину перехода
   await page.keyboard.press('PageDown');
-  await page.waitForTimeout(1800);
+  await page.waitForTimeout(SETTLE);
   check('нажатие посреди перехода не листает второй раз', (await readState(page)).current - b3 === 1);
 
   /* ------- остановиться между остановками невозможно ------- */
@@ -274,12 +289,12 @@ const coverage = (page, selector) => page.evaluate((sel) => {
 
   /* ------- End и выход в секции ------- */
   await page.keyboard.press('End');
-  await page.waitForTimeout(1800);
+  await page.waitForTimeout(SETTLE);
   check('End уводит на последнюю главу', (await readState(page)).current === 8);
   check('в пролёте прокрутка перехвачена', await page.evaluate(() => document.body.classList.contains('is-flight')));
 
   await page.keyboard.press('PageDown');
-  await page.waitForTimeout(1600);
+  await page.waitForTimeout(SETTLE);
   const released = await page.evaluate(() => ({
     locked: document.body.classList.contains('is-flight'),
     overflow: getComputedStyle(document.body).overflow,
@@ -304,7 +319,7 @@ const coverage = (page, selector) => page.evaluate((sel) => {
   await page.evaluate(() => window.scrollTo(0, 0));
   await page.waitForTimeout(250);
   await page.mouse.wheel(0, -120);
-  await page.waitForTimeout(1000);
+  await page.waitForTimeout(SETTLE);
   const back = await page.evaluate(() => ({
     locked: document.body.classList.contains('is-flight'),
     captions: [...document.querySelectorAll('.layer__caption')]
@@ -314,7 +329,7 @@ const coverage = (page, selector) => page.evaluate((sel) => {
     back.locked && back.captions === 1, `пролёт ${back.locked}, подписей ${back.captions}`);
 
   await page.keyboard.press('PageDown');
-  await page.waitForTimeout(1600);
+  await page.waitForTimeout(SETTLE);
   hud = await hudPaint(page);
   check('после возврата и повторного выхода подпись снова не рисует ни одной точки',
     hud.differ === 0 && hud.styled === 0,
@@ -404,7 +419,7 @@ const coverage = (page, selector) => page.evaluate((sel) => {
   const { ctx, page, noise, external } = await openPage({
     viewport: { width: 390, height: 844 }, deviceScaleFactor: 3, isMobile: true, hasTouch: true });
   await page.goto(URL, { waitUntil: 'networkidle' });
-  await page.waitForTimeout(1400);
+  await page.waitForTimeout(SETTLE);
   check('мобильный: консоль чистая', noise.length === 0, noise.slice(0, 2).join(' | '));
   check('мобильный: ноль внешних запросов', external.length === 0);
   check('мобильный: горизонтального скролла нет',
@@ -431,14 +446,14 @@ const coverage = (page, selector) => page.evaluate((sel) => {
   /* ------- послайдовая навигация пальцем и выход из пролёта ------- */
   const cdp = await ctx.newCDPSession(page);
   await swipe(cdp, page, 640, 300);
-  await page.waitForTimeout(1600);
+  await page.waitForTimeout(SETTLE);
   check('мобильный: один свайп = одна остановка',
     (await readState(page)).current === 1, `остановка ${(await readState(page)).current}`);
 
   await page.keyboard.press('End');
-  await page.waitForTimeout(1800);
+  await page.waitForTimeout(SETTLE);
   await swipe(cdp, page, 640, 300);              // с последней главы — в секции
-  await page.waitForTimeout(1600);
+  await page.waitForTimeout(SETTLE);
   check('мобильный: после пролёта прокрутка обычная',
     !(await page.evaluate(() => document.body.classList.contains('is-flight'))));
 
@@ -454,7 +469,7 @@ const coverage = (page, selector) => page.evaluate((sel) => {
   await page.evaluate(() => window.scrollTo(0, 0));
   await page.waitForTimeout(250);
   await swipe(cdp, page, 300, 640);
-  await page.waitForTimeout(1000);
+  await page.waitForTimeout(SETTLE);
   const mback = await page.evaluate(() => ({
     locked: document.body.classList.contains('is-flight'),
     captions: [...document.querySelectorAll('.layer__caption')]
@@ -464,7 +479,7 @@ const coverage = (page, selector) => page.evaluate((sel) => {
     mback.locked && mback.captions === 1, `пролёт ${mback.locked}, подписей ${mback.captions}`);
 
   await swipe(cdp, page, 640, 300);
-  await page.waitForTimeout(1600);
+  await page.waitForTimeout(SETTLE);
   mhud = await hudPaint(page);
   check('мобильный: после возврата и повторного выхода подпись снова не рисует ни одной точки',
     mhud.differ === 0 && mhud.styled === 0,

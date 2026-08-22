@@ -14,33 +14,18 @@
  *   scale     пресет масштаба { base, accel, soft } — глубина прохода
  */
 
-/** Кривая и пресет, стоящие в src/js/flight.js. Проверяются при запуске. */
-export const BASE_CURVE = [0.65, 0.35];
-export const BASE_SCALE = { base: 1.04, accel: 0.8, soft: 0.18 };
+/** Длительность, кривая и пресет, стоящие в src/. Сверяются с исходниками. */
+export const BASE_DURATION = 2400;
+export const BASE_CURVE = [0.33, 0.18];
+export const BASE_SCALE = { base: 1.04, accel: 1.31, soft: 0.111 };
 
 /**
- * «Уверенная» кривая: камера трогается раньше и дольше садится на главу.
- *
- * Пик скорости при этом НЕ выше базового (2,70 против 2,86 средней) — то есть
- * рывка посередине не прибавляется, меняется распределение: половина
- * длительности уходит на последнюю пятую часть пути, а не треть, как сейчас.
- * Чем длиннее переход, тем важнее: на 2800 мс симметричная кривая половину
- * времени ползёт у самых краёв, и это читается как вязкость.
+ * То, что стояло до применения решения: симметричная кривая и пологое колено.
+ * Оставлено не из сентиментальности — демонстрации сравнивают «как было» с
+ * «как стало», и обе стороны сравнения должны браться из одного файла.
  */
-export const CONFIDENT_CURVE = [0.33, 0.18];
-
-/**
- * «Глубже»: то же колено, но резче.
- *
- * Три опорные точки пресета сохранены — кадр рождается на 1,040, стоит на
- * главе на 1,150 и доходит до 2,6. Разница в том, ГДЕ это происходит: сейчас
- * 2,6 приходится на t = 1,14, а кадр растворяется уже на 0,70 и до 2,6 не
- * доживает — фактический потолок на экране 1,83. Здесь 2,6 приходится ровно
- * на конец растворения: кадр дольше стоит у съёмочной крупности главы и
- * уходит вперёд решительнее. accel · soft сохранено (0,145), поэтому
- * масштаб на главе не сдвигается ни на сотую.
- */
-export const DEEP_SCALE = { base: 1.04, accel: 1.31, soft: 0.111 };
+export const PREV_CURVE = [0.65, 0.35];
+export const PREV_SCALE = { base: 1.04, accel: 0.8, soft: 0.18 };
 
 const variant = (key, title, note, duration, curve = BASE_CURVE, scale = BASE_SCALE) =>
   ({ key, title, note, duration, curve, scale });
@@ -53,8 +38,8 @@ export const DURATIONS = [2000, 2400, 2800, 3200];
 
 export const DURATION_VARIANTS = Object.fromEntries(DURATIONS.map((ms) => [
   `d${ms}`,
-  variant(`d${ms}`, `${ms} мс`,
-    `переход ${ms} мс, кривая и глубина как в согласованном`, ms),
+  variant(`d${ms}`, `${ms} мс${ms === BASE_DURATION ? ' — принято' : ''}`,
+    `переход ${ms} мс, кривая и глубина как в src/`, ms),
 ]));
 
 export const DURATION_ORDER = DURATIONS.map((ms) => `d${ms}`);
@@ -63,33 +48,31 @@ export const DURATION_ORDER = DURATIONS.map((ms) => `d${ms}`);
  *  2. Кривая разгона (при одной и той же длительности)
  * ------------------------------------------------------------------ */
 
-export const CURVE_AT = 2800;
-
 export const CURVE_VARIANTS = {
-  base: variant('base', 'Базовая кривая',
-    `переход ${CURVE_AT} мс, cubic-bezier(.65, 0, .35, 1) — как сейчас`, CURVE_AT),
-  confident: variant('confident', 'Уверенная кривая',
-    `переход ${CURVE_AT} мс, cubic-bezier(.33, 0, .18, 1) — трогается раньше, дольше садится`,
-    CURVE_AT, CONFIDENT_CURVE),
+  prev: variant('prev', 'Прежняя кривая',
+    `переход ${BASE_DURATION} мс, cubic-bezier(.65, 0, .35, 1) — симметричная`,
+    BASE_DURATION, PREV_CURVE),
+  current: variant('current', 'Уверенная — принята',
+    `переход ${BASE_DURATION} мс, cubic-bezier(.33, 0, .18, 1) — трогается раньше, дольше садится`,
+    BASE_DURATION),
 };
 
-export const CURVE_ORDER = ['base', 'confident'];
+export const CURVE_ORDER = ['prev', 'current'];
 
 /* ------------------------------------------------------------------ *
  *  3. Глубина прохода (при одной и той же длительности и кривой)
  * ------------------------------------------------------------------ */
 
-export const DEPTH_AT = 2800;
-
 export const DEPTH_VARIANTS = {
-  base: variant('base', 'Базовая глубина',
-    `переход ${DEPTH_AT} мс, масштаб 1,04 → 1,15 → 1,83 к растворению`, DEPTH_AT),
-  deep: variant('deep', 'Резче колено',
-    `переход ${DEPTH_AT} мс, масштаб 1,04 → 1,15 → 2,60 к растворению`,
-    DEPTH_AT, BASE_CURVE, DEEP_SCALE),
+  prev: variant('prev', 'Прежняя глубина',
+    `переход ${BASE_DURATION} мс, масштаб 1,04 → 1,15 → 1,83 к растворению`,
+    BASE_DURATION, BASE_CURVE, PREV_SCALE),
+  current: variant('current', 'Резче колено — принято',
+    `переход ${BASE_DURATION} мс, масштаб 1,04 → 1,15 → 2,60 к растворению`,
+    BASE_DURATION),
 };
 
-export const DEPTH_ORDER = ['base', 'deep'];
+export const DEPTH_ORDER = ['prev', 'current'];
 
 /* ------------------------------------------------------------------ *
  *  Кривая: одна реализация на замер и на браузер
@@ -132,6 +115,8 @@ export const scaleWith = (t, S) => S.base * Math.exp(S.accel * softplusWith(t, S
  * а здесь забудут, оба инструмента упадут, а не соврут.
  */
 export const SOURCE_GUARDS = [
-  { file: 'src/js/flight.js', text: 'const x1 = 0.65, x2 = 0.35;' },
-  { file: 'src/js/flight.js', text: 'export const SCALE = { base: 1.04, accel: 0.8, soft: 0.18 };' },
+  { file: 'src/js/flight.js', text: 'const x1 = 0.33, x2 = 0.18;' },
+  { file: 'src/js/flight.js', text: 'export const SCALE = { base: 1.04, accel: 1.31, soft: 0.111 };' },
+  { file: 'src/js/main.js', text: 'const DURATION = 2400;' },
+  { file: 'src/css/tokens.css', text: '--flight-ease: cubic-bezier(.33, 0, .18, 1);' },
 ];
