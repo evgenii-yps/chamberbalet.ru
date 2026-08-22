@@ -9,14 +9,9 @@
 import * as C from '../src/content.js';
 import { PHOTO_WIDTHS } from './config.mjs';
 
-/** sizes: кадр ПРОЛЁТА показывается вплоть до масштаба 2,6, поэтому 100vw
- *  занижает потребность и браузер берёт слишком мелкий вариант. */
+/** sizes: кадр показывается вплоть до масштаба 2,6, поэтому 100vw занижает
+ *  потребность и браузер берёт слишком мелкий вариант. */
 export const SIZES = 'min(160vw, 2560px)';
-
-/** Первый экран в разгоне не участвует: это отдельный слой поверх стопки, и в
- *  момент замера LCP его масштаб равен 1,0. Просить под 160 % ширины экрана
- *  здесь не за что — кадр никогда не будет крупнее вьюпорта. */
-export const HERO_SIZES = '100vw';
 
 /** Заголовок главы содержит <br> — для aria-label его надо снять. */
 export const stripTags = (s) => String(s).replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
@@ -43,7 +38,7 @@ export function createRenderer({ debug = false, images = { photos: {}, og: null 
   const photoOf = (name) => images.photos?.[name];
 
   /** <picture> с источниками по убыванию предпочтения. */
-  function picture(layer, { eager = false, priority = false, sizes = SIZES } = {}) {
+  function picture(layer, { eager = false, priority = false } = {}) {
     const photo = photoOf(layer.photo);
     if (!photo) return '';
 
@@ -54,7 +49,7 @@ export function createRenderer({ debug = false, images = { photos: {}, og: null 
     const srcset = (list) => list.map((v) => `/assets/photo/${v.file} ${v.width}w`).join(', ');
     const sources = ['avif', 'webp']
       .filter((ext) => byExt[ext]?.length)
-      .map((ext) => `<source type="${byExt[ext][0].mime}" srcset="${srcset(byExt[ext])}" sizes="${sizes}">`);
+      .map((ext) => `<source type="${byExt[ext][0].mime}" srcset="${srcset(byExt[ext])}" sizes="${SIZES}">`);
 
     const jpg = byExt.jpg || [];
     if (!jpg.length) return '';
@@ -64,7 +59,7 @@ export function createRenderer({ debug = false, images = { photos: {}, og: null 
     const attrs = [
       `src="/assets/photo/${fallback.file}"`,
       `srcset="${srcset(jpg)}"`,
-      `sizes="${sizes}"`,
+      `sizes="${SIZES}"`,
       `width="${largest.width}"`,
       `height="${largest.height}"`,
       `alt="${esc(layer.alt)}"`,
@@ -138,7 +133,7 @@ export function createRenderer({ debug = false, images = { photos: {}, og: null 
     return [
       '<section class="opener" aria-labelledby="opener-title">',
       '<div class="opener__bg">',
-      picture({ ...heroLayer, alt: '' }, { eager: true, priority: true, sizes: HERO_SIZES }),
+      picture({ ...heroLayer, alt: '' }, { eager: true, priority: true }),
       videoEl,
       `<div class="opener__veil"${heroLayer.bright ? ' data-bright' : ''} aria-hidden="true"></div>`,
       '</div>',
@@ -353,13 +348,9 @@ export function createRenderer({ debug = false, images = { photos: {}, og: null 
       if (!photo) continue;
       const avif = photo.variants.filter((v) => v.ext === 'avif').sort((a, b) => a.width - b.width);
       if (!avif.length) continue;
-      // Кадр первого экрана предзагружаем по его же sizes: иначе предзагрузка
-      // тянет один вариант, а <img> первого экрана берёт другой — двойная
-      // загрузка вместо ускорения.
-      const sizes = layer.photo === C.hero.photo ? HERO_SIZES : SIZES;
       out.push(
         `<link rel="preload" as="image" type="image/avif" fetchpriority="high" ` +
-        `imagesrcset="${avif.map((v) => `/assets/photo/${v.file} ${v.width}w`).join(', ')}" imagesizes="${sizes}">`
+        `imagesrcset="${avif.map((v) => `/assets/photo/${v.file} ${v.width}w`).join(', ')}" imagesizes="${SIZES}">`
       );
     }
     return out.join('\n');
