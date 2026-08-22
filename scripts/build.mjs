@@ -39,7 +39,7 @@ async function emptyDist() {
 
 /**
  * Медиа кодируются в .build/assets и оттуда копируются. Кодирование AVIF на
- * четырнадцать кадров идёт минуты — терять его при каждой сборке нельзя.
+ * восемь кадров идёт минуты — терять его при каждой сборке нельзя.
  */
 async function copyAssets() {
   try { await fs.access(BUILD_ASSETS); } catch { return 0; }

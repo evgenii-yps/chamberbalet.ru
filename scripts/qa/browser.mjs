@@ -373,7 +373,7 @@ const coverage = (page, selector) => page.evaluate((sel) => {
     info.overflow !== 'hidden' && info.height > info.viewport * 10,
     `высота ${info.height} при экране ${info.viewport}`);
   check('без JS видны первый экран, все кадры и подписи',
-    info.opener && info.frames === 14 && info.captions === 8,
+    info.opener && info.frames === 8 && info.captions === 8,
     `кадров ${info.frames}, подписей ${info.captions}`);
   check('без JS экран загрузки не показывается',
     await page.$eval('.loader', (l) => getComputedStyle(l).display === 'none').catch(() => true));

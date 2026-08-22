@@ -15,6 +15,7 @@
     "pace": "node scripts/measure-pace.mjs",
     "demo": "node scripts/build-demo.mjs",
     "qa": "node scripts/qa/browser.mjs",
+    "qa:demo": "node scripts/qa/demo.mjs",
     "lighthouse": "node scripts/qa/lighthouse.mjs"
   },
   "devDependencies": {
