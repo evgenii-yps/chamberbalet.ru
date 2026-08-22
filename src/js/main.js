@@ -12,7 +12,10 @@ import { setupReveal } from './reveal.js';
 
 const DURATION = 1000;
 const RESIZE_DEBOUNCE = 150;
-const FIRST_SCREEN_FRAMES = 3;
+/** Сколько кадров пролёта держит экран загрузки. Их ровно один: нулевой —
+ *  единственный, что стоит в разметке, и он же делит файл с первым экраном.
+ *  Остальные подтягиваются после отрисовки (см. warmFlightPhotos). */
+const FIRST_SCREEN_FRAMES = 1;
 const LOADER_TIMEOUT = 6000;
 /** Пауза перед подменой подписи: старая успевает уйти, новая не мелькает. */
 const CAPTION_SWAP = 240;
@@ -71,6 +74,26 @@ const settled = (img) => {
   });
 };
 
+/**
+ * Кадры пролёта, кроме нулевого, догружаются после отрисовки первого экрана.
+ *
+ * До первого действия пользователя пролёт не стартует, а вес этих кадров
+ * соревнуется с кадром LCP за одну и ту же полосу. Ждём `load` — то есть
+ * момент, когда первый экран уже нарисован, — и поднимаем их в простое.
+ *
+ * Страховка на случай, если действие случится раньше: пролёт зовёт `onNeed`
+ * и поднимает недостающее сам, а первый переход идёт на нулевой кадр, который
+ * стоит в разметке и загружен всегда.
+ */
+function warmFlightPhotos(photos) {
+  const start = () => {
+    const idle = window.requestIdleCallback || ((fn) => setTimeout(fn, 200));
+    idle(() => photos.upto(0));
+  };
+  if (document.readyState === 'complete') start();
+  else window.addEventListener('load', start, { once: true });
+}
+
 async function runLoader(loader, photos, openerImage) {
   if (!loader) return;
   const first = openerImage ? [openerImage] : [];
@@ -126,6 +149,7 @@ function init() {
   const video = setupHeroVideo(opener.querySelector('.opener__video'));
 
   runLoader(loader, photos, opener.querySelector('.opener__bg img'));
+  warmFlightPhotos(photos);
 
   // Уважаем reduced-motion: пролёт вырождается в обычную прокрутку
   if (reduceMotion.matches) {

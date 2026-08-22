@@ -5,8 +5,44 @@ import { layers } from '../src/content.js';
 
 const S = 16;
 const REF = 'prototype/assets/photo';
-const IN  = process.argv[2] || 'media/originals/incoming';
 const OUT = 'media/originals/photo';
+
+/**
+ * Флаги отделяем от позиционных аргументов до того, как читать папку. Иначе
+ * `match-originals.mjs --apply` берёт «--apply» за имя входной папки и падает
+ * с ENOENT: scandir '--apply'.
+ *
+ *   node scripts/match-originals.mjs                     — прогон без записи
+ *   node scripts/match-originals.mjs --apply             — разложить по слотам
+ *   node scripts/match-originals.mjs путь/к/папке --apply
+ */
+const argv = process.argv.slice(2);
+const flags = argv.filter((a) => a.startsWith('-'));
+const positional = argv.filter((a) => !a.startsWith('-'));
+const IN = positional[0] || 'media/originals/incoming';
+
+if (flags.includes('--help') || flags.includes('-h')) {
+  console.log([
+    'Раскладка оригиналов по слотам из src/content.js.',
+    '',
+    '  node scripts/match-originals.mjs                      прогон без записи',
+    '  node scripts/match-originals.mjs --apply              разложить по слотам',
+    '  node scripts/match-originals.mjs <папка> --apply      своя входная папка',
+    '',
+    `  вход по умолчанию: media/originals/incoming`,
+    `  выход:             ${OUT}`,
+    '',
+    'Без --apply ничего не пишется. Слоты с неуверенным совпадением не',
+    'копируются даже с --apply — их видно по пометке ПРОВЕРИТЬ.',
+  ].join('\n'));
+  process.exit(0);
+}
+
+const unknown = flags.filter((f) => !['--apply', '--help', '-h'].includes(f));
+if (unknown.length) {
+  console.error(`неизвестный флаг: ${unknown.join(', ')} — см. --help`);
+  process.exit(2);
+}
 
 // Имена слотов берём из src/content.js — это единственный источник правды:
 // именно по ним build-images.mjs ищет оригиналы. Расходиться нельзя.
@@ -24,7 +60,7 @@ async function dhash(file) {
 }
 const ham = (a, b) => a.reduce((s, v, i) => s + (v !== b[i] ? 1 : 0), 0);
 
-const apply = process.argv.includes('--apply');
+const apply = flags.includes('--apply');
 const refs = [];
 for (let i = 0; i < 14; i++) {
   const n = String(i + 1).padStart(2, '0');

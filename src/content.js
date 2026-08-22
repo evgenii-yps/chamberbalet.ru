@@ -131,6 +131,7 @@ export const layers = [
   {
     photo: '04-candle-arc-top',
     alt: 'Вид сверху: свечная дуга очерчивает игровую площадку.',
+    bright: true,
     chapter: {
       kicker: 'Разметка',
       title: 'Свечная дуга<br>вместо рампы',
@@ -185,6 +186,7 @@ export const layers = [
   {
     photo: '10-mansion-tree',
     alt: 'Сцена у ёлки в интерьере особняка.',
+    bright: true,
     chapter: {
       kicker: 'Интерьеры',
       title: 'Особняки, анфилады,<br>кирхи, оранжереи',
@@ -201,6 +203,7 @@ export const layers = [
   {
     photo: '12-stage-top',
     alt: 'Вид сверху на игровую площадку во время спектакля.',
+    bright: true,
   },
   {
     photo: '13-soloist-ready',
