@@ -36,7 +36,7 @@ npm run build   # результат в dist/
 
 ```
 media/originals/incoming/ всё, что пришло со съёмки, как есть
-media/originals/photo/    14 отобранных кадров, имена из src/content.js
+media/originals/photo/    14 отобранных кадров (в сборку идут 8, см. SPEC §15)
 media/originals/video/    hero.<ext>, необязательно
 media/originals/fonts/    .ttf/.otf, необязательно
 ```
@@ -82,8 +82,11 @@ node scripts/match-originals.mjs media/originals/incoming --apply
 | `npm run fonts` | только шрифты |
 | `npm run check` | инварианты пролёта, затемнения и контраста |
 | `npm run serve` | локальный сервер над `dist/` на http://localhost:4173 |
-| `npm run qa` | 43 проверки в настоящем браузере (нужен `playwright`) |
+| `npm run qa` | 53 проверки в настоящем браузере (нужен `playwright`) |
+| `npm run qa:lazy` | ленивая загрузка под троттлингом 4G (нужен `playwright`) |
+| `npm run qa:demo` | демонстрации перехода: секундомер на живой странице |
 | `npm run lighthouse` | Lighthouse на мобильном профиле (нужен `lighthouse`) |
+| `npm run lcp` | LCP медианой прогонов, две сборки вперемешку |
 | `node scripts/check-contrast-photos.mjs` | контраст подписи на боевых кадрах |
 
 `qa` и `lighthouse` ставятся отдельно: `npm i -D playwright lighthouse

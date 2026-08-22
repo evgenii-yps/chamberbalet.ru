@@ -2,11 +2,14 @@
  * Инварианты пролёта. Проверяем числом то, что в приёмке записано словами.
  * Считаем по тем же функциям, что работают в браузере, — не по их копии.
  */
+import fs from 'node:fs';
+import path from 'node:path';
 import {
   scaleAt, opacityAt, fadeOutEnd, buildPath, positionOn,
   driftOf, SCALE, FADE, OPENER_AT, OPENER_FADE, OPENER_HOLD, openerOpacityAt,
 } from '../src/js/flight.js';
 import { layers, chapters } from '../src/content.js';
+import { ROOT } from './config.mjs';
 
 const problems = [];
 const ok = (name, pass) => { console.log('  ', pass ? '·' : '×', name); if (!pass) problems.push(name); };
@@ -111,7 +114,19 @@ ok('карта темпа равномерна: доля пути равна д�
 ok(`окно ухода у всех кадров ${FADE.outMax.toFixed(2)}`,
    outEnd.every((v) => Math.abs(v - FADE.outMax) < 1e-9));
 
-/* 11. Остановиться между главами невозможно — обеспечивается округлением в goTo. */
+/* 11. Кривая перехода в CSS и в скрипте — одна и та же.
+ *     По --flight-ease идут проявление секций и подпись главы, по копии в
+ *     flight.js — сам пролёт. Разойдутся — на одной странице окажутся два
+ *     разных движения, и заметить это глазами почти невозможно. */
+const read = (file) => fs.readFileSync(path.join(ROOT, file), 'utf8');
+const cssCurve = /--flight-ease:\s*cubic-bezier\(([^)]+)\)/.exec(read('src/css/tokens.css'))?.[1];
+const jsCurve = /const x1 = ([\d.]+), x2 = ([\d.]+);/.exec(read('src/js/flight.js'));
+const same = cssCurve && jsCurve &&
+  cssCurve.split(',').map(Number).join() === [Number(jsCurve[1]), 0, Number(jsCurve[2]), 1].join();
+ok(`кривая перехода одна: CSS cubic-bezier(${cssCurve ?? '—'}) и flight.js ` +
+   `(${jsCurve ? `${jsCurve[1]}, 0, ${jsCurve[2]}, 1` : '—'})`, Boolean(same));
+
+/* 12. Остановиться между главами невозможно — обеспечивается округлением в goTo. */
 
 if (problems.length) {
   console.error('\nНе сходится:');
