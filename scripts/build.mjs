@@ -20,6 +20,16 @@ import { scrimCss } from './check-scrim.mjs';
 import * as C from '../src/content.js';
 
 const DEBUG = process.env.BUILD_MODE === 'debug';
+/** ROBOTS=deny — собрать с запретом индексации целиком.
+ *
+ *  Нужно, пока сайт опубликован, но ещё не готов показываться в поиске:
+ *  залит на тестовый поддомен или ждёт заполнения контактов. Умолчание —
+ *  обычный robots.txt, разрешающий обход. Флаг ничего больше не меняет:
+ *  sitemap.xml генерируется в обоих режимах, он корректен сам по себе.
+ *
+ *      ROBOTS=deny npm run build
+ */
+const ROBOTS_DENY = process.env.ROBOTS === 'deny';
 const hash = (data) => crypto.createHash('sha256').update(data).digest('hex').slice(0, 8);
 
 async function emptyDist() {
@@ -126,8 +136,9 @@ async function buildIcons() {
 
 async function buildMeta() {
   const origin = C.site.url.replace(/\/$/, '');
-  await fs.writeFile(path.join(DIST, 'robots.txt'),
-    `User-agent: *\nAllow: /\n\nSitemap: ${origin}/sitemap.xml\n`);
+  await fs.writeFile(path.join(DIST, 'robots.txt'), ROBOTS_DENY
+    ? `User-agent: *\nDisallow: /\n`
+    : `User-agent: *\nAllow: /\n\nSitemap: ${origin}/sitemap.xml\n`);
 
   const today = new Date().toISOString().slice(0, 10);
   await fs.writeFile(path.join(DIST, 'sitemap.xml'),
@@ -219,6 +230,7 @@ async function main() {
   console.log('   скрипты         ', bytes(js.total), `→ /assets/js/${js.entry.file}`);
   console.log('   шрифты          ', bytes(fonts.faces.reduce((s, f) => s + f.size, 0)), `(${fonts.faces.length} файлов)`);
   console.log('   медиа и шрифты  ', bytes(mediaSize), 'в assets/');
+  if (ROBOTS_DENY) console.log('   robots.txt      ', 'Disallow: / — индексация запрещена (ROBOTS=deny)');
   console.log('\n   готово: dist/\n');
 }
 
