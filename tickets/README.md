@@ -6,7 +6,7 @@
 
 ```
 index.html    афиша
-event.html    страница вечера — event.html?id=chopiniana-2026-11-14
+event.html    страница вечера — event.html?id=chopiniana-2026-11-13
 system.html   витрина дизайн-системы: токены, компоненты, состояния
 ```
 

@@ -113,7 +113,7 @@
   padding: var(--s-4) var(--s-5);
   background: var(--ground-0);
   border-block-start: var(--hair) solid var(--rule);
-  box-shadow: 0 -8px 24px -12px rgb(0 0 0 / 0.45);
+  box-shadow: var(--shadow-sticky);
 }
 .btn-sticky .btn { flex: 1; }
 @media (min-width: 720px) { .btn-sticky { position: static; box-shadow: none; } }

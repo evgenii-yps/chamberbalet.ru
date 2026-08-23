@@ -11,57 +11,107 @@
      Основной источник — data/events.json. При открытии страницы
      двойным щелчком (протокол file://) браузер блокирует fetch к
      локальному файлу как cross-origin, поэтому здесь лежит точная
-     копия того же JSON. Копия используется ТОЛЬКО если fetch не
-     удался. Значения — заглушки пакета, менять их нельзя. */
+     копия массива events из того же файла — она снята с него
+     машинально, поле в поле, и правится только вместе с ним.
+     Используется ТОЛЬКО если fetch не удался.
+     Значения — заглушки пакета, менять их нельзя. */
 
-  var FALLBACK = {
-    events: [
-      {
-        id: "chopiniana-2026-11-14",
-        date: "2026-11-14",
-        title: "Шопениана при свечах",
-        venue: {
-          name: "Особняк Кочубея, Белый зал",
-          address: "Фурштатская, 24",
-          capacity: 120,
-          entrance: "Двор проходной, вход в правое крыло, второй этаж"
-        },
-        durationMin: 70,
-        interval: false,
-        programme: [
-          { title: "«Сильфиды»: Ноктюрн, соч. 32 № 2", durationMin: 8 },
-          { title: "Вальс, соч. 70 № 1 · па-де-де", durationMin: 6 },
-          { title: "«Умирающий лебедь», Сен-Санс", durationMin: 3 },
-          { title: "Мазурка, соч. 33 № 2 · финал", durationMin: 11 }
-        ],
-        seatings: [
-          { time: "19:00", priceFrom: 2400, status: "on", seatsLeft: 43, ticketUrl: "https://example.invalid/widget/chopiniana-1900" },
-          { time: "21:00", priceFrom: 3000, status: "low", seatsLeft: 6, ticketUrl: "https://example.invalid/widget/chopiniana-2100" }
-        ]
+  var FALLBACK = { events: [
+    {
+      "id": "chopiniana-2026-11-13",
+      "date": "2026-11-13",
+      "title": "Шопениана при свечах",
+      "venue": {
+        "name": "Особняк Кочубея, Белый зал",
+        "address": "Фурштатская, 24",
+        "capacity": 120,
+        "entrance": "Двор проходной, вход в правое крыло, второй этаж"
       },
-      {
-        id: "modern-2026-11-21",
-        date: "2026-11-21",
-        title: "Вечер современной хореографии",
-        venue: {
-          name: "Оранжерея Таврического сада",
-          address: "Потёмкинская, 2",
-          capacity: 180,
-          entrance: "Главный вход с Потёмкинской, гардероб слева"
+      "durationMin": 70,
+      "interval": false,
+      "programme": [
+        {
+          "title": "Ноктюрн, соч. 32 № 2 · вступление",
+          "durationMin": 8
         },
-        durationMin: 80,
-        interval: false,
-        programme: [
-          { title: "Первое отделение · три миниатюры", durationMin: 34 },
-          { title: "Второе отделение · одноактный балет", durationMin: 46 }
-        ],
-        seatings: [
-          { time: "19:00", priceFrom: 2800, status: "sold", seatsLeft: 0, ticketUrl: null },
-          { time: "21:00", priceFrom: 2800, status: "on", seatsLeft: 96, ticketUrl: "https://example.invalid/widget/modern-2100" }
-        ]
-      }
-    ]
-  };
+        {
+          "title": "Вальс, соч. 70 № 1 · па-де-де",
+          "durationMin": 6
+        },
+        {
+          "title": "Прелюдия, соч. 28 № 7 · вариация",
+          "durationMin": 4
+        },
+        {
+          "title": "Мазурка, соч. 33 № 2",
+          "durationMin": 5
+        },
+        {
+          "title": "«Умирающий лебедь», Сен-Санс",
+          "durationMin": 3
+        },
+        {
+          "title": "«Сильфиды» · одноактный балет целиком",
+          "durationMin": 38
+        }
+      ],
+      "seatings": [
+        {
+          "time": "19:00",
+          "priceFrom": 2400,
+          "status": "on",
+          "seatsLeft": 43,
+          "ticketUrl": "https://example.invalid/widget/chopiniana-1900"
+        },
+        {
+          "time": "21:00",
+          "priceFrom": 3000,
+          "status": "low",
+          "seatsLeft": 6,
+          "ticketUrl": "https://example.invalid/widget/chopiniana-2100"
+        }
+      ]
+    },
+    {
+      "id": "modern-2026-11-20",
+      "date": "2026-11-20",
+      "title": "Вечер современной хореографии",
+      "venue": {
+        "name": "Оранжерея Таврического сада",
+        "address": "Потёмкинская, 2",
+        "capacity": 180,
+        "entrance": "Главный вход с Потёмкинской, гардероб слева"
+      },
+      "durationMin": 80,
+      "interval": false,
+      "programme": [
+        {
+          "title": "Первое отделение · три миниатюры",
+          "durationMin": 34
+        },
+        {
+          "title": "Второе отделение · одноактный балет",
+          "durationMin": 46
+        }
+      ],
+      "seatings": [
+        {
+          "time": "19:00",
+          "priceFrom": 2800,
+          "status": "sold",
+          "seatsLeft": 0,
+          "ticketUrl": null
+        },
+        {
+          "time": "21:00",
+          "priceFrom": 2800,
+          "status": "on",
+          "seatsLeft": 96,
+          "ticketUrl": "https://example.invalid/widget/modern-2100"
+        }
+      ]
+    }
+  ] };
 
   function loadEvents(done) {
     var fail = function () { done(FALLBACK.events, "встроенная копия"); };
