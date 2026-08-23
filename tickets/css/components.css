@@ -1,0 +1,648 @@
+/* ═══════════════════════════════════════════════════════════════════
+   Камерный театр балета — компоненты
+   Подключать ПОСЛЕ tokens.css и base.css.
+   Ни один компонент не содержит литерального цвета — только токены.
+   ═══════════════════════════════════════════════════════════════════ */
+
+
+/* ═══════════════════════════════════════════════════════════════════
+   КНОПКИ
+   Заполненная кнопка на странице ОДНА — «Купить билет».
+   Опознавательный знак системы: приводочная линейка.
+   Рамка патины стоит со сдвигом 5 px, при наведении сходится до 2 px,
+   при нажатии садится в 0. Это жест типографской приводки.
+   Запрещено: scale() на наведении, изменение прозрачности как hover.
+   ═══════════════════════════════════════════════════════════════════ */
+
+.btn {
+  --btn-h: 44px;                       /* WCAG 2.5.5 AAA: 44×44 */
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--s-3);
+  min-height: var(--btn-h);
+  padding-inline: var(--s-5);
+  border: var(--hair) solid transparent;
+  border-radius: var(--r-0);
+  background: transparent;
+  color: inherit;
+  font-family: var(--face-work);
+  font-size: var(--t-300);
+  font-weight: 600;
+  line-height: 1.2;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+  text-decoration: none;
+  cursor: pointer;
+  transition:
+    background-color var(--dur-tap) var(--ease-tap),
+    color            var(--dur-tap) var(--ease-tap),
+    border-color     var(--dur-tap) var(--ease-tap),
+    outline-offset   var(--dur-tap) var(--ease-tap),
+    transform        var(--dur-tap) var(--ease-tap);
+}
+
+/* Мелкая — только там, где вокруг есть просвет 24 px (WCAG 2.5.8). */
+.btn--sm { --btn-h: 36px; padding-inline: var(--s-4); font-size: var(--t-200); }
+.btn--lg { --btn-h: 54px; padding-inline: var(--s-6); font-size: var(--t-400); }
+
+/* 1 · Билет — основное действие */
+.btn--ticket {
+  background: var(--cta-bg);
+  color: var(--cta-fg);
+  outline: var(--hair) solid var(--patina);
+  outline-offset: 5px;
+}
+.btn--ticket:hover         { outline-offset: 2px; }
+.btn--ticket:active        { outline-offset: 0; transform: translateY(1px); }
+.btn--ticket:focus-visible { outline: 2px solid var(--focus); outline-offset: 3px; }
+
+/* 2 · Контур — второстепенное действие */
+.btn--outline { border-color: var(--rule-hi); color: var(--ink-0); }
+.btn--outline:hover  { background: var(--ground-2); border-color: var(--ink-1); }
+.btn--outline:active { transform: translateY(1px); }
+
+/* 3 · Тихая — третьестепенное. Меняется толщина подчёркивания, не цвет. */
+.btn--quiet {
+  padding-inline: 0;
+  min-height: 32px;
+  color: var(--ink-0);
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 6px;
+  transition: text-decoration-thickness var(--dur-tap) var(--ease-tap);
+}
+.btn--quiet:hover { text-decoration-thickness: 3px; }
+
+/* Выключено. Не прозрачность 50 %, а собственная пара токенов. */
+.btn[disabled],
+.btn[aria-disabled="true"] {
+  background: var(--ground-2);
+  color: var(--ink-2);
+  border-color: transparent;
+  outline: 0;
+  cursor: not-allowed;
+  transform: none;
+  text-decoration: none;
+}
+
+/* Ожидание. Ширина кнопки не меняется — иначе прыгает вся строка. */
+.btn[data-loading="true"] { position: relative; pointer-events: none; color: transparent; }
+.btn[data-loading="true"]::after {
+  content: "";
+  position: absolute;
+  inset-block-start: calc(50% - 8px);
+  inset-inline-start: calc(50% - 8px);
+  width: 16px;
+  height: 16px;
+  border: 1.5px solid currentColor;
+  border-block-start-color: var(--cta-fg);
+  border-radius: var(--r-full);
+  color: var(--ink-2);
+  animation: ktb-spin 900ms linear infinite;
+}
+@keyframes ktb-spin { to { transform: rotate(360deg); } }
+
+/* Липкая кнопка покупки на мобильном — единственное место с тенью. */
+.btn-sticky {
+  position: sticky;
+  inset-block-end: 0;
+  z-index: 10;
+  display: flex;
+  gap: var(--s-4);
+  padding: var(--s-4) var(--s-5);
+  background: var(--ground-0);
+  border-block-start: var(--hair) solid var(--rule);
+  box-shadow: 0 -8px 24px -12px rgb(0 0 0 / 0.45);
+}
+.btn-sticky .btn { flex: 1; }
+@media (min-width: 720px) { .btn-sticky { position: static; box-shadow: none; } }
+
+
+/* ═══════════════════════════════════════════════════════════════════
+   ПОЛЯ
+   Единственное место в системе со скруглением, и то 2 px.
+   ═══════════════════════════════════════════════════════════════════ */
+
+.field { display: flex; flex-direction: column; gap: var(--s-3); max-width: 24rem; }
+.field > label { font-size: var(--t-200); font-weight: 600; letter-spacing: 0.02em; color: var(--ink-1); }
+
+.input {
+  min-height: 44px;
+  padding: var(--s-3) var(--s-4);
+  border: var(--hair) solid var(--rule-hi);
+  border-radius: var(--r-1);
+  background: var(--ground-0);
+  color: var(--ink-0);
+  font-family: var(--face-work);
+  font-size: var(--t-400);
+  transition: border-color var(--dur-tap) var(--ease-tap);
+}
+.input::placeholder { color: var(--ink-2); }
+.input:hover { border-color: var(--ink-2); }
+.input:focus-visible { border-color: var(--focus); outline: 2px solid var(--focus); outline-offset: 2px; }
+
+/* Ошибка помечена И цветом, И толщиной: цвета одного недостаточно. */
+.input[aria-invalid="true"] { border-color: var(--ochre); border-inline-start-width: 3px; }
+.field > .err { font-size: var(--t-200); color: var(--ochre); }
+
+
+/* ═══════════════════════════════════════════════════════════════════
+   СЧЁТЧИК МЕСТ
+   Единственный скруглённый элемент системы. Если скруглить что-то ещё,
+   он перестанет читаться как исключение.
+   ═══════════════════════════════════════════════════════════════════ */
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  padding: 3px 10px;
+  border: var(--hair) solid currentColor;
+  border-radius: var(--r-full);
+  font-size: var(--t-100);
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  font-variant-numeric: tabular-nums;
+}
+.pill--ok  { color: var(--patina); }  /* есть билеты      */
+.pill--low { color: var(--ochre); }   /* осталось мало    */
+/* «Продано» не окрашивается: это не авария, а хорошая новость.
+   Используйте класс .seating--gone на строке сеанса. */
+
+
+/* ═══════════════════════════════════════════════════════════════════
+   КАРТОЧКА ВЕЧЕРА — главный компонент
+   Дата — крупнейший типографический объект: у спектакля дата и есть товар.
+   Два сеанса — две строки покупки, а не выпадающий список.
+   ═══════════════════════════════════════════════════════════════════ */
+
+.event {
+  display: grid;
+  grid-template-columns: 1fr;
+  background: var(--ground-0);
+  border: var(--hair) solid var(--rule);
+  border-block-start: var(--bar) solid var(--ink-0);
+}
+@media (min-width: 720px) { .event { grid-template-columns: 8.5rem 1fr; } }
+
+.event__rail {
+  display: flex;
+  align-items: baseline;
+  gap: var(--s-4);
+  padding: var(--s-5);
+  border-block-end: var(--hair) solid var(--rule);
+}
+@media (min-width: 720px) {
+  .event__rail {
+    display: block;
+    border-block-end: 0;
+    border-inline-end: var(--hair) solid var(--rule);
+  }
+}
+.event__day { font-family: var(--face-afisha); font-size: var(--t-1000); line-height: 0.9; font-variant-numeric: tabular-nums; }
+.event__mon { margin-block-start: var(--s-3); font-size: var(--t-200); letter-spacing: var(--tr-caps); text-transform: uppercase; color: var(--ink-1); }
+.event__wd  { font-size: var(--t-200); color: var(--ink-2); }
+
+.event__body { display: flex; flex-direction: column; gap: var(--s-4); padding: var(--s-5); }
+@media (min-width: 720px) { .event__body { padding: var(--s-6); } }
+
+.event__title { font-family: var(--face-afisha); font-size: var(--t-800); line-height: var(--lh-tight); }
+.event__where { font-size: var(--t-300); color: var(--ink-1); }
+
+/* Программа вечера. Список номеров с хронометражом — обязателен:
+   это контент, SEO и самый «человеческий» блок страницы разом. */
+.programme { display: flex; flex-direction: column; gap: var(--s-2); font-size: var(--t-300); color: var(--ink-1); }
+.programme li {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: var(--s-4);
+  align-items: baseline;
+  padding-block: var(--s-2);
+  border-block-end: var(--hair) dotted var(--rule);
+}
+.programme li > :last-child { font-size: var(--t-200); color: var(--ink-2); font-variant-numeric: tabular-nums; }
+
+/* Сеансы */
+.seatings { display: flex; flex-direction: column; border: var(--hair) solid var(--rule); }
+.seating {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: var(--s-4);
+  padding: var(--s-4) var(--s-5);
+}
+.seating + .seating { border-block-start: var(--hair) solid var(--rule); }
+.seating__time  { font-family: var(--face-afisha); font-size: var(--t-700); line-height: 1; font-variant-numeric: tabular-nums; }
+.seating__meta  { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.seating__price { font-size: var(--t-300); font-weight: 600; font-variant-numeric: tabular-nums; }
+.seating--gone,
+.seating--gone .seating__time { color: var(--ink-2); }
+
+
+/* ═══════════════════════════════════════════════════════════════════
+   ПАНЕЛЬ И ЗАГОЛОВОК СЕКЦИИ
+   ═══════════════════════════════════════════════════════════════════ */
+
+.panel { padding: var(--s-6); background: var(--ground-1); border: var(--hair) solid var(--rule); }
+.panel--flat { background: transparent; }
+
+.sec-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--s-4); margin-block-end: var(--s-6); }
+.sec-num   { font-family: var(--face-afisha); font-size: var(--t-500); line-height: 1; color: var(--patina); }
+.sec-title { font-size: var(--t-700); font-weight: 600; line-height: var(--lh-head); letter-spacing: -0.015em; }
+.sec-sub   { font-size: var(--t-300); color: var(--ink-2); }
+
+/* Арка исторического зала — единственный декоративный мотив.
+   Ставится один раз на экран, не чаще. */
+.arc { display: block; width: 96px; height: 48px; color: var(--rule-hi); }
+
+
+/* ═══════════════════════════════════════════════════════════════════
+   ТАБЛИЦА
+   ═══════════════════════════════════════════════════════════════════ */
+
+.spec-table { width: 100%; border-collapse: collapse; font-size: var(--t-300); }
+.spec-table th,
+.spec-table td { padding: var(--s-4) var(--s-4) var(--s-4) 0; text-align: start; vertical-align: top; border-block-end: var(--hair) solid var(--rule); }
+.spec-table th { font-size: var(--t-100); font-weight: 600; letter-spacing: var(--tr-caps); text-transform: uppercase; color: var(--ink-2); }
+
+
+/* ═══════════════════════════════════════════════════════════════════
+   ДОБАВЛЕНО ПРИ СБОРКЕ ПРОТОТИПА · 23.08.2026
+   Только новые селекторы. Ни одно правило выше не переопределено.
+   Ни одного литерального цвета: все цвета — токены из tokens.css.
+   ═══════════════════════════════════════════════════════════════════ */
+
+
+/* ═══════════════ ШАПКА И ПОДВАЛ САЙТА ═══════════════
+   В шапке только название театра. Ни меню, ни поиска, ни переключателя
+   языка: на восьми концертах в квартал это мёртвый вес. */
+
+.site-head { padding-block: var(--s-5); border-block-end: var(--hair) solid var(--rule); }
+.site-head__in { display: flex; align-items: center; justify-content: space-between; gap: var(--s-4); }
+
+.logo {
+  font-family: var(--face-afisha);
+  font-size: var(--t-400);
+  line-height: 1.2;
+  letter-spacing: 0.15em;
+  text-decoration: none;
+}
+.logo--sm { font-size: var(--t-300); }
+a.logo { display: inline-flex; align-items: center; min-height: 44px; }
+
+.site-foot { padding-block: var(--s-8); }
+.foot-grid { display: grid; gap: var(--s-6); }
+@media (min-width: 820px) { .foot-grid { grid-template-columns: 1.4fr 1fr 1fr; } }
+.foot-col h2 { font-size: var(--t-300); font-weight: 600; margin-block-end: var(--s-4); }
+.foot-col li { font-size: var(--t-200); color: var(--ink-1); padding-block: var(--s-2); }
+.foot-venue__name { display: block; font-weight: 600; color: var(--ink-0); }
+.foot-venue { padding-block: var(--s-3); border-block-end: var(--hair) solid var(--rule); }
+
+
+/* ═══════════════ ПЕРВЫЙ ЭКРАН ═══════════════
+   Асимметрия: текст слева, место под фотографию справа. Не 50/50,
+   не по центру, без «блобов» и градиентов. */
+
+.hero { display: grid; gap: var(--s-6); padding-block: var(--s-7) var(--s-8); }
+@media (min-width: 900px) {
+  .hero { grid-template-columns: 1.42fr 1fr; gap: var(--s-7); align-items: end; }
+}
+.hero__title { font-size: var(--t-afisha); max-inline-size: 13ch; }
+.hero__sub { font-size: var(--t-700); color: var(--ink-1); }
+.hero__aside { display: flex; flex-direction: column; gap: var(--s-4); }
+
+/* Место под фотографию. Волосяная рамка и подпись, что здесь будет.
+   Не сток, не эмодзи, не градиент — ТЗ 5.1 и раздел 12, пункт 2. */
+.photo-stub {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--s-4);
+  padding: var(--s-6);
+  min-height: 200px;
+  border: var(--hair) solid var(--rule-hi);
+  text-align: center;
+}
+/* Без aspect-ratio: вместе с min-height он задавал прямоугольнику
+   минимальную ширину 391 px и утягивал за собой всю колонку на 320 px. */
+.photo-stub--hero { min-height: 300px; }
+.photo-stub__cap { font-size: var(--t-200); line-height: 1.5; color: var(--ink-2); max-inline-size: 26ch; }
+
+
+/* ═══════════════ АФИША ═══════════════ */
+
+.events { display: flex; flex-direction: column; gap: var(--s-5); }
+
+/* Пустое состояние афиши — не пустой экран, а честная строка. */
+.empty { padding: var(--s-6); border: var(--hair) solid var(--rule); font-size: var(--t-300); color: var(--ink-1); }
+
+/* Строка сеанса внутри карточки афиши: цена, счётчик, кнопка.
+   На узком экране раскладывается в две строки, кнопка во всю ширину. */
+@media (max-width: 519px) {
+  .seating { grid-template-columns: auto 1fr; row-gap: var(--s-4); }
+  .seating > .btn { grid-column: 1 / -1; width: 100%; }
+}
+
+
+/* Заголовок карточки — ссылка. Подчёркивание в 36 px Prata слишком
+   тяжёлое, поэтому оно появляется при наведении и фокусе. */
+.event__title a { text-decoration: none; }
+.event__title a:hover { text-decoration: underline; text-decoration-thickness: var(--hair); }
+
+
+/* ═══════════════ ТЕКСТОВЫЙ БЛОК ═══════════════ */
+
+.prose { display: flex; flex-direction: column; gap: var(--s-6); }
+.prose__part { display: flex; flex-direction: column; gap: var(--s-4); }
+.prose h3 { font-size: var(--t-500); font-weight: 600; line-height: var(--lh-head); }
+
+
+/* ═══════════════ СТРАНИЦА ВЕЧЕРА ═══════════════ */
+
+.evt-head { display: flex; flex-direction: column; gap: var(--s-4); margin-block-end: var(--s-6); }
+.evt-date {
+  display: block;
+  font-size: var(--t-afisha);
+  font-variant-numeric: tabular-nums;
+}
+.evt-wd { display: block; font-size: var(--t-300); letter-spacing: var(--tr-caps); text-transform: uppercase; color: var(--ink-2); }
+.evt-title { display: block; font-size: var(--t-800); margin-block-start: var(--s-3); }
+
+/* Раскладка страницы вечера. Порядок в разметке — тот, что требует ТЗ 5.2:
+   зал → как войти → программа → сеансы → место под фотографию.
+   На широком экране первые две и последняя уходят в левую колонку,
+   программа и покупка — в правую. Порядок обхода табом не меняется. */
+.evt-grid { display: grid; gap: var(--s-6); }
+.evt-side { display: flex; flex-direction: column; gap: var(--s-6); min-width: 0; }
+@media (min-width: 940px) {
+  .evt-grid {
+    grid-template-columns: 1fr 1.1fr;
+    grid-template-areas: "hall side" "entrance side" "photo side";
+    align-content: start;
+    align-items: start;
+    gap: var(--s-6) var(--s-7);
+  }
+  .evt-area-hall     { grid-area: hall; }
+  .evt-area-entrance { grid-area: entrance; }
+  .evt-area-side     { grid-area: side; }
+  .evt-area-photo    { grid-area: photo; }
+}
+
+.facts { display: flex; flex-direction: column; }
+.facts__row { display: grid; grid-template-columns: 1fr; gap: var(--s-1); padding-block: var(--s-4); border-block-end: var(--hair) solid var(--rule); }
+@media (min-width: 560px) { .facts__row { grid-template-columns: 10rem 1fr; gap: var(--s-4); align-items: baseline; } }
+.facts__k { font-size: var(--t-100); font-weight: 600; letter-spacing: var(--tr-caps); text-transform: uppercase; color: var(--ink-2); }
+.facts__v { font-size: var(--t-300); color: var(--ink-0); margin: 0; }
+
+.block-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--s-4); margin-block-end: var(--s-4); }
+.block-title { font-size: var(--t-600); font-weight: 600; line-height: var(--lh-head); }
+
+/* Итог по вечеру: сумма хронометража номеров. */
+.programme__total { display: grid; grid-template-columns: 1fr auto; gap: var(--s-4); padding-block: var(--s-3); font-size: var(--t-200); color: var(--ink-2); font-variant-numeric: tabular-nums; }
+
+/* Шапка страницы вечера на тёмном грунте. */
+.evt-hero { padding-block: var(--s-7) var(--s-8); }
+
+/* Липкая кнопка: внутренняя раскладка. Сама .btn-sticky описана выше.
+   display:flex у .btn-sticky перебивает [hidden], поэтому — явно. */
+.btn-sticky[hidden] { display: none; }
+/* Липкая кнопка: внутренняя раскладка. Сама .btn-sticky описана выше. */
+.btn-sticky__in { display: flex; align-items: center; gap: var(--s-4); width: 100%; max-width: 1180px; margin-inline: auto; }
+.btn-sticky__meta { display: flex; flex-direction: column; gap: var(--s-1); min-width: 0; }
+.btn-sticky__time { font-family: var(--face-afisha); font-size: var(--t-500); line-height: 1; font-variant-numeric: tabular-nums; }
+.btn-sticky__price { font-size: var(--t-200); color: var(--ink-2); font-variant-numeric: tabular-nums; }
+
+
+/* ═══════════════ ВИТРИНА: ШАПКА ═══════════════ */
+
+.masthead { padding-block: var(--s-8) var(--s-7); }
+.masthead__top { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--s-4); margin-block-end: var(--s-7); }
+.thesis { font-size: var(--t-afisha); line-height: 0.94; letter-spacing: -0.02em; max-inline-size: 16ch; }
+.masthead__grid { display: grid; gap: var(--s-6); margin-block-start: var(--s-6); }
+@media (min-width: 880px) { .masthead__grid { grid-template-columns: 1.35fr 1fr; align-items: end; } }
+
+.decisions { display: grid; border: var(--hair) solid var(--rule); }
+@media (min-width: 820px) { .decisions { grid-template-columns: repeat(3, 1fr); } }
+.decision { padding: var(--s-5); border-block-end: var(--hair) solid var(--rule); }
+.decision:last-child { border-block-end: 0; }
+@media (min-width: 820px) {
+  .decision { border-block-end: 0; border-inline-end: var(--hair) solid var(--rule); }
+  .decision:last-child { border-inline-end: 0; }
+}
+.decision__t { font-size: var(--t-400); font-weight: 600; margin-block: var(--s-3); }
+.decision p { font-size: var(--t-200); line-height: 1.5; color: var(--ink-1); }
+
+
+/* ═══════════════ ВИТРИНА: ОБРАЗЦЫ ЦВЕТА ═══════════════ */
+
+.swatches { display: grid; grid-template-columns: repeat(auto-fill, minmax(148px, 1fr)); gap: var(--s-3); }
+.sw {
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+  border: var(--hair) solid var(--rule);
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+}
+.sw:hover { border-color: var(--ink-1); }
+.sw__chip { height: 56px; border-block-end: var(--hair) solid var(--rule); }
+.sw__meta { display: flex; flex-direction: column; gap: var(--s-1); padding: var(--s-3); }
+.sw__name { font-size: var(--t-200); font-weight: 600; }
+.sw__use  { font-size: var(--t-100); line-height: 1.35; color: var(--ink-2); }
+
+
+/* Образцы двух голосов в разделе «Типографика». */
+.specimen-afisha { font-size: var(--t-1000); }
+.specimen-time   { font-size: var(--t-900); }
+/* Ниже 560 px «Умирающий» в 58 px не влезает в колонку и растягивает
+   страницу. Образец опускается на один шаг шкалы — новых значений нет. */
+@media (max-width: 560px) {
+  .specimen-afisha { font-size: var(--t-900); }
+  .specimen-time   { font-size: var(--t-800); }
+}
+
+
+/* ═══════════════ ВИТРИНА: ШКАЛА КЕГЛЯ ═══════════════ */
+
+.scale-row {
+  display: grid;
+  grid-template-columns: 5.5rem 4rem minmax(0, 1fr);
+  gap: var(--s-4) var(--s-5);
+  align-items: baseline;
+  padding-block: var(--s-4);
+  border-block-end: var(--hair) solid var(--rule);
+}
+.scale-row > .px:last-child { grid-column: 3; grid-row: 2; }
+@media (min-width: 720px) {
+  .scale-row { grid-template-columns: 5.5rem 4rem minmax(0, 1fr) 15rem; }
+  .scale-row > .px:last-child { grid-column: 4; grid-row: 1; }
+}
+.scale-row code { font-size: var(--t-200); }
+.scale-row .px { font-size: var(--t-200); color: var(--ink-2); font-variant-numeric: tabular-nums; }
+.scale-row .spec { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+
+
+/* ═══════════════ ВИТРИНА: ОТСТУПЫ ═══════════════ */
+
+.spacers { display: flex; flex-direction: column; gap: var(--s-3); }
+.spacer-row { display: grid; grid-template-columns: 4rem 3.5rem 1fr; gap: var(--s-4); align-items: center; }
+.spacer-bar { height: 12px; background: var(--patina); }
+.spacer-row code { font-size: var(--t-200); }
+
+.shape-demo { width: 64px; height: 44px; border: var(--hair) solid var(--rule-hi); }
+.shape-demo--r0 { border-radius: var(--r-0); }
+.shape-demo--r1 { border-radius: var(--r-1); }
+.rule-demo { height: var(--hair); background: var(--rule); }
+.rule-demo--hi { background: var(--rule-hi); }
+.rule-demo--bar { height: var(--bar); background: var(--ink-0); }
+
+
+/* ═══════════════ ВИТРИНА: СОСТОЯНИЯ И ПАРЫ ═══════════════ */
+
+.states { display: grid; gap: var(--s-5); }
+.state-cell { display: flex; flex-direction: column; gap: var(--s-3); align-items: flex-start; }
+.state-label { font-size: var(--t-100); letter-spacing: var(--tr-caps); text-transform: uppercase; color: var(--ink-2); }
+
+.demo-pair { display: grid; border: var(--hair) solid var(--rule); }
+@media (min-width: 900px) { .demo-pair { grid-template-columns: 1fr 1fr; } }
+.demo-pair > * { padding: var(--s-6); min-width: 0; }
+
+
+/* ═══════════════ ВИТРИНА: ПРАВИЛА ═══════════════ */
+
+.rules { display: grid; gap: var(--s-5); }
+@media (min-width: 800px) { .rules { grid-template-columns: 1fr 1fr; } }
+.rule-col { padding-block-start: var(--s-5); border-block-start: var(--bar) solid var(--rule-hi); }
+.rule-col--yes { border-block-start-color: var(--patina); }
+.rule-col--no  { border-block-start-color: var(--ochre); }
+.rule-col li { padding-block: var(--s-3); border-block-end: var(--hair) solid var(--rule); font-size: var(--t-300); color: var(--ink-1); }
+.eyebrow--patina { color: var(--patina); }
+.eyebrow--ochre  { color: var(--ochre); }
+
+
+/* ═══════════════ ВИТРИНА: ДВИЖЕНИЕ ═══════════════ */
+
+.motion-track { position: relative; height: 44px; overflow: hidden; border: var(--hair) solid var(--rule); }
+.motion-dot { position: absolute; inset-block: 8px; inset-inline-start: 8px; width: 28px; background: var(--patina); transition: transform var(--dur-enter) var(--ease-enter); }
+.motion-track[data-run="true"] .motion-dot { transform: translateX(var(--travel, 220px)); }
+
+
+/* ═══════════════ ВИТРИНА: ТОСТ ═══════════════ */
+
+.toast {
+  position: fixed;
+  inset-block-end: var(--s-5);
+  inset-inline-start: 50%;
+  z-index: 50;
+  padding: var(--s-3) var(--s-5);
+  background: var(--ink-0);
+  color: var(--ground-0);
+  font-size: var(--t-200);
+  font-weight: 600;
+  opacity: 0;
+  pointer-events: none;
+  transform: translate(-50%, 12px);
+  transition: opacity var(--dur-exit) var(--ease-exit), transform var(--dur-exit) var(--ease-exit);
+}
+.toast[data-show="true"] {
+  opacity: 1;
+  transform: translate(-50%, 0);
+  transition-duration: var(--dur-enter);
+  transition-timing-function: var(--ease-enter);
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════
+   АНТИПРИМЕР · раздел 08 витрины «Дефолт против нашего»
+   ВНИМАНИЕ: это НЕ часть системы. Здесь намеренно собрано всё, что
+   запрещено разделом 7 ТЗ: Inter, индиго, градиент на заголовке,
+   скругления, тень, цветная полоса сверху карточки, эмодзи вместо
+   изображения и scale(1.05) на наведении. Показано как то, чего
+   делать нельзя. Цвета взяты из --slop-* (tokens.css): показать
+   дефолтное индиго, не написав его шестнадцатеричный код, нельзя,
+   а вне tokens.css литеральных цветов быть не должно.
+   Ни один селектор ниже не используется вне раздела 08.
+   ═══════════════════════════════════════════════════════════════════ */
+
+.slop {
+  font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+  background: var(--slop-bg);
+  color: var(--slop-ink);
+}
+.slop__label { margin-block-end: 20px; font-size: 11px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--slop-faint); }
+.slop .card {
+  padding: 24px;
+  border: 1px solid var(--slop-border);
+  border-top: 4px solid var(--slop-indigo);
+  border-radius: 12px;
+  box-shadow: 0 1px 3px var(--slop-shadow);
+  background: var(--slop-white);
+  text-align: center;
+}
+.slop .card h3 {
+  margin-bottom: 8px;
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  background: linear-gradient(90deg, var(--slop-violet), var(--slop-blue));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+.slop .card p { margin: 0 auto 16px; max-width: 34ch; font-size: 14px; color: var(--slop-muted); }
+.slop .card .b {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 20px;
+  border: 0;
+  border-radius: 8px;
+  background: var(--slop-indigo);
+  color: var(--slop-white);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.2s ease;
+}
+.slop .card .b:hover { transform: scale(1.05); }
+.slop .em { display: block; margin-bottom: 8px; font-size: 28px; }
+.slop__list { margin-top: 20px; padding: 0; list-style: none; font-size: 13px; line-height: 1.6; color: var(--slop-muted); }
+.slop__list code { color: inherit; }
+
+
+/* ═══════════════ СЛУЖЕБНОЕ ═══════════════ */
+
+/* Ссылка «к содержанию»: скрыта, пока не получит фокус с клавиатуры. */
+.skip {
+  position: absolute;
+  inset-block-start: var(--s-3);
+  inset-inline-start: var(--s-3);
+  z-index: 60;
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: var(--s-3) var(--s-4);
+  background: var(--ground-0);
+  border: var(--hair) solid var(--rule-hi);
+  color: var(--ink-0);
+  font-size: var(--t-200);
+  font-weight: 600;
+  text-decoration: none;
+  transform: translateY(-200%);
+}
+.skip:focus-visible { transform: translateY(0); }
+
+/* Малая арка — в подвале и в тесных местах. */
+.arc--sm { width: 64px; height: 32px; }
+
+/* Рисунок в заглушке под фотографию: свод исторического зала. */
+.stub-art { width: 160px; height: 96px; color: var(--rule-hi); }
+.stub-art--sm { width: 112px; height: 68px; }
+
+.noscript { padding: var(--s-5); border: var(--hair) solid var(--ochre); border-inline-start-width: 3px; font-size: var(--t-300); }

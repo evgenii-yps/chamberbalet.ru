@@ -1,0 +1,67 @@
+{
+  "_комментарий": "Модель данных вечера. ВСЕ значения ниже — заглушки для сборки прототипа, кроме структуры. Реальные залы, цены и вместимость подставляются после подписания площадок. Даты в ISO, время локальное (Europe/Moscow). Цены в рублях, целыми числами.",
+
+  "_поля": {
+    "id": "строка, латиницей, уникальна, используется в URL страницы вечера",
+    "date": "YYYY-MM-DD",
+    "title": "название программы, попадает в .event__title, набирается Prata",
+    "venue.name": "название зала",
+    "venue.address": "адрес одной строкой",
+    "venue.capacity": "число мест в этом зале",
+    "venue.entrance": "как войти — двор, крыло, этаж. Обязательное поле: снимает часть звонков",
+    "durationMin": "хронометраж в минутах",
+    "interval": "true, если есть антракт",
+    "programme[]": "номера вечера: title + durationMin. Список обязателен, пустым не оставлять",
+    "seatings[]": "сеансы. Обычно два: 19:00 и 21:00. Каждый — самостоятельный товар со своей ценой и заполняемостью",
+    "seatings[].status": "on | low | sold — определяет вид строки: .pill--ok, .pill--low, .seating--gone",
+    "seatings[].seatsLeft": "число свободных мест; null, если оператор его не отдаёт",
+    "seatings[].ticketUrl": "прямая ссылка в виджет оператора на конкретный сеанс"
+  },
+
+  "events": [
+    {
+      "id": "chopiniana-2026-11-14",
+      "date": "2026-11-14",
+      "title": "Шопениана при свечах",
+      "venue": {
+        "name": "Особняк Кочубея, Белый зал",
+        "address": "Фурштатская, 24",
+        "capacity": 120,
+        "entrance": "Двор проходной, вход в правое крыло, второй этаж"
+      },
+      "durationMin": 70,
+      "interval": false,
+      "programme": [
+        { "title": "«Сильфиды»: Ноктюрн, соч. 32 № 2", "durationMin": 8 },
+        { "title": "Вальс, соч. 70 № 1 · па-де-де", "durationMin": 6 },
+        { "title": "«Умирающий лебедь», Сен-Санс", "durationMin": 3 },
+        { "title": "Мазурка, соч. 33 № 2 · финал", "durationMin": 11 }
+      ],
+      "seatings": [
+        { "time": "19:00", "priceFrom": 2400, "status": "on",  "seatsLeft": 43, "ticketUrl": "https://example.invalid/widget/chopiniana-1900" },
+        { "time": "21:00", "priceFrom": 3000, "status": "low", "seatsLeft": 6,  "ticketUrl": "https://example.invalid/widget/chopiniana-2100" }
+      ]
+    },
+    {
+      "id": "modern-2026-11-21",
+      "date": "2026-11-21",
+      "title": "Вечер современной хореографии",
+      "venue": {
+        "name": "Оранжерея Таврического сада",
+        "address": "Потёмкинская, 2",
+        "capacity": 180,
+        "entrance": "Главный вход с Потёмкинской, гардероб слева"
+      },
+      "durationMin": 80,
+      "interval": false,
+      "programme": [
+        { "title": "Первое отделение · три миниатюры", "durationMin": 34 },
+        { "title": "Второе отделение · одноактный балет", "durationMin": 46 }
+      ],
+      "seatings": [
+        { "time": "19:00", "priceFrom": 2800, "status": "sold", "seatsLeft": 0,  "ticketUrl": null },
+        { "time": "21:00", "priceFrom": 2800, "status": "on",   "seatsLeft": 96, "ticketUrl": "https://example.invalid/widget/modern-2100" }
+      ]
+    }
+  ]
+}

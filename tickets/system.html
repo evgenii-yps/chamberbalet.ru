@@ -1,0 +1,463 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="data:,">
+<title>Дизайн-система — Камерный театр балета</title>
+<meta name="description" content="Витрина дизайн-системы камерного театра балета: цвет, типографика, ритм и форма, кнопки, поля, карточка вечера, движение, сравнение с дефолтом, правила и пробелы.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Prata&family=Golos+Text:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="css/tokens.css">
+<link rel="stylesheet" href="css/base.css">
+<link rel="stylesheet" href="css/components.css">
+</head>
+<body data-page="system">
+
+<a class="skip" href="#color">К разделам системы</a>
+
+<main id="main">
+
+<div class="wrap masthead">
+  <div class="masthead__top">
+    <a class="logo" href="index.html">КАМЕРНЫЙ&nbsp;ТЕАТР&nbsp;БАЛЕТА</a>
+    <span class="eyebrow">Дизайн-система · черновик 0.1 · 23.08.2026</span>
+  </div>
+
+  <div class="masthead__grid">
+    <div class="stack gap-5">
+      <svg class="arc" viewBox="0 0 96 48" aria-hidden="true" focusable="false"><path d="M0.5 48 L0.5 34 A47.5 33.5 0 0 1 95.5 34 L95.5 48" fill="none" stroke="currentColor" stroke-width="1"/></svg>
+      <h1 class="afisha thesis">Товар&nbsp;— дата, время и&nbsp;зал. Всё остальное подчинено.</h1>
+    </div>
+    <div class="stack gap-4">
+      <p class="lede">Это не «стиль по мотивам». Это набор решений, у каждого из которых названа причина, привязанная к делу: камерный балет в исторических интерьерах, два сеанса, 80—300&nbsp;мест, холодный трафик.</p>
+      <p class="note">Всё ниже — предложение, а не факт. Числа взяты из вводных проекта и из разбора открытых дизайн-систем; лицензии перечислены в конце.</p>
+    </div>
+  </div>
+
+  <div class="decisions push-7">
+    <div class="decision">
+      <span class="eyebrow">01 · Гарнитуры</span>
+      <h2 class="decision__t">Prata + Golos Text</h2>
+      <p>Не Inter. Специалисты по кириллице прямо не рекомендуют его к использованию, и он же — маркер №&nbsp;1 генеративного лендинга. Prata (Cyreal) — дидон с родной кириллицей, афишный голос. Golos Text (ParaType) — рабочий. Обе OFL, обе на Google Fonts.</p>
+    </div>
+    <div class="decision">
+      <span class="eyebrow">02 · Цвет</span>
+      <h2 class="decision__t">Зал и патина</h2>
+      <p>Холодный сине-зелёный грунт вечернего зала, известняковый текст с тёплым подмесом, акцент — патина окисленной меди. Ни кремового фона, ни терракоты, ни фиолетового: это ровно те три палитры, которые сейчас выдаёт любой генератор.</p>
+    </div>
+    <div class="decision">
+      <span class="eyebrow">03 · Форма</span>
+      <h2 class="decision__t">Радиус 0, линейки вместо теней</h2>
+      <p>Скруглений нет нигде, кроме полей ввода (2&nbsp;px) и ровно одного счётчика мест. Иерархию держат волосяные линейки и толщина. Тень — только у липкой кнопки на мобильном.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════ 01 · ЦВЕТ ═══════ -->
+<section class="section" id="color" aria-labelledby="h-color">
+  <div class="wrap">
+    <div class="sec-head">
+      <span class="sec-num">01</span>
+      <h2 class="sec-title" id="h-color">Цвет</h2>
+      <span class="sec-sub">Роли, а не оттенки. Компонент не знает, какой сейчас грунт.</span>
+    </div>
+
+    <div class="stack gap-6">
+      <div>
+        <span class="eyebrow">Грунт «зал» — вечерний спектакль</span>
+        <div class="surface-hall panel push-4">
+          <div class="swatches" data-swatches="hall"></div>
+        </div>
+      </div>
+
+      <div>
+        <span class="eyebrow">Грунт «день» — светлая страница</span>
+        <div class="surface-day panel push-4">
+          <div class="swatches" data-swatches="day"></div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="stack gap-4">
+          <h3 class="t-500 strong">Правила цвета</h3>
+          <ul class="stack gap-3 dashed">
+            <li>— Заполненная кнопка на странице <b>одна</b>: «Купить билет». Она всегда <code>--cta-bg</code>, то есть инвертированный грунт. Максимальный контраст, ноль вкусовщины.</li>
+            <li>— Патина работает тихо: линейки, метки, приводочная рамка кнопки, подчёркивание при наведении. Она не заливка и не «свечение».</li>
+            <li>— Охра — единственный тревожный цвет, и означает ровно одно: <b>мало мест</b> или ошибка в поле. «Продано» окрашивается не в красный, а в <code>--ink-2</code>: это не авария, это спокойный факт.</li>
+            <li>— Нейтрали не серые. У них chroma 0.007—0.021 и hue грунта. Поштучно разницы не видно, целиком — принципиальная.</li>
+            <li>— Светлота задана не круглыми числами (0.212, а не 0.20). Круглые значения — след дефолтной темы.</li>
+          </ul>
+          <p class="note">Щёлкните по образцу, чтобы скопировать имя переменной.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════ 02 · ТИПОГРАФИКА ═══════ -->
+<section class="section" id="type" aria-labelledby="h-type">
+  <div class="wrap">
+    <div class="sec-head">
+      <span class="sec-num">02</span>
+      <h2 class="sec-title" id="h-type">Типографика</h2>
+      <span class="sec-sub">Два голоса. Больше на восьми концертах в квартал не нужно.</span>
+    </div>
+
+    <div class="grid2 pull-6">
+      <div class="panel panel--flat">
+        <span class="eyebrow">Афишный голос · Prata · 400</span>
+        <div class="afisha specimen-afisha push-5 pull-4">Умирающий<br>лебедь</div>
+        <div class="afisha specimen-time tab">19:00 · 21:00</div>
+        <p class="note push-5">Даты, время, названия программ и номеров. Дидон с высоким контрастом штриха — то, чем набирали театральные афиши. Никогда: текст абзацами, цены в чекауте, подписи к полям.</p>
+      </div>
+      <div class="panel panel--flat">
+        <span class="eyebrow">Рабочий голос · Golos Text · 400—700</span>
+        <p class="t-400 push-5 pull-4">Особняк Кочубея, Белый зал. 120&nbsp;мест, 70&nbsp;минут без антракта. Вход с Фурштатской, 24; двор проходной, вход в правое крыло.</p>
+        <p class="note">Всё остальное: интерфейс, описания, цены, адреса, кнопки, служебные подписи. Экранный гротеск ParaType с проверенной кириллицей и табличными цифрами.</p>
+      </div>
+    </div>
+
+    <span class="eyebrow">Шкала кегля</span>
+    <div id="typescale" class="push-4"></div>
+
+    <div class="panel push-6">
+      <p class="t-300 dim"><b>Почему шкала неровная.</b> Внизу шаг 1.08—1.15 — текстовые кегли должны различаться едва, иначе интерфейс распадается. Вверху шаг растёт до 1.31 — афише нужны редкие, далеко отстоящие крупные размеры, а не двадцать промежуточных. Это обратная логика по отношению к Carbon, где отношение, наоборот, сужается кверху.</p>
+    </div>
+
+    <div class="panel panel--flat push-5">
+      <span class="eyebrow">Русская наборная дисциплина — обязательна</span>
+      <div class="scroll-x push-4">
+        <table class="spec-table">
+          <thead><tr><th>Правило</th><th>Верно</th><th>Неверно</th></tr></thead>
+          <tbody>
+            <tr><td>Кавычки</td><td>«Времена года»</td><td class="note">"Времена года"</td></tr>
+            <tr><td>Вложенные</td><td>«Вечер „Шопениана“»</td><td class="note">«Вечер «Шопениана»»</td></tr>
+            <tr><td>Диапазоны</td><td class="tab">19:00—20:10</td><td class="note tab">19:00-20:10</td></tr>
+            <tr><td>Неразрывный пробел</td><td class="tab">3 000&nbsp;₽ · Санкт‑Петербург</td><td class="note">разрыв перед ₽ и внутри города</td></tr>
+            <tr><td>Цифры в столбцах</td><td class="tab">tabular-nums</td><td class="note">пропорциональные</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="note push-4">Генераторы этого не соблюдают почти никогда. Дёшево в исполнении, мгновенно читается как «набирал человек».</p>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════ 03 · РИТМ И ФОРМА ═══════ -->
+<section class="section" id="rhythm" aria-labelledby="h-rhythm">
+  <div class="wrap">
+    <div class="sec-head">
+      <span class="sec-num">03</span>
+      <h2 class="sec-title" id="h-rhythm">Ритм и форма</h2>
+      <span class="sec-sub">Девять шагов отступа, три толщины линейки, один скруглённый элемент.</span>
+    </div>
+
+    <div class="grid2">
+      <div>
+        <span class="eyebrow">Отступы · ×1.6 выше 8&nbsp;px</span>
+        <div class="spacers push-4" id="spacers"></div>
+        <p class="note push-5">Не кратная восьмёрке сетка. Восьмикратная шкала даёт двадцать почти одинаковых интервалов; афише нужны четыре тесных и три очень крупных.</p>
+      </div>
+
+      <div class="stack gap-5">
+        <div>
+          <span class="eyebrow">Линейки</span>
+          <div class="stack gap-4 push-4">
+            <div><div class="rule-demo"></div><p class="note push-4">1&nbsp;px <code>--rule</code> — разделение внутри блока</p></div>
+            <div><div class="rule-demo rule-demo--hi"></div><p class="note push-4">1&nbsp;px <code>--rule-hi</code> — рамка интерактивного элемента</p></div>
+            <div><div class="rule-demo rule-demo--bar"></div><p class="note push-4">6&nbsp;px <code>--bar</code> — верх карточки вечера, начало смыслового блока</p></div>
+          </div>
+        </div>
+        <div>
+          <span class="eyebrow">Скругления</span>
+          <div class="row gap-5 push-4">
+            <div class="stack gap-3"><div class="shape-demo shape-demo--r0"></div><span class="note">0 — всё</span></div>
+            <div class="stack gap-3"><div class="shape-demo shape-demo--r1"></div><span class="note">2 — поля</span></div>
+            <div class="stack gap-3"><span class="pill pill--low">осталось 6</span><span class="note">999 — только это</span></div>
+          </div>
+          <p class="note push-4">Круглая форма встречается на странице один раз и поэтому что-то значит. Если скруглить всё, счётчик мест перестанет читаться как исключение.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════ 04 · КНОПКИ ═══════ -->
+<section class="section" id="buttons" aria-labelledby="h-buttons">
+  <div class="wrap">
+    <div class="sec-head">
+      <span class="sec-num">04</span>
+      <h2 class="sec-title" id="h-buttons">Кнопки</h2>
+      <span class="sec-sub">Наводите, жмите, проходите табом — состояния живые.</span>
+    </div>
+    <p class="t-300 dim pull-6">Опознавательный знак системы — <b>приводочная линейка</b> у кнопки «Купить билет»: тонкая рамка стоит со сдвигом 5&nbsp;px, при наведении сходится до 2&nbsp;px, при нажатии садится в ноль. Это жест из типографской приводки, а не <code>hover:scale-105</code>.</p>
+  </div>
+
+  <div class="demo-pair">
+    <div class="surface-hall">
+      <span class="eyebrow">В зале</span>
+      <div class="states push-5" data-buttons></div>
+    </div>
+    <div class="surface-day">
+      <span class="eyebrow">Днём</span>
+      <div class="states push-5" data-buttons></div>
+    </div>
+  </div>
+
+  <div class="wrap push-6">
+    <div class="scroll-x">
+      <table class="spec-table">
+        <thead><tr><th>Состояние</th><th>Что меняется</th><th>Чего не делаем</th></tr></thead>
+        <tbody>
+          <tr><td>rest</td><td>Заливка <code>--cta-bg</code>, рамка патины со сдвигом 5&nbsp;px</td><td class="note">—</td></tr>
+          <tr><td>hover</td><td>Сдвиг рамки 5&nbsp;→&nbsp;2&nbsp;px за 110&nbsp;мс</td><td class="note">не <code>scale(1.05)</code>, не изменение прозрачности</td></tr>
+          <tr><td>active</td><td><code>translateY(1px)</code>, сдвиг рамки в 0</td><td class="note">не «щелчок» уменьшением</td></tr>
+          <tr><td>focus-visible</td><td>2&nbsp;px <code>--focus</code>, offset 3&nbsp;px, единый для всей системы</td><td class="note">не <code>outline: none</code></td></tr>
+          <tr><td>disabled</td><td>Фон <code>--ground-2</code>, текст <code>--ink-2</code>, рамка снята</td><td class="note">не прозрачность 50&nbsp;%</td></tr>
+          <tr><td>loading</td><td>Текст скрыт, дуга 16&nbsp;px, размер кнопки не меняется</td><td class="note">не подмена ширины</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="note push-4">Высота кнопки 44&nbsp;px, у крупной 54&nbsp;px — это WCAG 2.5.5 AAA (44×44). Мелкая 36&nbsp;px допустима только там, где вокруг есть просвет 24&nbsp;px.</p>
+  </div>
+</section>
+
+<!-- ═══════ 05 · ПОЛЯ ═══════ -->
+<section class="section" id="fields" aria-labelledby="h-fields">
+  <div class="wrap">
+    <div class="sec-head">
+      <span class="sec-num">05</span>
+      <h2 class="sec-title" id="h-fields">Поля</h2>
+      <span class="sec-sub">Единственное место, где есть скругление. И то 2&nbsp;px.</span>
+    </div>
+  </div>
+
+  <div class="demo-pair">
+    <div class="surface-hall stack gap-5">
+      <span class="eyebrow">В зале</span>
+      <div class="field">
+        <label for="f1">Имя и фамилия</label>
+        <input class="input" id="f1" type="text" placeholder="Как в паспорте">
+      </div>
+      <div class="field">
+        <label for="f2">Электронная почта</label>
+        <input class="input" id="f2" type="email" value="ne-pochta" aria-invalid="true" aria-describedby="f2e">
+        <span class="err" id="f2e">Нужен адрес вида имя@домен — на него придёт билет.</span>
+      </div>
+    </div>
+    <div class="surface-day stack gap-5">
+      <span class="eyebrow">Днём</span>
+      <div class="field">
+        <label for="f3">Имя и фамилия</label>
+        <input class="input" id="f3" type="text" placeholder="Как в паспорте">
+      </div>
+      <div class="field">
+        <label for="f4">Электронная почта</label>
+        <input class="input" id="f4" type="email" value="ne-pochta" aria-invalid="true" aria-describedby="f4e">
+        <span class="err" id="f4e">Нужен адрес вида имя@домен — на него придёт билет.</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="wrap push-6">
+    <div class="panel">
+      <h3 class="t-500 strong pull-4">Правило ошибки</h3>
+      <p class="t-300 dim">Ошибка говорит, что произошло и что сделать. Не «Некорректное значение», а «Нужен адрес вида имя@домен — на него придёт билет». Ошибочное поле помечается охрой и утолщением левой границы до 3&nbsp;px: цвет один не читается людьми с дальтонизмом.</p>
+      <p class="note push-4">Форма покупки — максимум три поля. Сокращение с шести до трёх поднимает конверсию; переход с многошагового чекаута на одностраничный у одного оператора дал рост завершения покупки примерно с 60 до 75&nbsp;%. Оценка по внешнему источнику, не по вашим данным.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════ 06 · КАРТОЧКА ВЕЧЕРА ═══════ -->
+<section class="section" id="event" aria-labelledby="h-event">
+  <div class="wrap">
+    <div class="sec-head">
+      <span class="sec-num">06</span>
+      <h2 class="sec-title" id="h-event">Карточка вечера</h2>
+      <span class="sec-sub">Главный компонент. Дата — самый крупный объект, два сеанса — отдельные строки покупки.</span>
+    </div>
+  </div>
+
+  <div class="demo-pair">
+    <div class="surface-hall stack gap-5">
+      <span class="eyebrow">В зале</span>
+      <div class="events" data-system-events></div>
+    </div>
+    <div class="surface-day stack gap-5">
+      <span class="eyebrow">Днём</span>
+      <div class="events" data-system-events></div>
+    </div>
+  </div>
+
+  <div class="wrap push-6">
+    <div class="panel">
+      <h3 class="t-500 strong pull-4">Почему карточка устроена так</h3>
+      <ul class="stack gap-3 dashed">
+        <li>— <b>Дата — крупнейший типографический объект.</b> У концерта дата и есть товар. Так же устроены карточки Эльбской филармонии.</li>
+        <li>— <b>Два сеанса — две строки покупки, а не выпадающий список.</b> 19:00 и 21:00 — разные товары с разной ценой и разной заполняемостью. Выбор в один тап, без раскрытия.</li>
+        <li>— <b>Список произведений с опусами.</b> Это одновременно контент, SEO и самый «человеческий» блок страницы: генератор такого не пишет, потому что ему нечего туда положить.</li>
+        <li>— <b>Всё для решения — до перехода в виджет:</b> цена, адрес, вместимость, длительность, есть ли антракт. Это снимает недоверие, на котором теряется часть покупателей.</li>
+        <li>— <b>«Продано» не красное.</b> Аншлаг — хорошая новость, а не авария.</li>
+      </ul>
+      <p class="note push-4">Обе карточки собраны из <code>data/events.json</code> тем же кодом, что и афиша. Значения — заглушки пакета.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════ 07 · ДВИЖЕНИЕ ═══════ -->
+<section class="section" id="motion" aria-labelledby="h-motion">
+  <div class="wrap">
+    <div class="sec-head">
+      <span class="sec-num">07</span>
+      <h2 class="sec-title" id="h-motion">Движение</h2>
+      <span class="sec-sub">Три длительности, три кривые. Ноль появлений по скроллу.</span>
+    </div>
+
+    <div class="grid2">
+      <div class="stack gap-5">
+        <div class="stack gap-4" id="motion-demos"></div>
+        <button class="btn btn--outline start" id="motion-run" type="button">Проиграть</button>
+      </div>
+      <div class="panel">
+        <h3 class="t-500 strong pull-4">Куда тратим движение</h3>
+        <p class="t-300 dim">Ровно на три вещи: состояние кнопки «Купить билет», раскрытие программы вечера, переключение между сеансами. Всё остальное — статика.</p>
+        <ul class="stack gap-3 dashed push-4">
+          <li>— Уход короче входа: 160&nbsp;мс против 240. Правило Primer.</li>
+          <li>— Потолок 300&nbsp;мс для интерфейса. Дольше — только смена экрана.</li>
+          <li>— <code>prefers-reduced-motion</code> обрабатывается, анимация сокращается до 1&nbsp;мс.</li>
+          <li>— Никаких <code>fade-up</code> при скролле, перехвата скролла и кастомного курсора: первое — маркер генератора, второе и третье прямо ломают доступность.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════ 08 · ДЕФОЛТ ПРОТИВ НАШЕГО ═══════ -->
+<section class="section" id="versus" aria-labelledby="h-versus">
+  <div class="wrap">
+    <div class="sec-head">
+      <span class="sec-num">08</span>
+      <h2 class="sec-title" id="h-versus">Дефолт против нашего</h2>
+      <span class="sec-sub">Слева — то, что выдаёт генератор по умолчанию. Справа — то же содержание в системе.</span>
+    </div>
+  </div>
+
+  <div class="demo-pair">
+    <div class="slop">
+      <div class="slop__label">Так делать не надо</div>
+      <div class="card">
+        <span class="em" aria-hidden="true">🩰</span>
+        <h3>Незабываемый вечер балета</h3>
+        <p>Погрузитесь в атмосферу классического балета в историческом особняке. Уникальный опыт, который запомнится надолго.</p>
+        <button class="b" type="button">Забронировать →</button>
+      </div>
+      <ul class="slop__list">
+        <li>Inter · <code>rounded-xl</code> · <code>shadow-sm</code></li>
+        <li>Цветная полоса сверху карточки — маркер №&nbsp;1</li>
+        <li>indigo-500 <code>#6366f1</code> и градиентный заголовок</li>
+        <li>Эмодзи вместо изображения, всё по центру</li>
+        <li>Ноль конкретики: ни даты, ни зала, ни цены</li>
+      </ul>
+    </div>
+    <div class="surface-hall stack gap-5">
+      <span class="eyebrow">Так надо</span>
+      <div id="versus-event"></div>
+      <ul class="stack gap-3 dashed">
+        <li>Prata + Golos Text · радиус 0 · линейка вместо тени</li>
+        <li>Дата — крупнейший объект, а не слоган</li>
+        <li>Патина как акцент, охра только для «мало мест»</li>
+        <li>Конкретика вместо обещаний: зал, вместимость, хронометраж, цена</li>
+        <li>Одна заполненная кнопка, и она про деньги</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════ 09 · ПРАВИЛА ═══════ -->
+<section class="section" id="rules" aria-labelledby="h-rules">
+  <div class="wrap">
+    <div class="sec-head">
+      <span class="sec-num">09</span>
+      <h2 class="sec-title" id="h-rules">Что можно и чего нельзя</h2>
+      <span class="sec-sub">Спорное здесь — верх страницы. Всё, что ведёт к оплате, остаётся скучным.</span>
+    </div>
+
+    <div class="rules">
+      <div class="rule-col rule-col--yes">
+        <span class="eyebrow eyebrow--patina">Делаем</span>
+        <ul class="push-4">
+          <li><b>Свои фотографии залов и репетиций.</b> Самый сильный и самый дешёвый ход: залы уже есть. Опрос Getty (7 500 респондентов, 25 стран): 98&nbsp;% считают подлинность изображений критичной для доверия.</li>
+          <li><b>Палитру пипеткой со своих же фото.</b> Значения ниже — стартовые; после первой съёмки их надо пересобрать по реальным стенам и свету.</li>
+          <li><b>Один рукодельный элемент на страницу:</b> план рассадки, схема прохода во двор, пиктограмма конкретного зала. Статистика такого не порождает.</li>
+          <li><b>Асимметричный первый экран:</b> текст слева, фото зала справа, не 50/50 и не по центру.</li>
+          <li><b>Конкретный текст.</b> «Шопениана, хореография Фокина. Особняк Кочубея, Белый зал, 120 мест, 19:00 и 21:00, 70 минут без антракта» вместо «незабываемого вечера».</li>
+          <li><b>CSS-типографику редактора:</b> <code>text-wrap: balance</code> на заголовках, <code>pretty</code> на абзацах, <code>hyphens: auto</code> при <code>lang="ru"</code>.</li>
+        </ul>
+      </div>
+      <div class="rule-col rule-col--no">
+        <span class="eyebrow eyebrow--ochre">Не делаем</span>
+        <ul class="push-4">
+          <li><b>Брутализм на страницах покупки.</b> На холодном трафике сырые макеты почти всегда проигрывают полированным: посетитель ещё не вложил внимание. Базы зрителей нет — значит трафик холодный почти весь.</li>
+          <li><b>Кастомный курсор.</b> Ломает системные настройки у слабовидящих и конвенцию «рука = ссылка».</li>
+          <li><b>Перехват скролла.</b> Отбирает у человека контроль над темпом.</li>
+          <li><b>Низкий контраст «ради утончённости».</b> Основной текст — минимум 4.5:1, аудитория 30—60 лет.</li>
+          <li><b>Акцидентный шрифт в теле текста.</b> Prata — только заголовки, даты, время. Цены и адреса — только Golos Text.</li>
+          <li><b>Регистрация до покупки.</b> Порядка четверти покупателей отваливается на этом шаге.</li>
+          <li><b>Тяжёлые эффекты.</b> Больше трёх секунд загрузки на мобильном — и половина уходит.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="panel push-6">
+      <p class="t-300 dim"><b>Разделение риска.</b> Авторское и рискованное живёт в верхней части страницы и в контентных блоках: типографика, фото, ритм, тексты. Всё, что ниже кнопки «Купить билет», — конвенционально, крупно, контрастно и предсказуемо. Ощущение авторства даёт первый экран; деньги приносит скучный низ. Это оценка, а не измеренный факт — проверять A/B-тестом после первых восьми концертов.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════ 10 · ПРОБЕЛЫ ═══════ -->
+<section class="section" id="gaps" aria-labelledby="h-gaps">
+  <div class="wrap">
+    <div class="sec-head">
+      <span class="sec-num">10</span>
+      <h2 class="sec-title" id="h-gaps">Пробелы и что проверить</h2>
+      <span class="sec-sub">Здесь данных нет, и они не выдуманы.</span>
+    </div>
+    <div class="scroll-x">
+      <table class="spec-table">
+        <thead><tr><th>Пробел</th><th>Почему важно</th><th>Как закрыть</th></tr></thead>
+        <tbody>
+          <tr><td>Кода лендинга нет</td><td>Система собрана «в воздухе», без сверки с текущей вёрсткой и стеком</td><td>Дать репозиторий или URL — токены переписываются поверх реального кода</td></tr>
+          <tr><td>Возможности виджета билетного оператора</td><td>Виджет — чужая поверхность. Он может тянуть свой шрифт и свои скругления поверх ваших</td><td>Запросить у оператора, что настраивается: только цвет кнопки или полный white-label</td></tr>
+          <tr><td>Доля мобильного трафика</td><td>От неё зависит, где рисовать основную композицию</td><td>Померить на первых концертах, не предполагать</td></tr>
+          <tr><td>Фотографий залов нет</td><td>Палитра построена на реконструкции «вечернего зала», а не на ваших стенах</td><td>Снять два зала, пересобрать <code>--ground-*</code> и <code>--patina</code> пипеткой</td></tr>
+          <tr><td>Названия и адреса в примерах</td><td>«Особняк Кочубея», цены и вместимость — заглушки для показа компонента</td><td>Заменить на реальные после подписания площадок</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="panel push-6">
+      <h3 class="t-500 strong pull-4">Лицензии</h3>
+      <p class="t-300 dim">Prata (Cyreal) и Golos Text (ParaType) — SIL OFL 1.1, коммерческое использование и веб-встраивание разрешены. Идеи заимствованы из shadcn/ui (MIT), Radix Colors (MIT), GitHub Primer (MIT), Guardian Source (Apache-2.0), IBM Carbon (Apache-2.0), USWDS (CC0) — код ниоткуда не скопирован, взяты только принципы.</p>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<footer class="site-foot">
+  <div class="wrap row between bottom gap-5">
+    <div class="stack gap-3">
+      <a class="logo logo--sm" href="index.html">КАМЕРНЫЙ&nbsp;ТЕАТР&nbsp;БАЛЕТА</a>
+      <span class="note">Дизайн-система, черновик 0.1. Предложение к обсуждению, а не утверждённый стандарт. · <a href="index.html">афиша</a></span>
+    </div>
+    <svg class="arc arc--sm" viewBox="0 0 96 48" aria-hidden="true" focusable="false"><path d="M0.5 48 L0.5 34 A47.5 33.5 0 0 1 95.5 34 L95.5 48" fill="none" stroke="currentColor" stroke-width="1"/></svg>
+  </div>
+</footer>
+
+<div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+<script src="js/app.js"></script>
+</body>
+</html>

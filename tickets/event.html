@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="data:,">
+<title>Вечер — Камерный театр балета</title>
+<meta name="description" content="Один вечер: дата, зал, как войти, программа с хронометражом и два сеанса — 19:00 и 21:00, у каждого своя цена и свои свободные места.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Prata&family=Golos+Text:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="css/tokens.css">
+<link rel="stylesheet" href="css/base.css">
+<link rel="stylesheet" href="css/components.css">
+</head>
+<body data-page="event">
+
+<a class="skip" href="#tickets">К покупке билета</a>
+
+<header class="site-head">
+  <div class="wrap site-head__in">
+    <a class="logo" href="index.html">КАМЕРНЫЙ&nbsp;ТЕАТР&nbsp;БАЛЕТА</a>
+  </div>
+</header>
+
+<main id="main">
+
+  <!-- ═══ ВЕЧЕР НЕ НАЙДЕН ═══ -->
+  <section class="section" id="event-missing" hidden>
+    <div class="wrap stack gap-5">
+      <h1 class="sec-title">Такого вечера в афише нет</h1>
+      <p id="event-missing-id" class="t-400 dim">В адресе страницы не указан вечер.</p>
+      <a class="btn btn--outline start" href="index.html">Открыть афишу</a>
+    </div>
+  </section>
+
+  <!-- ═══ ВЕЧЕР ═══ -->
+  <div id="event-page">
+
+    <div class="surface-hall">
+      <div class="wrap evt-hero">
+        <h1 class="evt-head">
+          <span class="afisha evt-date" id="evt-date">—</span>
+          <span class="evt-wd" id="evt-wd"></span>
+          <span class="afisha evt-title" id="evt-title"></span>
+        </h1>
+        <p class="note">Прототип: зал, цена, вместимость и ссылка на виджет — заглушки.</p>
+      </div>
+    </div>
+
+    <section class="section">
+      <div class="wrap evt-grid">
+
+        <!-- 3 · зал, адрес, вместимость, хронометраж, антракт -->
+        <div class="evt-area-hall">
+          <div class="block-head"><h2 class="block-title">Зал и вечер</h2></div>
+          <dl class="facts" id="evt-facts"></dl>
+        </div>
+
+        <!-- 4 · как войти -->
+        <div class="evt-area-entrance">
+          <div class="panel stack gap-3">
+            <span class="eyebrow">Как войти</span>
+            <p class="t-400" id="evt-entrance"></p>
+            <p class="note">Исторические особняки почти всегда со двора. Эта строка снимает половину звонков перед началом.</p>
+          </div>
+        </div>
+
+        <div class="evt-side evt-area-side">
+          <!-- 5 · программа вечера -->
+          <div>
+            <div class="block-head">
+              <h2 class="block-title">Программа вечера</h2>
+              <span class="sec-sub">Номера и хронометраж</span>
+            </div>
+            <div id="evt-programme"></div>
+          </div>
+
+          <!-- 6 · два сеанса — две строки покупки -->
+          <div id="tickets">
+            <div class="block-head">
+              <h2 class="block-title">Билеты</h2>
+              <span class="sec-sub">19:00 и 21:00 — разные сеансы, разная цена</span>
+            </div>
+            <div id="evt-seatings"></div>
+            <p class="note push-4">Покупка идёт на стороне билетного оператора: кнопка открывает его виджет в этой же вкладке. Оператор пока не выбран, ссылки ведут на <code>example.invalid</code>.</p>
+          </div>
+        </div>
+
+        <!-- 7 · место под фотографию зала -->
+        <div class="evt-area-photo">
+          <div class="photo-stub">
+            <svg class="stub-art stub-art--sm" viewBox="0 0 160 96" aria-hidden="true" focusable="false">
+              <path d="M4 95.5 H156" fill="none" stroke="currentColor" stroke-width="1"/>
+              <path d="M36 95.5 V44 A44 40 0 0 1 124 44 V95.5" fill="none" stroke="currentColor" stroke-width="1"/>
+              <path d="M66 95.5 V62 A14 14 0 0 1 94 62 V95.5" fill="none" stroke="currentColor" stroke-width="1"/>
+            </svg>
+            <p class="photo-stub__cap" id="evt-photo-cap">здесь фотография зала</p>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <noscript>
+      <div class="wrap"><p class="noscript">Страница вечера собирается на стороне браузера, и для неё нужен JavaScript.</p></div>
+    </noscript>
+  </div>
+
+</main>
+
+<!-- 8 · липкая кнопка покупки: на мобильном липнет, на десктопе обычная -->
+<div class="btn-sticky" id="sticky" hidden></div>
+
+<footer class="site-foot surface-hall">
+  <div class="wrap">
+    <div class="foot-grid">
+      <div class="foot-col">
+        <h2>Залы</h2>
+        <ul id="foot-venues" class="stack">
+          <li class="note">Список залов появится вместе с афишей.</li>
+        </ul>
+      </div>
+      <div class="foot-col">
+        <h2>Связь</h2>
+        <ul class="stack">
+          <li>Почта и телефон — <b>заглушка</b>: юридического лица пока нет, публиковать нечего.</li>
+          <li>Все ссылки «Купить билет» ведут на <code>example.invalid</code>: билетный оператор не выбран.</li>
+        </ul>
+      </div>
+      <div class="foot-col">
+        <h2>Документы</h2>
+        <ul class="stack">
+          <li>Политика обработки персональных данных — <b>заглушка</b>, документа ещё нет.</li>
+          <li>Оферта и реквизиты — <b>заглушка</b>, появятся вместе с юрлицом.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="row between bottom gap-5 push-7">
+      <div class="stack gap-3">
+        <a class="logo logo--sm" href="index.html">КАМЕРНЫЙ&nbsp;ТЕАТР&nbsp;БАЛЕТА</a>
+        <span class="note">Прототип 0.1 · 23.08.2026 · источник данных: <span id="data-source">—</span> · <a href="system.html">дизайн-система</a></span>
+      </div>
+      <svg class="arc arc--sm" viewBox="0 0 96 48" aria-hidden="true" focusable="false"><path d="M0.5 48 L0.5 34 A47.5 33.5 0 0 1 95.5 34 L95.5 48" fill="none" stroke="currentColor" stroke-width="1"/></svg>
+    </div>
+  </div>
+</footer>
+
+<script src="js/app.js"></script>
+</body>
+</html>
