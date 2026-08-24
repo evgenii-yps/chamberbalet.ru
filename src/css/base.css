@@ -32,7 +32,6 @@ h1, h2, h3 {
 p { margin: 0; }
 
 a { color: inherit; text-decoration-color: var(--brass-40); text-underline-offset: .22em; }
-a:hover { text-decoration-color: var(--brass); }
 
 button {
   font: inherit;
