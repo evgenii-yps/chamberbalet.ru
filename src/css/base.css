@@ -106,6 +106,8 @@ button {
   top: 0; left: 0; right: 0;
   z-index: var(--z-topbar);
   display: flex;
+  /* align-items, justify-content и gap инертны: ребёнок сейчас один. Оставлены
+     под возможный второй элемент — раскладка на пару уже описана и настроена. */
   align-items: baseline;
   justify-content: space-between;
   gap: 1rem;
