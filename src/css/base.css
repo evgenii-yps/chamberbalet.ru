@@ -106,10 +106,13 @@ button {
   top: 0; left: 0; right: 0;
   z-index: var(--z-topbar);
   display: flex;
-  /* align-items, justify-content и gap инертны: ребёнок сейчас один. Оставлены
-     под возможный второй элемент — раскладка на пару уже описана и настроена. */
-  align-items: baseline;
-  justify-content: space-between;
+  /* justify-content работает: центрирует единственного ребёнка — название
+     театра. align-items при одном ребёнке даёт то же, что и прежний baseline
+     (замерено: высота шапки и y названия совпали до сотых на 320, 390, 768 и
+     1280) — center стоит ради читаемости намерения, не ради пикселей.
+     gap инертен, разделять нечего; оставлен под возможный второй элемент. */
+  align-items: center;
+  justify-content: center;
   gap: 1rem;
   padding: clamp(1rem, 2.6vh, 1.75rem) var(--gutter);
   font-size: var(--step--1);
@@ -117,7 +120,22 @@ button {
   text-transform: uppercase;
   pointer-events: none;
 }
-.topbar__name { color: var(--cream-55); }
+.topbar__name {
+  font-family: var(--display);
+  /* Начертания 500 в самохостинге нет: собираются только 400 и 600
+     (scripts/config.mjs). По правилам подбора CSS запрос 500 разрешается в
+     400 — синтетического утолщения не будет, лишнего файла тоже. */
+  font-weight: 500;
+  font-style: normal;          /* курсив Cormorant ломает кириллицу */
+  font-size: 21px;
+  letter-spacing: .13em;
+  text-transform: uppercase;
+  /* justify-content центрирует бокс, а не строки внутри него. Пока строка
+     одна, разницы нет; на 320 она переносится, и без этого обе строки
+     прижимаются влево. */
+  text-align: center;
+  color: var(--cream);
+}
 
 /* Экран загрузки: держится, пока не готовы первые кадры */
 .loader {
