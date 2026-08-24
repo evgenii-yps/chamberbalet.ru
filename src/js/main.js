@@ -343,7 +343,7 @@ function init() {
 
   after?.addEventListener('focusin', () => { if (active) exitFlight(); });
 
-  for (const link of document.querySelectorAll('.skip-link, [data-to-contact]')) {
+  for (const link of document.querySelectorAll('.skip-link')) {
     link.addEventListener('click', (e) => { e.preventDefault(); toContact(); });
   }
 

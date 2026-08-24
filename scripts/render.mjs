@@ -285,7 +285,6 @@ export function createRenderer({ debug = false, images = { photos: {}, og: null 
     return [
       '<header class="topbar">',
       `<span class="topbar__name">${esc(C.site.organisation.name)}</span>`,
-      `<a class="topbar__link" href="#${esc(C.contactSection.id)}" data-to-contact>${esc(C.ui.toContact)}</a>`,
       '</header>',
     ].join('');
   }
