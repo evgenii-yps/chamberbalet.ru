@@ -121,9 +121,22 @@
 .contact__list { display: grid; gap: 1.4rem 3rem; grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr)); margin: clamp(2rem, 5vh, 3rem) 0 0; }
 .contact__list dt { font-size: var(--step--1); letter-spacing: .14em; text-transform: uppercase; color: var(--brass); }
 .contact__list dd { margin: .4em 0 0; font-size: var(--step-1); }
-.contact__list a { text-decoration: none; border-bottom: 1px solid var(--brass-40); }
+.contact__list a {
+  text-decoration-line: underline;
+  text-decoration-thickness: 1px;
+  transition: text-decoration-thickness var(--t-out) var(--e-out);
+}
 @media (hover: hover) and (pointer: fine) {
-  .contact__list a:hover { border-bottom-color: var(--brass); }
+  .contact__list a:hover {
+    text-decoration-thickness: 3px;
+    transition: text-decoration-thickness var(--t-in) var(--e-in);
+  }
+}
+.contact__list a:active {
+  text-decoration-thickness: 3px;
+  text-decoration-color: var(--flame);
+  transition: text-decoration-thickness var(--t-press) var(--e-press),
+              text-decoration-color var(--t-press) var(--e-press);
 }
 
 /* Подвал */
