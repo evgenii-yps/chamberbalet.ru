@@ -32,7 +32,6 @@ h1, h2, h3 {
 p { margin: 0; }
 
 a { color: inherit; text-decoration-color: var(--brass-40); text-underline-offset: .22em; }
-a:hover { text-decoration-color: var(--brass); }
 
 button {
   font: inherit;
@@ -44,8 +43,8 @@ button {
 }
 
 :focus-visible {
-  outline: 2px solid var(--flame);
-  outline-offset: 3px;
+  outline: var(--focus-width) solid var(--flame);
+  outline-offset: var(--focus-offset);
   border-radius: var(--radius);
 }
 
@@ -118,11 +117,62 @@ button {
 .topbar__name { color: var(--cream-55); }
 .topbar__link {
   color: var(--cream);
-  text-decoration: none;
-  border-bottom: 1px solid var(--brass-40);
+  /* Подчёркивание через text-decoration, не border-bottom: border не
+     разрывается на descender'ах. Цвет и отступ — от общего правила a. */
+  text-decoration-line: underline;
+  text-decoration-thickness: 1px;
+  /* Зона нажатия 44 px, порог WCAG 2.5.5 AAA. Паддингами, не height: 1lh —
+     фактическая высота строки, поэтому 44 выходит и на 390, и на 1280, где
+     кегль плавает. Цель 44,5: раскладка округляет доли пикселя, ровно на 44
+     замер давал 43,98. */
+  padding-block: calc((44.5px - 1lh) / 2);
+  position: relative;          /* якорь приводочной линейки */
   pointer-events: auto;
+  /* ЗАМЕРЕНО: Chromium 141 не анимирует text-decoration-thickness — толщина
+     прыгает 1 → 3 px мгновенно. Объявление верно по спецификации и оставлено
+     на будущее; цвет подчёркивания анимируется штатно. */
+  transition: text-decoration-thickness var(--t-out) var(--e-out);
 }
-.topbar__link:hover { border-bottom-color: var(--brass); }
+@media (hover: hover) and (pointer: fine) {
+  .topbar__link:hover {
+    text-decoration-thickness: 3px;
+    transition: text-decoration-thickness var(--t-in) var(--e-in);
+  }
+}
+.topbar__link:active {
+  text-decoration-thickness: 3px;
+  text-decoration-color: var(--flame);
+  transition: text-decoration-thickness var(--t-press) var(--e-press),
+              text-decoration-color var(--t-press) var(--e-press);
+}
+
+/* Приводочная линейка. Единственная на сайте: знак работает, пока он редкий.
+   Ширина рамки постоянная, меняется только сдвиг наружу — габарит ссылки не
+   меняется ни в одном состоянии и соседей не двигает. Не масштабирует, не
+   заливает, не даёт тени: это жест приводки, а не подсветка. */
+.topbar__link::after {
+  content: "";
+  position: absolute;
+  inset: calc(var(--gauge-rest) * -1);
+  border: 1px solid var(--brass);
+  pointer-events: none;
+  transition: inset var(--t-out) var(--e-out);
+}
+@media (hover: hover) and (pointer: fine) {
+  .topbar__link:hover::after {
+    inset: calc(var(--gauge-hover) * -1);
+    transition: inset var(--t-in) var(--e-in);
+  }
+}
+.topbar__link:active::after {
+  inset: var(--gauge-press);
+  transition: inset var(--t-press) var(--e-press);
+}
+
+/* Кольцо фокуса наружу линейки: 3 px от рамки, то есть 8 px от ссылки. Иначе
+   кольцо на 3 px ложится внутрь рамки на 5 px и пересекает её. Единственное
+   отступление от единого кольца, предписано Решением 4. */
+.topbar__link:focus-visible { outline-offset: calc(var(--focus-offset) + var(--gauge-rest)); }
 
 /* Экран загрузки: держится, пока не готовы первые кадры */
 .loader {

@@ -209,7 +209,9 @@
   border: 1px solid var(--brass-40);
   transition: background 300ms ease, border-color 300ms ease, transform 300ms ease;
 }
-.rail__dot:hover::before { border-color: var(--brass); }
+@media (hover: hover) and (pointer: fine) {
+  .rail__dot:hover::before { border-color: var(--brass); }
+}
 .rail__dot[aria-current='true']::before {
   background: var(--flame);
   border-color: var(--flame);
