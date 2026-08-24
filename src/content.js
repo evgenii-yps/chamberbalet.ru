@@ -321,6 +321,5 @@ export const ui = {
   railLabel: 'Главы',
   skipLink: 'К контактам',
   liveLabelPrefix: 'Глава: ',
-  toContact: 'Контакт',
   footer: '© Камерный театр балета',
 };

@@ -162,24 +162,18 @@ html:not(.js) .reveal { opacity: 1; transform: none; }
   .reveal { opacity: 1; transform: none; }
 }
 
-/* Уменьшенное движение: интерфейс. Гасится ПЕРЕХОД, не состояние — линейка
-   по-прежнему на 5 / 2 / 0 px, подчёркивание на 1 / 3 px, просто без движения
-   между ними. 1ms, а не 0.01ms: столько же у --reveal. Перечислением, а не
-   голым a: .skip-link попадает сюда явно, кольцо фокуса не трогаем.
+/* Уменьшенное движение: интерфейс. Гасится ПЕРЕХОД, не состояние — подчёркивание
+   по-прежнему на 1 / 3 px, просто без движения между ними. 1ms, а не 0.01ms:
+   столько же у --reveal. Перечислением, а не голым a: .skip-link попадает сюда
+   явно, кольцо фокуса не трогаем.
 
    Состояния перечислены поимённо, и блок стоит здесь, а не в base.css: правила
    :hover и :active объявляют transition сокращённой формой, а она
-   переустанавливает длительность, и .topbar__link::after её не перебивает.
+   переустанавливает длительность, и голый .contact__list a её не перебивает.
    sections.css собирается последним из четырёх файлов — отсюда блок выигрывает
    и у base.css, и у собственных правил файла. */
 @media (prefers-reduced-motion: reduce) {
   .skip-link,
-  .topbar__link,
-  .topbar__link:hover,
-  .topbar__link:active,
-  .topbar__link::after,
-  .topbar__link:hover::after,
-  .topbar__link:active::after,
   .contact__list a,
   .contact__list a:hover,
   .contact__list a:active { transition-duration: 1ms; }
