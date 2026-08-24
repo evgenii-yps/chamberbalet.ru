@@ -145,7 +145,7 @@ button {
    давала прежняя граница, съедало бы любое изменение названия. С 401 px и
    выше действуют обычные. */
 @media (max-width: 400px) {
-  .topbar { padding-left: 8px; padding-right: 8px; }
+  .topbar { padding-left: 4px; padding-right: 4px; }
   .topbar__name { font-size: 20px; letter-spacing: .10em; }
 }
 
