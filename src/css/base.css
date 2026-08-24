@@ -122,9 +122,15 @@ button {
      подчёркивания приходят от общего правила a — здесь только толщина. */
   text-decoration-line: underline;
   text-decoration-thickness: 1px;
-  /* 1 px вместо снятого border-bottom: без него шапка теряет ровно пиксель
-     высоты — замерено, 64,17 → 63,17 на 390 и 64,98 → 63,98 на 1280. */
-  padding-bottom: 1px;
+  /* Зона нажатия 44 px — порог WCAG 2.5.5 уровня AAA. Паддингами, не
+     height: 1lh — фактическая высота строки, поэтому 44 выходит и на 390, и
+     на 1280, где кегль плавает по ширине окна. Цель 44,5, а не 44: раскладка
+     округляет доли пикселя, и ровно на 44 замер давал 43,98 — на сотую ниже
+     порога. Полпикселя запаса эту сотую съедают. Отменяет padding-bottom: 1px,
+     которым фаза 3 добирала высоту снятого border-bottom: с этими паддингами
+     пиксель уже ничего не решает. */
+  padding-block: calc((44.5px - 1lh) / 2);
+  position: relative;          /* якорь приводочной линейки */
   pointer-events: auto;
   /* ЗАМЕРЕНО: Chromium 141 text-decoration-thickness НЕ анимирует — толщина
      прыгает 1 → 3 px мгновенно, при заявленных 240/160 мс. Объявление
@@ -145,6 +151,37 @@ button {
   transition: text-decoration-thickness var(--t-press) var(--e-press),
               text-decoration-color var(--t-press) var(--e-press);
 }
+
+/* Приводочная линейка. Единственная на сайте: опознавательный знак работает,
+   пока он редкий; поставленный на всё, он становится стилем рамок.
+   Ширина рамки постоянная, меняется только сдвиг наружу, поэтому габарит
+   ссылки не меняется ни в одном состоянии и соседей не двигает.
+   Не масштабирует, не заливает, не даёт тени и не светится — это печатный
+   жест приводки, а не подсветка. */
+.topbar__link::after {
+  content: "";
+  position: absolute;
+  inset: calc(var(--gauge-rest) * -1);
+  border: 1px solid var(--brass);
+  pointer-events: none;
+  transition: inset var(--t-out) var(--e-out);
+}
+@media (hover: hover) and (pointer: fine) {
+  .topbar__link:hover::after {
+    inset: calc(var(--gauge-hover) * -1);
+    transition: inset var(--t-in) var(--e-in);
+  }
+}
+.topbar__link:active::after {
+  inset: var(--gauge-press);
+  transition: inset var(--t-press) var(--e-press);
+}
+
+/* Кольцо фокуса выносится наружу линейки: 3 px от рамки в покое, то есть
+   8 px от самой ссылки. Иначе кольцо на отступе 3 px ложится внутрь рамки,
+   стоящей на 5 px, и они пересекаются. Единственное отступление от единого
+   кольца на весь сайт, и оно предписано Решением 4 дизайн-системы. */
+.topbar__link:focus-visible { outline-offset: calc(var(--focus-offset) + var(--gauge-rest)); }
 
 /* Экран загрузки: держится, пока не готовы первые кадры */
 .loader {
