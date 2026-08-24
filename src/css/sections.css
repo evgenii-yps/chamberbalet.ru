@@ -122,7 +122,9 @@
 .contact__list dt { font-size: var(--step--1); letter-spacing: .14em; text-transform: uppercase; color: var(--brass); }
 .contact__list dd { margin: .4em 0 0; font-size: var(--step-1); }
 .contact__list a { text-decoration: none; border-bottom: 1px solid var(--brass-40); }
-.contact__list a:hover { border-bottom-color: var(--brass); }
+@media (hover: hover) and (pointer: fine) {
+  .contact__list a:hover { border-bottom-color: var(--brass); }
+}
 
 /* Подвал */
 

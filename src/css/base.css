@@ -121,7 +121,9 @@ button {
   border-bottom: 1px solid var(--brass-40);
   pointer-events: auto;
 }
-.topbar__link:hover { border-bottom-color: var(--brass); }
+@media (hover: hover) and (pointer: fine) {
+  .topbar__link:hover { border-bottom-color: var(--brass); }
+}
 
 /* Экран загрузки: держится, пока не готовы первые кадры */
 .loader {
