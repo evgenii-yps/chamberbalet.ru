@@ -145,7 +145,7 @@ export function createRenderer({ debug = false, images = { photos: {}, og: null 
       '</div>',
       '<div class="opener__in">',
       `<p class="opener__kicker">${esc(C.hero.kicker)}</p>`,
-      `<h1 class="opener__title" id="opener-title">${esc(C.hero.title)}</h1>`,
+      `<h1 class="opener__title" id="opener-title">${esc(C.site.organisation.name)}</h1>`,
       `<p class="opener__lede">${esc(C.hero.lede)}</p>`,
       '</div>',
       '</section>',
@@ -287,6 +287,14 @@ export function createRenderer({ debug = false, images = { photos: {}, og: null 
       '<header class="topbar">',
       `<span class="topbar__name">${esc(C.site.organisation.name)}</span>`,
       '</header>',
+      // Летящее название. Стоит рядом с шапкой, а не внутри неё: шапка
+      // position: absolute и уезжает вместе со страницей, а морфинг идёт по
+      // экрану. Разметка декоративная — читающему её озвучил бы h1 первого
+      // экрана, поэтому aria-hidden. Без JS узел скрыт стилями, и название
+      // на первом экране несёт h1, как и до фазы 2.
+      '<div class="wordmark" aria-hidden="true">',
+      `<span class="wordmark__line">${esc(C.site.organisation.name)}</span>`,
+      '</div>',
     ].join('');
   }
 
@@ -345,7 +353,13 @@ export function createRenderer({ debug = false, images = { photos: {}, og: null 
   function renderPreload() {
     const out = [];
     for (const face of fonts.faces || []) {
-      if (face.weight !== 400 || !/cyrillic/.test(face.source || '')) continue;
+      // Латиница веса 400 предзагружается наравне с кириллицей, хотя видимого
+      // латинского текста на первом экране нет. Пробел и точка попадают в
+      // латинскую подрезку (unicode-range с U+20), и без предзагрузки её
+      // ширины приезжают позже первой отрисовки. Текст первого экрана
+      // центрирован построчно, поэтому смена ширин двигает каждую строку —
+      // замерено до 47,53 px по x. Это давало CLS 0,000826 у Lighthouse.
+      if (face.weight !== 400) continue;
       out.push(`<link rel="preload" as="font" type="font/woff2" crossorigin href="/assets/fonts/${face.file}">`);
     }
     // Предзагружаем только нулевой кадр — он же фон первого экрана. Остальные

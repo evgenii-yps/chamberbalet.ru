@@ -120,6 +120,7 @@
   min-height: 26rem;
   display: flex;
   align-items: center;
+  justify-content: center;
   padding: 0 var(--gutter);
   overflow: hidden;
 }
@@ -135,10 +136,17 @@
 .opener__video { opacity: 0; transition: opacity 1s var(--flight-ease); }
 .opener__video.is-ready { opacity: 1; }
 
-.opener__in { position: relative; max-width: min(48rem, 90vw); }
+.opener__in {
+  position: relative;
+  /* 50rem, а не 48: при 48 заголовок «Камерный театр балета» на плавающем
+     кегле упирался в потолок и переносился начиная с 1292 px. */
+  max-width: min(50rem, 90vw);
+  text-align: center;
+}
 .opener__kicker {
   display: flex;
   align-items: center;
+  justify-content: center;   /* text-align центрирует строки, не флекс-строку */
   gap: .75em;
   font-size: var(--step--1);
   font-weight: 500;
@@ -165,6 +173,10 @@
   font-size: var(--step-1);
   color: var(--cream-70);
   max-width: 42ch;
+  /* Свой потолок в 42ch держит длину строки прозы, но блок с max-width сам
+     не центрируется: без auto абзац прижимался влево на 85 px при 768 и на
+     269 px при 1920. text-align центрирует строки внутри бокса, не бокс. */
+  margin-inline: auto;
   text-shadow: 0 1px 24px rgba(7, 5, 6, .9);
 }
 
@@ -325,10 +337,25 @@ html:not(.js) .rail { display: none; }
 /* Узкий экран: текст не должен подлезать под рельс глав, а рубрика в две
    строки не должна разъезжаться со своей чертой. */
 @media (max-width: 34rem) {
+  /* Поля остаются асимметричными. Симметричные 20/20 при кегле 29 сажают
+     глифы заголовка на рельс: на 320 правый край строки заходит в ячейку
+     точки на 9,45 px и в видимый квадратик на 0,95 px, задевая точки 3 и 4.
+     Штатная проверка qa ловит это же по боксам и падает на .opener__kicker.
+     Следствие: заголовок стоит не по центру окна, а по центру поля между
+     20 и 56 — на 18 px левее. Решение за владельцем, см. отчёт. */
   .opener { padding-right: calc(var(--gutter) + 2.25rem); }
+  .opener__title { font-size: 29px; }
   .layer__caption { width: min(45rem, 100% - var(--gutter) - 2.25rem); }
   .opener__kicker::before, .layer__kicker::before { display: none; }
   .opener__kicker { letter-spacing: .18em; }
+}
+
+/* Узкие экраны: при 29 px строке нужно 266,92 px, а после правого поля под
+   рельс остаётся ширина минус 76. Одной строкой это укладывается только с
+   343 px, а порог запаса в 6 px берётся с 349. Поэтому граница 348, а не
+   343: полоса 343…348 давала запас от +0,08 до +5,08. */
+@media (max-width: 348px) {
+  .opener__title { font-size: 25px; }
 }
 
 /* Мелкая высота: подпись не должна упираться в край */
