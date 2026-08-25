@@ -350,6 +350,12 @@ html:not(.js) .rail { display: none; }
   .opener__kicker { letter-spacing: .18em; }
 }
 
+/* Самый узкий экран: при 29 px строка не помещается в 244 px, остающиеся
+   после правого поля под рельс. 25 px укладываются с запасом. */
+@media (max-width: 320px) {
+  .opener__title { font-size: 25px; }
+}
+
 /* Мелкая высота: подпись не должна упираться в край */
 @media (max-height: 520px) {
   .layer__caption { bottom: 1.25rem; }
