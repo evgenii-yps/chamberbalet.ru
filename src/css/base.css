@@ -160,6 +160,13 @@ html.opener-on .topbar__name { visibility: hidden; }
 @media (prefers-reduced-motion: reduce) {
   .topbar__name { visibility: hidden; }
 }
+/* Тот же случай без флага: скрипт не выполнился, класс opener-on не появится
+   никогда, и подпись встала бы рядом с заголовком — два одинаковых названия
+   на одном экране. До фазы 2 они хотя бы различались регистром, теперь это
+   дословный повтор. Обоснование то же, что у reduce: шапка absolute и в
+   секциях всё равно уезжает, а заголовок — единственное место, где название
+   есть. */
+html:not(.js) .topbar__name { visibility: hidden; }
 
 .topbar__name,
 .wordmark__line {
