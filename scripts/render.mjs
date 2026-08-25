@@ -345,7 +345,13 @@ export function createRenderer({ debug = false, images = { photos: {}, og: null 
   function renderPreload() {
     const out = [];
     for (const face of fonts.faces || []) {
-      if (face.weight !== 400 || !/cyrillic/.test(face.source || '')) continue;
+      // Латиница веса 400 предзагружается наравне с кириллицей, хотя видимого
+      // латинского текста на первом экране нет. Пробел и точка попадают в
+      // латинскую подрезку (unicode-range с U+20), и без предзагрузки её
+      // ширины приезжают позже первой отрисовки. Текст первого экрана
+      // центрирован построчно, поэтому смена ширин двигает каждую строку —
+      // замерено до 47,53 px по x. Это давало CLS 0,000826 у Lighthouse.
+      if (face.weight !== 400) continue;
       out.push(`<link rel="preload" as="font" type="font/woff2" crossorigin href="/assets/fonts/${face.file}">`);
     }
     // Предзагружаем только нулевой кадр — он же фон первого экрана. Остальные
