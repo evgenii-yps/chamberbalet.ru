@@ -77,7 +77,7 @@ async function buildCss(fontCss) {
 
 /* --------------- скрипты: хэш в имени, импорты переписываются --------------- */
 
-const JS_FILES = ['flight.js', 'nav.js', 'hero-video.js', 'reveal.js', 'main.js'];
+const JS_FILES = ['flight.js', 'nav.js', 'hero-video.js', 'reveal.js', 'wordmark.js', 'main.js'];
 
 async function buildJs() {
   const outDir = path.join(DIST, 'assets', 'js');

@@ -287,6 +287,14 @@ export function createRenderer({ debug = false, images = { photos: {}, og: null 
       '<header class="topbar">',
       `<span class="topbar__name">${esc(C.site.organisation.name)}</span>`,
       '</header>',
+      // Летящее название. Стоит рядом с шапкой, а не внутри неё: шапка
+      // position: absolute и уезжает вместе со страницей, а морфинг идёт по
+      // экрану. Разметка декоративная — читающему её озвучил бы h1 первого
+      // экрана, поэтому aria-hidden. Без JS узел скрыт стилями, и название
+      // на первом экране несёт h1, как и до фазы 2.
+      '<div class="wordmark" aria-hidden="true">',
+      `<span class="wordmark__line">${esc(C.site.organisation.name)}</span>`,
+      '</div>',
     ].join('');
   }
 

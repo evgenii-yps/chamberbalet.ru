@@ -198,8 +198,8 @@ async function inlineOne(template, jsDir, jsFiles, flightFile, opts) {
     css = css.replaceAll(`url('../fonts/${font}')`, `url('${uri}')`);
   }
 
-  /* скрипты: пять модулей в один, импорты и экспорты снимаются */
-  const modules = ['flight.', 'nav.', 'hero-video.', 'reveal.', 'main.'];
+  /* скрипты: шесть модулей в один, импорты и экспорты снимаются */
+  const modules = ['flight.', 'nav.', 'hero-video.', 'reveal.', 'wordmark.', 'main.'];
   const parts = [];
   for (const prefix of modules) {
     const file = jsFiles.find((f) => f.startsWith(prefix));

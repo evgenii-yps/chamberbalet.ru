@@ -6,6 +6,7 @@
  * листаются нативно.
  */
 import { createFlight, OPENER_AT } from './flight.js';
+import { createWordmark } from './wordmark.js';
 import { createNav } from './nav.js';
 import { setupHeroVideo } from './hero-video.js';
 import { setupReveal } from './reveal.js';
@@ -160,6 +161,14 @@ function init() {
   const photos = createPhotoLoader(world);
   const live = document.getElementById('flight-live');
   const scrim = document.querySelector('.flight__scrim');
+  const wordmark = createWordmark({
+    el: document.querySelector('.wordmark'),
+    line: document.querySelector('.wordmark__line'),
+    title: document.querySelector('.opener__title'),
+  });
+  // Ширины глифов приезжают вместе со шрифтом. До этого момента замер даст
+  // метрики подстановочной гарнитуры, и коэффициент масштаба разойдётся.
+  document.fonts?.ready.then(() => wordmark?.measure());
   const rail = document.querySelector('.rail');
   const railDots = rail ? Array.from(rail.querySelectorAll('.rail__dot')) : [];
   const hint = document.querySelector('.hint');
@@ -188,7 +197,13 @@ function init() {
       opener.style.opacity = opacity.toFixed(3);
       opener.style.transform = `scale(${(1 + (1 - opacity) * 0.06).toFixed(4)})`;
       opener.style.visibility = opacity < 0.01 ? 'hidden' : 'visible';
-      // Пока первый экран виден, название стоит в нём, а не в шапке
+      // Матрица ставится ДО класса: узел проявляется уже на своём месте.
+      // Обратный порядок дал бы один кадр названия в положении подписи —
+      // перед тем, как оно прыгнет вниз, в заголовок.
+      wordmark?.apply(opacity);
+      // Пока первый экран виден, название стоит в нём, а не в шапке.
+      // Тот же класс отдаёт слово летящему узлу и забирает у подписи: на
+      // границе они совпадают геометрически, потому что стили общие.
       document.documentElement.classList.toggle('opener-on', opacity >= 0.01);
       // Первый экран несёт своё затемнение. Экранный слой поднимается ровно
       // настолько, насколько уходит первый экран, — плотность не удваивается
@@ -349,7 +364,12 @@ function init() {
     link.addEventListener('click', (e) => { e.preventDefault(); toContact(); });
   }
 
-  window.addEventListener('resize', debounce(() => flight.resize(), RESIZE_DEBOUNCE), { passive: true });
+  window.addEventListener('resize', debounce(() => {
+    flight.resize();
+    // Кегли заголовка и подписи держатся clamp и медиазапросами — после
+    // смены ширины и коэффициент, и оба центра другие.
+    wordmark?.measure();
+  }, RESIZE_DEBOUNCE), { passive: true });
   reduceMotion.addEventListener?.('change', (e) => { if (e.matches) exitFlight(); });
 
   enterFlight(0);
