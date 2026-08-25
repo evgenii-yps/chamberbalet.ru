@@ -28,12 +28,17 @@
  *
  * Сжатие — brotli, теми же типами, что перечислены в .htaccess. woff2, avif и
  * прочее уже сжато, поэтому идёт как есть: сервер их не трогает.
+ *
+ * К телам прибавляются заголовки ответа по HEADERS_PER_REQUEST_ESTIMATE —
+ * величина оценочная, обоснование при ней же в config.mjs. Без неё счёт был
+ * мягче Lighthouse на 4 195 Б: сборка проходила бы статику и не проходила
+ * Lighthouse. С ней остаток — единицы байт.
  */
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import zlib from 'node:zlib';
 import {
-  DIST, BUILD, TRANSFER_BUDGET, TRANSFER_PROFILE,
+  DIST, BUILD, TRANSFER_BUDGET, TRANSFER_PROFILE, HEADERS_PER_REQUEST_ESTIMATE,
   FIRST_SCREEN_SLIDES, requestWidthAt, bytes,
 } from './config.mjs';
 import { layers } from '../src/content.js';
@@ -80,23 +85,43 @@ const photos = layers.slice(0, FIRST_SCREEN_SLIDES).map((l) => ({ slug: l.photo,
 const smallRefs = [...html.matchAll(/<link[^>]*rel="(icon|manifest)"[^>]*href="([^"]+)"/g)].map((m) => m[2]);
 
 /* ── счёт ────────────────────────────────────────────────────────────── */
-const sum = async (files) => (await Promise.all(files.map(weigh))).reduce((s, n) => s + n, 0);
-const codeBytes = await sum([...css, ...js]);
-const docBytes = zlib.brotliCompressSync(Buffer.from(html)).length;
-const fontBytes = fonts.reduce((s, f) => s + f.size, 0);
-const photoBytes = photos.reduce((s, p) => s + (p?.size || 0), 0);
-const smallBytes = await sum(smallRefs.map((r) => path.join(DIST, r.replace(/^\//, ''))));
-const transferBytes = docBytes + codeBytes + fontBytes + photoBytes + smallBytes;
+/** Один запрос: тело плюс заголовки. Класс заголовков решает расширение —
+ *  у сжатых ответов есть Content-Encoding и Vary, у прочих нет. */
+const headersFor = (file) =>
+  (COMPRESSIBLE.has(path.extname(file)) ? HEADERS_PER_REQUEST_ESTIMATE.compressed
+                                        : HEADERS_PER_REQUEST_ESTIMATE.plain);
+
+async function group(label, files) {
+  const body = (await Promise.all(files.map(weigh))).reduce((s, n) => s + n, 0);
+  const headers = files.reduce((s, f) => s + headersFor(f), 0);
+  return { label, files, body, headers, total: body + headers };
+}
+
+const fontFiles = fonts.map((f) => path.join(DIST, 'assets', 'fonts', f.file));
+const photoFiles = photos.map((p) => path.join(DIST, 'assets', 'photo', p.file));
+const smallFiles = smallRefs.map((r) => path.join(DIST, r.replace(/^\//, '')));
+
+const groups = [
+  await group('документ', [path.join(DIST, 'index.html')]),
+  await group('стили', css),
+  await group('скрипты', js),
+  await group(`шрифты (веса ${[...usedWeights].sort().join(', ')})`, fontFiles),
+  await group(`кадры ×${FIRST_SCREEN_SLIDES} @${photos[0]?.width}`, photoFiles),
+  await group('иконка и манифест', smallFiles),
+];
+
+const codeGroups = groups.filter((g) => g.label === 'стили' || g.label === 'скрипты');
+const codeBytes = codeGroups.reduce((s, g) => s + g.total, 0);
+const transferBytes = groups.reduce((s, g) => s + g.total, 0);
+const requests = groups.reduce((s, g) => s + g.files.length, 0);
+const headersTotal = groups.reduce((s, g) => s + g.headers, 0);
 
 console.log(`\nТрансфер первой загрузки — статически, brotli, профиль ${TRANSFER_PROFILE.width}×${TRANSFER_PROFILE.height} ×${TRANSFER_PROFILE.dpr}`);
-console.table([
-  { что: 'документ', файлов: 1, вес: bytes(docBytes) },
-  { что: 'стили', файлов: css.length, вес: bytes(await sum(css)) },
-  { что: 'скрипты', файлов: js.length, вес: bytes(await sum(js)) },
-  { что: `шрифты (веса ${[...usedWeights].sort().join(', ')})`, файлов: fonts.length, вес: bytes(fontBytes) },
-  { что: `кадры ×${FIRST_SCREEN_SLIDES} @${photos[0]?.width}`, файлов: photos.length, вес: bytes(photoBytes) },
-  { что: 'иконка и манифест', файлов: smallRefs.length, вес: bytes(smallBytes) },
-]);
+console.table(groups.map((g) => ({
+  что: g.label, запросов: g.files.length, тела: bytes(g.body),
+  'заголовки (оценка)': bytes(g.headers), всего: bytes(g.total),
+})));
+console.log(`   запросов ${requests}, из них заголовков — ${bytes(headersTotal)} по оценке`);
 
 const over = [];
 for (const [label, got, cap] of [
