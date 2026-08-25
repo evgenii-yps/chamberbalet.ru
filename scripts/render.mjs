@@ -145,7 +145,7 @@ export function createRenderer({ debug = false, images = { photos: {}, og: null 
       '</div>',
       '<div class="opener__in">',
       `<p class="opener__kicker">${esc(C.hero.kicker)}</p>`,
-      `<h1 class="opener__title" id="opener-title">${esc(C.hero.title)}</h1>`,
+      `<h1 class="opener__title" id="opener-title">${esc(C.site.organisation.name)}</h1>`,
       `<p class="opener__lede">${esc(C.hero.lede)}</p>`,
       '</div>',
       '</section>',

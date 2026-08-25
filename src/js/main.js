@@ -188,6 +188,8 @@ function init() {
       opener.style.opacity = opacity.toFixed(3);
       opener.style.transform = `scale(${(1 + (1 - opacity) * 0.06).toFixed(4)})`;
       opener.style.visibility = opacity < 0.01 ? 'hidden' : 'visible';
+      // Пока первый экран виден, название стоит в нём, а не в шапке
+      document.documentElement.classList.toggle('opener-on', opacity >= 0.01);
       // Первый экран несёт своё затемнение. Экранный слой поднимается ровно
       // настолько, насколько уходит первый экран, — плотность не удваивается
       if (scrim) scrim.style.opacity = (1 - opacity).toFixed(3);

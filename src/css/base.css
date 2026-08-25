@@ -120,6 +120,11 @@ button {
   text-transform: uppercase;
   pointer-events: none;
 }
+/* На первом экране название несёт заголовок, а не шапка. Класс ставит
+   main.js по значению onOpener. visibility, а не display: высота шапки не
+   меняется, значит и сдвига раскладки нет. */
+html.opener-on .topbar__name { visibility: hidden; }
+
 .topbar__name {
   font-family: var(--display);
   /* 400. Начертание 600 в сборке есть, и визуально оно плотнее, но включение
