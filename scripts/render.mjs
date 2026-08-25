@@ -117,6 +117,7 @@ export function createRenderer({ debug = false, images = { photos: {}, og: null 
       `<article class="layer${layer.tall ? ' layer--tall' : ''}" style="--i:${i}"`,
       ` data-index="${i}" data-chapter="${esc(label)}"`,
       layer.bright ? ' data-bright' : '',
+      layer.topScrim ? ' data-top-scrim' : '',
       chapter ? ` aria-labelledby="chapter-${number + 1}-title"` : ` aria-label="${esc(layer.alt)}"`,
       '>',
       `<div class="layer__photo" data-photo="${esc(layer.photo)}">${photoInner}</div>`,
