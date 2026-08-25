@@ -12,7 +12,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import zlib from 'node:zlib';
 import { fileURLToPath } from 'node:url';
-import { TRANSFER_BUDGET, bytes } from '../config.mjs';
+import { TRANSFER_BUDGET, TRANSFER_PROFILE, bytes } from '../config.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 /** По умолчанию dist/, но можно указать другую сборку: npm run lighthouse -- <путь> */
@@ -53,7 +53,10 @@ const chrome = await chromeLauncher.launch({
 });
 const result = await lighthouse('http://localhost:4180/', {
   port: chrome.port, output: 'json', logLevel: 'error',
-  screenEmulation: { mobile: true, width: 412, height: 823, deviceScaleFactor: 1.75, disabled: false },
+  // Профиль — из config.mjs: по нему же считает статический сторож
+  // check-transfer.mjs, и разъехаться они не должны.
+  screenEmulation: { mobile: true, width: TRANSFER_PROFILE.width, height: TRANSFER_PROFILE.height,
+                     deviceScaleFactor: TRANSFER_PROFILE.dpr, disabled: false },
   formFactor: 'mobile',
 });
 const c = result.lhr.categories;
