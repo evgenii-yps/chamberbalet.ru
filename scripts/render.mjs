@@ -7,7 +7,7 @@
  * сборке она рисуется видимой пометкой.
  */
 import * as C from '../src/content.js';
-import { PHOTO_WIDTHS } from './config.mjs';
+import { PHOTO_WIDTHS, GALLERY_EAGER } from './config.mjs';
 
 /** sizes: кадр показывается вплоть до масштаба 2,6, поэтому 100vw занижает
  *  потребность и браузер берёт слишком мелкий вариант. */
@@ -23,7 +23,13 @@ export const esc = (s) => String(s)
 /** Значения, которые нельзя показывать. */
 const blank = C.isBlank;
 
-export function createRenderer({ debug = false, images = { photos: {}, og: null }, video = { sources: [], poster: [] }, fonts = { faces: [] } }) {
+export function createRenderer({
+  debug = false,
+  images = { photos: {}, og: null, gallery: [], seam: null },
+  video = { sources: [], poster: [] },
+  sectionVideo = { source: null, poster: null },
+  fonts = { faces: [] },
+}) {
   /**
    * Заполненное значение → само значение.
    * Пустое → null в проде (блок исчезает) или пометка в отладке.
@@ -113,6 +119,19 @@ export function createRenderer({ debug = false, images = { photos: {}, og: null 
     const number = chapter ? C.chapters.findIndex((c) => c.index === i) : -1;
     const label = chapter ? `${chapter.kicker}. ${stripTags(chapter.title)}` : layer.alt;
 
+    // Кадрирование слота едет инлайновыми переменными, а не классом на каждый
+    // слайд: значения живут в content.js, и добавление слайда не должно
+    // требовать правки CSS. Пустые не печатаются — в CSS у каждой свой var().
+    const crop = layer.crop || {};
+    const cropVars = [
+      crop.position && `--crop:${crop.position}`,
+      crop.scale && `--crop-scale:${crop.scale}`,
+      crop.origin && `--crop-origin:${crop.origin}`,
+      crop.narrow?.position && `--crop-n:${crop.narrow.position}`,
+      crop.narrow?.scale && `--crop-scale-n:${crop.narrow.scale}`,
+      crop.narrow?.origin && `--crop-origin-n:${crop.narrow.origin}`,
+    ].filter(Boolean).join(';');
+
     return [
       `<article class="layer${layer.tall ? ' layer--tall' : ''}" style="--i:${i}"`,
       ` data-index="${i}" data-chapter="${esc(label)}"`,
@@ -120,7 +139,8 @@ export function createRenderer({ debug = false, images = { photos: {}, og: null 
       layer.topScrim ? ' data-top-scrim' : '',
       chapter ? ` aria-labelledby="chapter-${number + 1}-title"` : ` aria-label="${esc(layer.alt)}"`,
       '>',
-      `<div class="layer__photo" data-photo="${esc(layer.photo)}">${photoInner}</div>`,
+      `<div class="layer__photo" data-photo="${esc(layer.photo)}"` +
+        (cropVars ? ` style="${cropVars}"` : '') + `>${photoInner}</div>`,
       chapter ? caption(chapter, number, C.chapters.length) : '',
       '</article>',
     ].join('');
@@ -200,6 +220,144 @@ export function createRenderer({ debug = false, images = { photos: {}, og: null 
     ].join(''));
   }
 
+  /* ---------------------- стык, видео, галерея, файлы ---------------------- */
+
+  /**
+   * Стык. Растворяет последний кадр пролёта в тёплом грунте.
+   *
+   * Размытие идёт по заранее подготовленной крохе (LQIP), а не через
+   * backdrop-filter: тот на мобильном при прокрутке роняет кадры, потому что
+   * заставляет композитор пересчитывать фон под каждым кадром движения. Здесь
+   * размывается статическая картинка 20 px шириной — стоимость нулевая.
+   *
+   * Блок декоративный целиком: aria-hidden, в поток чтения не входит.
+   */
+  function renderSeam() {
+    if (!images.seam) return '';
+    return [
+      '<div class="seam" aria-hidden="true">',
+      '<div class="seam__blur"></div>',
+      '<div class="seam__wash"></div>',
+      '<div class="seam__grain"></div>',
+      '</div>',
+    ].join('');
+  }
+
+  /**
+   * Видео.
+   *
+   * preload="none" и никакого poster в разметке: атрибут ставит JS, когда
+   * секция входит в область просмотра. Поставь его здесь — и постер уедет в
+   * первую загрузку, где ему делать нечего.
+   *
+   * Контролы нативные. Никаких iframe YouTube / VK / Rutube: внешние запросы,
+   * вес, трекеры и риск, что у площадки этот домен закрыт.
+   */
+  function renderVideoSection() {
+    const v = C.videoSection;
+    const src = sectionVideo.source;
+    if (!src) return '';
+    const caption = val(v.caption);
+    return section(v.id, [
+      `<p class="kicker">${esc(v.kicker)}</p>`,
+      `<h2 class="section__title">${esc(v.title)}</h2>`,
+      `<figure class="filmstrip${v.vertical ? ' filmstrip--tall' : ''}">`,
+      `<video class="filmstrip__video" controls preload="none" playsinline`,
+      ` width="${src.width}" height="${src.height}"`,
+      ` data-poster="/assets/photo/${sectionVideo.poster.file}">`,
+      `<source src="/assets/video/${src.file}" type="${src.mime}">`,
+      '</video>',
+      caption ? `<figcaption class="filmstrip__caption">${caption}</figcaption>` : '',
+      '</figure>',
+    ].join(''), ' section--video');
+  }
+
+  /**
+   * Галерея. Разметка полная и без JS: миниатюры — обычные ссылки на
+   * полноразмер. Лайтбокс перехватывает клик, когда скрипт жив; когда нет,
+   * кадр просто открывается по ссылке.
+   */
+  function renderGallery() {
+    const g = C.gallery;
+    const items = images.gallery || [];
+    if (!items.length) return '';
+
+    const cells = items.map((item, i) => [
+      `<li class="shots__cell">`,
+      `<a class="shots__link" href="/assets/gallery/${item.full.file}"`,
+      ` data-full="/assets/gallery/${item.full.file}"`,
+      ` data-width="${item.full.width}" data-height="${item.full.height}"`,
+      ` data-alt="${esc(item.alt)}"`,
+      ` aria-label="${esc(g.ui.open)}: ${esc(item.alt)}">`,
+      `<img src="/assets/gallery/${item.thumb.file}" alt="${esc(item.alt)}"`,
+      ` width="${item.thumb.width}" height="${item.thumb.height}"`,
+      i < GALLERY_EAGER ? ' decoding="async"' : ' loading="lazy" decoding="async"',
+      '>',
+      '</a></li>',
+    ].join('')).join('');
+
+    return section(g.id, [
+      `<p class="kicker">${esc(g.kicker)}</p>`,
+      `<h2 class="section__title">${esc(g.title)}</h2>`,
+      `<ul class="shots">${cells}</ul>`,
+      `<p class="shots__note">${esc(g.note)}</p>`,
+    ].join(''));
+  }
+
+  /** Лайтбокс. Один узел на всю галерею, пустой до открытия. */
+  function renderLightbox() {
+    const g = C.gallery;
+    if (!(images.gallery || []).length) return '';
+    return [
+      '<div class="lightbox" id="lightbox" role="dialog" aria-modal="true"',
+      ` aria-label="${esc(g.ui.label)}" hidden>`,
+      '<div class="lightbox__backdrop" data-close></div>',
+      '<figure class="lightbox__frame">',
+      '<img class="lightbox__img" alt="">',
+      '<figcaption class="lightbox__caption"><span class="lightbox__alt"></span>',
+      '<span class="lightbox__count"></span></figcaption>',
+      '</figure>',
+      `<button type="button" class="lightbox__btn lightbox__btn--prev" data-prev>`,
+      `<span class="visually-hidden">${esc(g.ui.prev)}</span></button>`,
+      `<button type="button" class="lightbox__btn lightbox__btn--next" data-next>`,
+      `<span class="visually-hidden">${esc(g.ui.next)}</span></button>`,
+      `<button type="button" class="lightbox__btn lightbox__btn--close" data-close>`,
+      `<span class="visually-hidden">${esc(g.ui.close)}</span></button>`,
+      '</div>',
+    ].join('');
+  }
+
+  /**
+   * Панель материалов.
+   *
+   * Ссылки пока нет. Кнопка при этом не исчезает и не ведёт в никуда: она
+   * приглушена и несёт aria-disabled, а рядом стоит строка о том, что папку
+   * ещё собирают. Администратор видит, что материалы будут, и не тратит клик.
+   */
+  function renderMaterials() {
+    const m = C.materials;
+    const href = blank(m.href) ? null : m.href;
+    const updated = val(m.updated);
+    const list = m.items.map((i) => `<li>${esc(i)}</li>`).join('');
+
+    const button = href
+      ? `<a class="panel__cta" href="${esc(href)}" target="_blank" rel="noopener noreferrer">${esc(m.cta)}</a>`
+      : `<span class="panel__cta panel__cta--off" role="link" aria-disabled="true" tabindex="0">${esc(m.cta)}</span>`;
+
+    return section(m.id, [
+      `<p class="kicker">${esc(m.kicker)}</p>`,
+      `<h2 class="section__title">${esc(m.title)}</h2>`,
+      '<div class="panel">',
+      `<p class="panel__lede">${esc(m.lede)}</p>`,
+      `<ul class="panel__list">${list}</ul>`,
+      button,
+      updated
+        ? `<p class="panel__updated">${esc(m.updatedLabel)}: ${updated}</p>`
+        : `<p class="panel__updated">${esc(m.pending)}</p>`,
+      '</div>',
+    ].join(''));
+  }
+
   function renderStats() {
     const s = C.statsSection;
     if (!any(s.items.map((i) => i.value))) return '';       // все слоты пусты — блока нет
@@ -272,14 +430,41 @@ export function createRenderer({ debug = false, images = { photos: {}, og: null 
     ].join(''));
   }
 
+  /**
+   * Порядок секций — E1 правки 06, под вопросы администратора площадки в том
+   * порядке, в каком они возникают:
+   *
+   *   стык        — граница пролёта и текста;
+   *   видео       — «как это выглядит вживую?»;
+   *   что от зала — «что вы у меня попросите?»  первое возражение, не ждёт;
+   *   репертуар   — «что вы можете сыграть?»;
+   *   три модели  — «как считаем деньги?»;
+   *   галерея     — «покажите больше, чем восемь кадров»;
+   *   материалы   — «дайте файлы, мне надо согласовать»;
+   *   контакт     — «с кем говорить?».
+   *
+   * «Театр в цифрах» стоит там же, где стоял, и в проде не выводится вовсе:
+   * все её значения — заглушки.
+   */
   function renderSections() {
-    return `<div class="after">${[
+    // Стык стоит ПЕРЕД .after, а не внутри него. Ему надо наехать на низ
+    // последнего кадра, а .after непрозрачен и своим фоном обрезал бы
+    // фотографию ровно той линией, которую стык и должен убрать.
+    return renderSeam() + `<div class="after">${[
+      renderVideoSection(),
       renderRequirements(),
       renderStats(),
       renderRepertoire(),
       renderModels(),
+      renderGallery(),
+      renderMaterials(),
       renderContact(),
-    ].join('')}</div>`;
+    ].join('')}</div>` +
+    // Лайтбокс стоит СНАРУЖИ .after намеренно. У .after свой контекст
+    // наложения (z-index: var(--z-section)), и любой ребёнок внутри него
+    // не может подняться выше самого .after — то есть выше 1, тогда как
+    // пролёт лежит на 100. Модальное окно оказалось бы под фотографией.
+    renderLightbox();
   }
 
   function renderTopbar() {

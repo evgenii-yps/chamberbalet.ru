@@ -17,6 +17,7 @@ import { buildVideo } from './build-video.mjs';
 import { buildFonts } from './build-fonts.mjs';
 import { createRenderer, esc } from './render.mjs';
 import { scrimCss } from './check-scrim.mjs';
+import { stripComments } from './strip-comments.mjs';
 import * as C from '../src/content.js';
 
 const DEBUG = process.env.BUILD_MODE === 'debug';
@@ -30,6 +31,18 @@ const DEBUG = process.env.BUILD_MODE === 'debug';
  *      ROBOTS=deny npm run build
  */
 const ROBOTS_DENY = process.env.ROBOTS === 'deny';
+/**
+ * Комментарии в dist/. Умолчание — снимать.
+ *
+ * Комментарии этого проекта несут решения и замеры, и в исходнике они
+ * остаются целиком. Но браузеру они не нужны, а бюджет за них платит:
+ * на сборке правки 06 — 20,4 КиБ из 37,7 под brotli, то есть больше
+ * половины гейта `code` уходило на текст, который никто не читает.
+ * Гейт после этого меряет код, а не прозу.
+ *
+ *     BUILD_COMMENTS=keep npm run build
+ */
+const KEEP_COMMENTS = process.env.BUILD_COMMENTS === 'keep';
 const hash = (data) => crypto.createHash('sha256').update(data).digest('hex').slice(0, 8);
 
 async function emptyDist() {
@@ -58,17 +71,25 @@ async function copyAssets() {
 
 /* ------------------------- стили: один файл ------------------------- */
 
-async function buildCss(fontCss) {
+async function buildCss(fontCss, seam) {
   const order = ['tokens.css', 'base.css', 'flight.css', 'sections.css'];
   const parts = [];
   if (fontCss) parts.push('/* шрифты: самохостинг, ноль внешних запросов */\n' + fontCss);
+  // LQIP стыка приезжает из конвейера изображений: он считается от последнего
+  // кадра пролёта, а тот меняется вместе с content.js. Держать эту строку в
+  // исходном CSS значило бы обновлять её руками при каждой замене кадра.
+  if (seam) {
+    parts.push('/* стык: нижние 30 % последнего кадра, 20 px, WebP q40 — ' +
+               `${seam.size} Б */\n:root { --seam-lqip: url("${seam.dataUri}"); }`);
+  }
   for (const name of order) {
     let css = await fs.readFile(path.join(SRC, 'css', name), 'utf8');
     // Затемнение собирается из чисел SCRIM, которые проверяет check-scrim.mjs
     css = css.replace('/*{{scrim}}*/', scrimCss());
     parts.push(`/* ${name} */\n` + css);
   }
-  const css = parts.join('\n\n');
+  let css = parts.join('\n\n');
+  if (!KEEP_COMMENTS) css = stripComments(css, 'css');
   const file = `app.${hash(css)}.css`;
   await fs.mkdir(path.join(DIST, 'assets', 'css'), { recursive: true });
   await fs.writeFile(path.join(DIST, 'assets', 'css', file), css);
@@ -77,7 +98,8 @@ async function buildCss(fontCss) {
 
 /* --------------- скрипты: хэш в имени, импорты переписываются --------------- */
 
-const JS_FILES = ['flight.js', 'nav.js', 'hero-video.js', 'reveal.js', 'wordmark.js', 'main.js'];
+const JS_FILES = ['flight.js', 'nav.js', 'hero-video.js', 'observe.js', 'reveal.js',
+                  'lightbox.js', 'stage-video.js', 'wordmark.js', 'main.js'];
 
 async function buildJs() {
   const outDir = path.join(DIST, 'assets', 'js');
@@ -102,6 +124,7 @@ async function buildJs() {
       const emittedDep = await visit(dep, seen);
       code = code.replaceAll(`'./${dep}'`, `'./${emittedDep.file}'`);
     }
+    if (!KEEP_COMMENTS) code = stripComments(code, 'js');
     const file = `${name.replace(/\.js$/, '')}.${hash(code)}.js`;
     await fs.writeFile(path.join(outDir, file), code);
     const entry = { file, size: Buffer.byteLength(code) };
@@ -178,10 +201,13 @@ async function main() {
   const video = await buildVideo();
   const fonts = await buildFonts();
 
-  const R = createRenderer({ debug: DEBUG, images, video, fonts });
+  const R = createRenderer({
+    debug: DEBUG, images, video, fonts,
+    sectionVideo: video.section || { source: null, poster: null },
+  });
 
   const mediaSize = await copyAssets();
-  const css = await buildCss(fonts.css);
+  const css = await buildCss(fonts.css, images.seam);
   const js = await buildJs();
   await buildIcons();
   await buildMeta();

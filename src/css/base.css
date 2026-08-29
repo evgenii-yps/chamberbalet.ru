@@ -4,7 +4,11 @@ html { -webkit-text-size-adjust: 100%; }
 
 body {
   margin: 0;
-  background: var(--void);
+  /* Тёплый грунт, а не пустота. Виден он только ниже пролёта и под подвалом:
+     сам пролёт и первый экран лежат fixed и красят себя сами (--void,
+     --stage). Менять ради этого --void нельзя — на нём собрано затемнение
+     кадров, и грунт уехал бы вместе с ним. */
+  background: var(--soil-1);
   color: var(--cream);
   font-family: var(--text);
   font-size: var(--step-0);

@@ -10,6 +10,8 @@ import { createWordmark } from './wordmark.js';
 import { createNav } from './nav.js';
 import { setupHeroVideo } from './hero-video.js';
 import { setupReveal } from './reveal.js';
+import { setupLightbox } from './lightbox.js';
+import { setupStageVideo } from './stage-video.js';
 
 /** Длительность перехода между главами. Решение и числа — SPEC §15. */
 const DURATION = 2400;
@@ -148,6 +150,11 @@ function init() {
   const after = document.querySelector('.after');
   const loader = document.querySelector('.loader');
   setupReveal();
+  // Секции текстовой части живут своей жизнью и от пролёта не зависят: если
+  // пролёта нет вовсе (нет разметки, reduced-motion), они обязаны работать.
+  // Поэтому обе настройки стоят до раннего возврата ниже.
+  setupLightbox(document);
+  setupStageVideo(document);
 
   if (!flightEl || !world || !opener) return;
 
@@ -194,6 +201,24 @@ function init() {
     duration: DURATION,
     onNeed: (position) => photos.upto(position + 1),
     onOpener: (opacity) => {
+      // Пролёт закончен — рисовать нечего.
+      //
+      // onOpener ведёт первый экран, летящее название и ЭКРАННОЕ затемнение,
+      // а затемнение это position: fixed на всю область просмотра. Из paint()
+      // его зовёт не только анимация: resize() тоже красит кадр, безусловно.
+      // После выхода из пролёта позиция стоит на последней остановке, где
+      // openerOpacityAt даёт 0, — и один resize возвращал scrim.style.opacity
+      // в «1» инлайном, навсегда.
+      //
+      // Заливка затемнения — rgb(7 5 6), то есть ровно --void. На фоне его не
+      // видно вовсе, поэтому дефект читался не как «наехал слой», а как
+      // «текст в секциях выключен»: замерено 1.99 : 1 на надзаголовке
+      // «АРТИСТЫ» против 8.41 номинала, и 5.20 : 1 на «ПОЛ» — при одном и том
+      // же селекторе .group__title, вся разница в высоте на экране.
+      //
+      // На iOS Safari resize прилетает при каждом сворачивании адресной
+      // строки, то есть на первом же движении пальца в секциях.
+      if (!active) return;
       opener.style.opacity = opacity.toFixed(3);
       opener.style.transform = `scale(${(1 + (1 - opacity) * 0.06).toFixed(4)})`;
       opener.style.visibility = opacity < 0.01 ? 'hidden' : 'visible';

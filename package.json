@@ -20,11 +20,14 @@
     "qa:demo": "node scripts/qa/demo.mjs",
     "qa:lazy": "node scripts/qa/lazy.mjs",
     "lcp": "node scripts/qa/lcp.mjs",
-    "lighthouse": "node scripts/qa/lighthouse.mjs"
+    "lighthouse": "node scripts/qa/lighthouse.mjs",
+    "qa:accept": "node scripts/qa/accept.mjs",
+    "qa:wordmark": "node scripts/qa/wordmark-widths.mjs"
   },
   "devDependencies": {
     "@fontsource/cormorant-garamond": "^5.2.8",
     "@fontsource/manrope": "^5.2.8",
+    "ffmpeg-static": "^5.3.0",
     "sharp": "^0.34.5",
     "subset-font": "^2.4.0"
   }
