@@ -22,7 +22,9 @@
     "lcp": "node scripts/qa/lcp.mjs",
     "lighthouse": "node scripts/qa/lighthouse.mjs",
     "qa:accept": "node scripts/qa/accept.mjs",
-    "qa:wordmark": "node scripts/qa/wordmark-widths.mjs"
+    "qa:wordmark": "node scripts/qa/wordmark-widths.mjs",
+    "pack": "node scripts/pack-deploy.mjs",
+    "qa:deploy": "node scripts/qa/deploy-smoke.mjs"
   },
   "devDependencies": {
     "@fontsource/cormorant-garamond": "^5.2.8",
