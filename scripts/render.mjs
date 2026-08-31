@@ -133,7 +133,10 @@ export function createRenderer({
     ].filter(Boolean).join(';');
 
     return [
-      `<article class="layer${layer.tall ? ' layer--tall' : ''}" style="--i:${i}"`,
+      `<article class="layer${layer.tall ? ' layer--tall' : ''}"`,
+      // --scrim-frame инлайном: из него ::after кадра берёт свою плотность по
+      // наследованию, а main.js копирует то же значение на экранный слой.
+      ` style="--i:${i}${layer.scrimText ? `;--scrim-frame:${layer.scrimText}` : ''}"`,
       ` data-index="${i}" data-chapter="${esc(label)}"`,
       layer.bright ? ' data-bright' : '',
       layer.topScrim ? ' data-top-scrim' : '',
@@ -161,7 +164,9 @@ export function createRenderer({
       '<div class="opener__bg">',
       picture({ ...heroLayer, alt: '' }, { eager: true, priority: true }),
       videoEl,
-      `<div class="opener__veil"${heroLayer.bright ? ' data-bright' : ''} aria-hidden="true"></div>`,
+      `<div class="opener__veil"${heroLayer.bright ? ' data-bright' : ''}` +
+        (heroLayer.scrimText ? ` style="--scrim-frame:${heroLayer.scrimText}"` : '') +
+        ' aria-hidden="true"></div>',
       '</div>',
       '<div class="opener__in">',
       `<p class="opener__kicker">${esc(C.hero.kicker)}</p>`,

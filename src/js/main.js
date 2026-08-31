@@ -177,7 +177,16 @@ function init() {
    * — единственный верный источник для экранного слоя на остановке 0.
    * Читаем из разметки, а не повторяем условие: два места разойдутся.
    */
-  const openerBright = document.querySelector('.opener__veil')?.hasAttribute('data-bright');
+  const openerVeil = document.querySelector('.opener__veil');
+  const openerBright = openerVeil?.hasAttribute('data-bright');
+  /** Покадровое переопределение плотности, если оно у кадра есть. */
+  const frameScrim = (el) => el?.style.getPropertyValue('--scrim-frame') || '';
+  const applyScrim = (bright, frame) => {
+    if (!scrim) return;
+    scrim.toggleAttribute('data-bright', Boolean(bright));
+    if (frame) scrim.style.setProperty('--scrim-frame', frame);
+    else scrim.style.removeProperty('--scrim-frame');
+  };
   const wordmark = createWordmark({
     el: document.querySelector('.wordmark'),
     line: document.querySelector('.wordmark__line'),
@@ -285,7 +294,7 @@ function init() {
          «вниз / вверх» на половине первого экрана рос с 13,7 % до 28,7 %.
          Флаг снимает и clearChapter(), но его зовёт только выход из пролёта,
          а сюда приходят возвратом внутри пролёта — это разные события. */
-      scrim?.toggleAttribute('data-bright', Boolean(openerBright));
+      applyScrim(openerBright, frameScrim(openerVeil));
       if (live) live.textContent = '';
       return;
     }
@@ -293,8 +302,7 @@ function init() {
     const target = layerEls[stopIndexes[chapterNumber]];
     swapTimer = setTimeout(() => {
       target?.setAttribute('data-in', '');
-      const bright = target?.hasAttribute('data-bright');
-      if (scrim) scrim.toggleAttribute('data-bright', Boolean(bright));
+      applyScrim(target?.hasAttribute('data-bright'), frameScrim(target));
       if (live) live.textContent = target?.dataset.chapter || '';
     }, CAPTION_SWAP);
   }
@@ -314,6 +322,7 @@ function init() {
     shownChapter = -2;
     layerEls.forEach((el) => el.removeAttribute('data-in'));
     scrim?.removeAttribute('data-bright');
+    scrim?.style.removeProperty('--scrim-frame');
     if (live) live.textContent = '';
   }
 
