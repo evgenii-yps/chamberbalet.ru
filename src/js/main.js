@@ -168,6 +168,16 @@ function init() {
   const photos = createPhotoLoader(world);
   const live = document.getElementById('flight-live');
   const scrim = document.querySelector('.flight__scrim');
+  /**
+   * Пресет затемнения для первого экрана.
+   *
+   * Первый экран лежит поверх нулевого кадра и несёт СВОЮ вуаль
+   * (.opener__veil), а под ней тем же профилем работает экранный слой. Флаг
+   * светлого пресета у вуали ставит сборка по кадру-подложке, поэтому он же
+   * — единственный верный источник для экранного слоя на остановке 0.
+   * Читаем из разметки, а не повторяем условие: два места разойдутся.
+   */
+  const openerBright = document.querySelector('.opener__veil')?.hasAttribute('data-bright');
   const wordmark = createWordmark({
     el: document.querySelector('.wordmark'),
     line: document.querySelector('.wordmark__line'),
@@ -239,6 +249,23 @@ function init() {
       nav.transitionEnded();
       markRail(stop);
     },
+    /**
+     * Композитные слои живут ровно столько, сколько идёт движение.
+     *
+     * will-change поднимает слой и держит его растр отдельно от страницы.
+     * Пока флаг стоит, композитор выбирает масштаб растеризации один раз и
+     * дальше тянет тот же битмап; какой масштаб он выберет, зависит от того,
+     * через какие крупности слой прошёл. Вниз и вверх крупности идут в
+     * обратном порядке — и один и тот же кадр на одной и той же позиции
+     * растеризуется по-разному: замерено 17,9 % расхождения по пикселям на
+     * 1280 и ореол по контуру глифов названия (макс. Δ канала 212 из 255).
+     *
+     * Поэтому флаг ставится на время перехода и снимается на остановке: в
+     * покое слой возвращается в общий растр страницы, и состояние снова
+     * зависит только от позиции. Смысл прежнего объявления сохранён —
+     * к первому кадру перехода слой уже поднят, см. onMove в flight.js.
+     */
+    onMove: (moving) => document.documentElement.classList.toggle('is-moving', moving),
   });
 
   /** Подпись подменяется с паузой: старая успевает уйти, новая не мелькает. */
@@ -250,7 +277,18 @@ function init() {
 
     clearTimeout(swapTimer);
     layerEls.forEach((el) => el.removeAttribute('data-in'));
-    if (chapterNumber < 0) { if (live) live.textContent = ''; return; }
+    if (chapterNumber < 0) {
+      /* Возврат на первый экран. Раньше ветка выходила прямо здесь, и флаг
+         светлого пресета оставался от последней показанной главы: вниз
+         экранный слой шёл с плато 0,52, вверх — с 0,70, при одной и той же
+         позиции камеры. Отрисовка переставала быть функцией позиции, а диф
+         «вниз / вверх» на половине первого экрана рос с 13,7 % до 28,7 %.
+         Флаг снимает и clearChapter(), но его зовёт только выход из пролёта,
+         а сюда приходят возвратом внутри пролёта — это разные события. */
+      scrim?.toggleAttribute('data-bright', Boolean(openerBright));
+      if (live) live.textContent = '';
+      return;
+    }
 
     const target = layerEls[stopIndexes[chapterNumber]];
     swapTimer = setTimeout(() => {
@@ -310,6 +348,10 @@ function init() {
     layerEls.forEach((el, i) => el.toggleAttribute('data-live-frame', i === stopIndexes.at(-1)));
     flightEl.classList.add('is-done');
     document.documentElement.classList.add('flight-done');
+    /* Выход не проходит через goTo и сигнала об остановке не даёт. Снимаем
+       класс движения здесь же: иначе он пережил бы пролёт и держал слои
+       поднятыми на всей текстовой части. */
+    document.documentElement.classList.remove('is-moving');
     document.body.classList.remove('is-flight');
     window.scrollTo(0, 0);
     scrim?.removeAttribute('data-on');
