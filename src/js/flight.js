@@ -166,9 +166,10 @@ export function driftOf(i) {
  * @param {(index:number)=>void} options.onSettle  вызывается на чистой остановке
  * @param {(position:number)=>void} options.onNeed просьба подгрузить кадры
  * @param {(opacity:number)=>void} options.onOpener состояние первого экрана
+ * @param {(moving:boolean)=>void} options.onMove камера тронулась / встала
  */
 export function createFlight({
-  layers, isChapter, stops, duration = 1000, onSettle, onNeed, onOpener,
+  layers, isChapter, stops, duration = 1000, onSettle, onNeed, onOpener, onMove,
 }) {
   const count = layers.length;
   const last = stops.length - 1;
@@ -237,6 +238,7 @@ export function createFlight({
     position = path.to;
     animating = false;
     paint();
+    onMove?.(false);
     onSettle?.(index);
   }
 
@@ -252,6 +254,7 @@ export function createFlight({
       position = stops[target];
       animating = false;
       paint();
+      onMove?.(false);
       onSettle?.(index);
       return true;
     }
@@ -259,6 +262,11 @@ export function createFlight({
     path = buildPath(position, stops[target], isChapter, count);
     startedAt = performance.now();
     animating = true;
+    /* Сообщаем о старте ДО первого кадра: по этому сигналу main.js ставит
+       класс движения, а по нему CSS выдаёт will-change. Стиль успевает
+       примениться в текущем кадре, первый transform приходит в следующем —
+       то есть слой поднят раньше, чем начинает двигаться. */
+    onMove?.(true);
     raf = requestAnimationFrame(step);
     return true;
   }

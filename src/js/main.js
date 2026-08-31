@@ -10,6 +10,8 @@ import { createWordmark } from './wordmark.js';
 import { createNav } from './nav.js';
 import { setupHeroVideo } from './hero-video.js';
 import { setupReveal } from './reveal.js';
+import { setupLightbox } from './lightbox.js';
+import { setupStageVideo } from './stage-video.js';
 
 /** Длительность перехода между главами. Решение и числа — SPEC §15. */
 const DURATION = 2400;
@@ -148,6 +150,11 @@ function init() {
   const after = document.querySelector('.after');
   const loader = document.querySelector('.loader');
   setupReveal();
+  // Секции текстовой части живут своей жизнью и от пролёта не зависят: если
+  // пролёта нет вовсе (нет разметки, reduced-motion), они обязаны работать.
+  // Поэтому обе настройки стоят до раннего возврата ниже.
+  setupLightbox(document);
+  setupStageVideo(document);
 
   if (!flightEl || !world || !opener) return;
 
@@ -161,6 +168,25 @@ function init() {
   const photos = createPhotoLoader(world);
   const live = document.getElementById('flight-live');
   const scrim = document.querySelector('.flight__scrim');
+  /**
+   * Пресет затемнения для первого экрана.
+   *
+   * Первый экран лежит поверх нулевого кадра и несёт СВОЮ вуаль
+   * (.opener__veil), а под ней тем же профилем работает экранный слой. Флаг
+   * светлого пресета у вуали ставит сборка по кадру-подложке, поэтому он же
+   * — единственный верный источник для экранного слоя на остановке 0.
+   * Читаем из разметки, а не повторяем условие: два места разойдутся.
+   */
+  const openerVeil = document.querySelector('.opener__veil');
+  const openerBright = openerVeil?.hasAttribute('data-bright');
+  /** Покадровое переопределение плотности, если оно у кадра есть. */
+  const frameScrim = (el) => el?.style.getPropertyValue('--scrim-frame') || '';
+  const applyScrim = (bright, frame) => {
+    if (!scrim) return;
+    scrim.toggleAttribute('data-bright', Boolean(bright));
+    if (frame) scrim.style.setProperty('--scrim-frame', frame);
+    else scrim.style.removeProperty('--scrim-frame');
+  };
   const wordmark = createWordmark({
     el: document.querySelector('.wordmark'),
     line: document.querySelector('.wordmark__line'),
@@ -194,6 +220,24 @@ function init() {
     duration: DURATION,
     onNeed: (position) => photos.upto(position + 1),
     onOpener: (opacity) => {
+      // Пролёт закончен — рисовать нечего.
+      //
+      // onOpener ведёт первый экран, летящее название и ЭКРАННОЕ затемнение,
+      // а затемнение это position: fixed на всю область просмотра. Из paint()
+      // его зовёт не только анимация: resize() тоже красит кадр, безусловно.
+      // После выхода из пролёта позиция стоит на последней остановке, где
+      // openerOpacityAt даёт 0, — и один resize возвращал scrim.style.opacity
+      // в «1» инлайном, навсегда.
+      //
+      // Заливка затемнения — rgb(7 5 6), то есть ровно --void. На фоне его не
+      // видно вовсе, поэтому дефект читался не как «наехал слой», а как
+      // «текст в секциях выключен»: замерено 1.99 : 1 на надзаголовке
+      // «АРТИСТЫ» против 8.41 номинала, и 5.20 : 1 на «ПОЛ» — при одном и том
+      // же селекторе .group__title, вся разница в высоте на экране.
+      //
+      // На iOS Safari resize прилетает при каждом сворачивании адресной
+      // строки, то есть на первом же движении пальца в секциях.
+      if (!active) return;
       opener.style.opacity = opacity.toFixed(3);
       opener.style.transform = `scale(${(1 + (1 - opacity) * 0.06).toFixed(4)})`;
       opener.style.visibility = opacity < 0.01 ? 'hidden' : 'visible';
@@ -214,6 +258,23 @@ function init() {
       nav.transitionEnded();
       markRail(stop);
     },
+    /**
+     * Композитные слои живут ровно столько, сколько идёт движение.
+     *
+     * will-change поднимает слой и держит его растр отдельно от страницы.
+     * Пока флаг стоит, композитор выбирает масштаб растеризации один раз и
+     * дальше тянет тот же битмап; какой масштаб он выберет, зависит от того,
+     * через какие крупности слой прошёл. Вниз и вверх крупности идут в
+     * обратном порядке — и один и тот же кадр на одной и той же позиции
+     * растеризуется по-разному: замерено 17,9 % расхождения по пикселям на
+     * 1280 и ореол по контуру глифов названия (макс. Δ канала 212 из 255).
+     *
+     * Поэтому флаг ставится на время перехода и снимается на остановке: в
+     * покое слой возвращается в общий растр страницы, и состояние снова
+     * зависит только от позиции. Смысл прежнего объявления сохранён —
+     * к первому кадру перехода слой уже поднят, см. onMove в flight.js.
+     */
+    onMove: (moving) => document.documentElement.classList.toggle('is-moving', moving),
   });
 
   /** Подпись подменяется с паузой: старая успевает уйти, новая не мелькает. */
@@ -225,13 +286,23 @@ function init() {
 
     clearTimeout(swapTimer);
     layerEls.forEach((el) => el.removeAttribute('data-in'));
-    if (chapterNumber < 0) { if (live) live.textContent = ''; return; }
+    if (chapterNumber < 0) {
+      /* Возврат на первый экран. Раньше ветка выходила прямо здесь, и флаг
+         светлого пресета оставался от последней показанной главы: вниз
+         экранный слой шёл с плато 0,52, вверх — с 0,70, при одной и той же
+         позиции камеры. Отрисовка переставала быть функцией позиции, а диф
+         «вниз / вверх» на половине первого экрана рос с 13,7 % до 28,7 %.
+         Флаг снимает и clearChapter(), но его зовёт только выход из пролёта,
+         а сюда приходят возвратом внутри пролёта — это разные события. */
+      applyScrim(openerBright, frameScrim(openerVeil));
+      if (live) live.textContent = '';
+      return;
+    }
 
     const target = layerEls[stopIndexes[chapterNumber]];
     swapTimer = setTimeout(() => {
       target?.setAttribute('data-in', '');
-      const bright = target?.hasAttribute('data-bright');
-      if (scrim) scrim.toggleAttribute('data-bright', Boolean(bright));
+      applyScrim(target?.hasAttribute('data-bright'), frameScrim(target));
       if (live) live.textContent = target?.dataset.chapter || '';
     }, CAPTION_SWAP);
   }
@@ -251,6 +322,7 @@ function init() {
     shownChapter = -2;
     layerEls.forEach((el) => el.removeAttribute('data-in'));
     scrim?.removeAttribute('data-bright');
+    scrim?.style.removeProperty('--scrim-frame');
     if (live) live.textContent = '';
   }
 
@@ -285,6 +357,10 @@ function init() {
     layerEls.forEach((el, i) => el.toggleAttribute('data-live-frame', i === stopIndexes.at(-1)));
     flightEl.classList.add('is-done');
     document.documentElement.classList.add('flight-done');
+    /* Выход не проходит через goTo и сигнала об остановке не даёт. Снимаем
+       класс движения здесь же: иначе он пережил бы пролёт и держал слои
+       поднятыми на всей текстовой части. */
+    document.documentElement.classList.remove('is-moving');
     document.body.classList.remove('is-flight');
     window.scrollTo(0, 0);
     scrim?.removeAttribute('data-on');

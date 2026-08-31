@@ -116,17 +116,79 @@ const transferBytes = groups.reduce((s, g) => s + g.total, 0);
 const requests = groups.reduce((s, g) => s + g.files.length, 0);
 const headersTotal = groups.reduce((s, g) => s + g.headers, 0);
 
-console.log(`\nТрансфер первой загрузки — статически, brotli, профиль ${TRANSFER_PROFILE.width}×${TRANSFER_PROFILE.height} ×${TRANSFER_PROFILE.dpr}`);
+console.log(`\nЧетыре гейта. Трансфер первой загрузки — статически, brotli, профиль ${TRANSFER_PROFILE.width}×${TRANSFER_PROFILE.height} ×${TRANSFER_PROFILE.dpr}`);
 console.table(groups.map((g) => ({
   что: g.label, запросов: g.files.length, тела: bytes(g.body),
   'заголовки (оценка)': bytes(g.headers), всего: bytes(g.total),
 })));
 console.log(`   запросов ${requests}, из них заголовков — ${bytes(headersTotal)} по оценке`);
 
+/* ── transfer-full: вся страница после прокрутки до низа ─────────────── */
+/*
+ * Считается: документ, стили, скрипты, шрифты, ВСЕ кадры пролёта, миниатюры
+ * галереи, постер видео, иконка и манифест.
+ *
+ * НЕ считается — намеренно, и это не умолчание:
+ *
+ *   ВИДЕОФАЙЛ. Стоит на preload="none" и не тянется, пока зритель не нажал
+ *     play. У него свой гейт `video` с потолком 12 МБ. Включи его сюда — и
+ *     число перестало бы что-либо значить: одиннадцать мегабайт перекрыли бы
+ *     всё остальное, и рост галереи вдвое остался бы незамеченным.
+ *
+ *   ПОЛНОРАЗМЕРЫ ЛАЙТБОКСА. Тянутся по одному и только при открытии кадра.
+ *     Их двенадцать; сложить их в бюджет страницы значило бы мерить сеанс,
+ *     которого не бывает — никто не открывает подряд все двенадцать.
+ *
+ * Общее у обоих исключений одно: загрузка идёт по ЯВНОМУ действию зрителя,
+ * а не по прокрутке. Всё, что приезжает само, здесь посчитано.
+ */
+const galleryDir = path.join(DIST, 'assets', 'gallery');
+const galleryManifest = images.gallery || [];
+const thumbFiles = galleryManifest.map((g) => path.join(galleryDir, g.thumb.file));
+
+/** Все кадры пролёта в том варианте, который попросит браузер профиля. */
+const allPhotoFiles = layers
+  .map((l) => pick(l.photo))
+  .filter(Boolean)
+  .map((v) => path.join(DIST, 'assets', 'photo', v.file));
+
+/** Постер видео: ставится из JS при входе секции в вьюпорт, то есть по
+ *  прокрутке — значит в transfer-full входит. */
+const sectionVideo = JSON.parse(await fs.readFile(path.join(BUILD, 'video-section.json'), 'utf8'));
+const posterFiles = sectionVideo.poster
+  ? [path.join(DIST, 'assets', 'photo', sectionVideo.poster.file)] : [];
+
+const fullGroups = [
+  await group('документ', [path.join(DIST, 'index.html')]),
+  await group('стили', css),
+  await group('скрипты', js),
+  await group('шрифты', fontFiles),
+  await group(`кадры пролёта ×${allPhotoFiles.length}`, allPhotoFiles),
+  await group(`миниатюры галереи ×${thumbFiles.length}`, thumbFiles),
+  await group('постер видео', posterFiles),
+  await group('иконка и манифест', smallFiles),
+];
+const fullBytes = fullGroups.reduce((s, g) => s + g.total, 0);
+
+console.log(`\nВся страница после прокрутки до низа — тот же профиль`);
+console.table(fullGroups.map((g) => ({
+  что: g.label, запросов: g.files.length, тела: bytes(g.body), всего: bytes(g.total),
+})));
+console.log('   исключены намеренно: видеофайл (свой гейт) и полноразмеры лайтбокса —');
+console.log('   и то и другое грузится по явному действию зрителя, а не по прокрутке');
+
+/* ── видео: отдельная строка ─────────────────────────────────────────── */
+/* Нет файла — гейт проходит с нулём и начнёт работать в момент подстановки. */
+const videoBytes = sectionVideo.source
+  ? (await fs.stat(path.join(DIST, 'assets', 'video', sectionVideo.source.file))).size
+  : 0;
+
 const over = [];
 for (const [label, got, cap] of [
   ['вся страница', transferBytes, TRANSFER_BUDGET.transfer],
   ['CSS и JS', codeBytes, TRANSFER_BUDGET.code],
+  ['до низа', fullBytes, TRANSFER_BUDGET.transferFull],
+  ['видео', videoBytes, TRANSFER_BUDGET.video],
 ]) {
   const ok = got <= cap;
   if (!ok) over.push(`${label}: ${bytes(got)} > ${bytes(cap)}`);

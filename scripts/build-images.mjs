@@ -17,12 +17,14 @@ import sharp from 'sharp';
 import {
   ORIGINALS, BUILD, BUILD_ASSETS, PHOTO_FORMATS, OG_IMAGE,
   MIN_ORIGINAL_LONG_SIDE, BUDGET, BUDGET_WIDTH, FIRST_SCREEN_SLIDES, bytes,
-  widthsFor, requestWidthAt, CODE_FONTS_FALLBACK,
+  widthsFor, requestWidthAt, CODE_FONTS_FALLBACK, GALLERY, SEAM_LQIP,
 } from './config.mjs';
-import { layers } from '../src/content.js';
+import { layers, gallery } from '../src/content.js';
 
 const PHOTO_SRC = path.join(ORIGINALS, 'photo');
 const PHOTO_OUT = path.join(BUILD_ASSETS, 'photo');
+const GALLERY_SRC = path.join(ORIGINALS, 'gallery');
+const GALLERY_OUT = path.join(BUILD_ASSETS, 'gallery');
 const CACHE_FILE = path.join(BUILD, 'images.cache.json');
 const MANIFEST_FILE = path.join(BUILD, 'images.json');
 const EXTENSIONS = ['.jpg', '.jpeg', '.png', '.tif', '.tiff', '.webp', '.avif'];
@@ -33,13 +35,15 @@ async function readCache() {
   try { return JSON.parse(await fs.readFile(CACHE_FILE, 'utf8')); } catch { return {}; }
 }
 
-async function findOriginal(basename) {
+async function findIn(dir, basename) {
   for (const ext of EXTENSIONS) {
-    const file = path.join(PHOTO_SRC, basename + ext);
+    const file = path.join(dir, basename + ext);
     try { await fs.access(file); return file; } catch { /* дальше */ }
   }
   return null;
 }
+
+const findOriginal = (basename) => findIn(PHOTO_SRC, basename);
 
 const hashOf = (buffer) => crypto.createHash('sha256').update(buffer).digest('hex').slice(0, 8);
 
@@ -111,8 +115,72 @@ async function makeOgImage(source) {
   return { file, size: buffer.length };
 }
 
+/**
+ * Галерея: две производные на кадр — миниатюра в сетку и полноразмер в
+ * лайтбокс. Полноразмер в первую загрузку не входит и открывается по клику,
+ * поэтому его потолок отдельный и щедрее.
+ *
+ * Миниатюра режется в 3 : 2 через fit: cover — сетка обязана держать ряды
+ * ровными, а среди оригиналов есть вертикальные. Точка кадрирования
+ * `attention`: sharp выбирает область с наибольшей детализацией, что для
+ * вертикального кадра с фигурой даёт корпус, а не потолок.
+ */
+async function processGalleryItem(item) {
+  const source = await findIn(GALLERY_SRC, item.photo);
+  if (!source) return null;
+  const base = sharp(source, { failOn: 'none' }).rotate().toColourspace('srgb').withIccProfile('srgb');
+  const meta = await sharp(source, { failOn: 'none' }).metadata();
+
+  const thumbBuf = await base.clone()
+    .resize({ width: GALLERY.thumb.width, height: GALLERY.thumb.height, fit: 'cover', position: 'attention' })
+    .webp({ quality: GALLERY.thumb.quality, effort: 5 })
+    .toBuffer();
+  const fullBuf = await base.clone()
+    .resize({ width: GALLERY.full.width, height: GALLERY.full.width, fit: 'inside', withoutEnlargement: true })
+    .webp({ quality: GALLERY.full.quality, effort: 5 })
+    .toBuffer();
+  const fullMeta = await sharp(fullBuf).metadata();
+
+  const thumb = `${item.photo}-${GALLERY.thumb.width}.${hashOf(thumbBuf)}.webp`;
+  const full  = `${item.photo}-${GALLERY.full.width}.${hashOf(fullBuf)}.webp`;
+  await fs.writeFile(path.join(GALLERY_OUT, thumb), thumbBuf);
+  await fs.writeFile(path.join(GALLERY_OUT, full), fullBuf);
+
+  return {
+    photo: item.photo, alt: item.alt,
+    thumb: { file: thumb, size: thumbBuf.length, width: GALLERY.thumb.width, height: GALLERY.thumb.height },
+    full:  { file: full,  size: fullBuf.length,  width: fullMeta.width, height: fullMeta.height },
+    source: { width: meta.width, height: meta.height },
+  };
+}
+
+/**
+ * LQIP стыка: нижние 30 % последнего кадра пролёта, ужатые до 20 px по
+ * ширине. Дальше эту кроху растягивает и размывает CSS.
+ *
+ * Берётся именно последний кадр, потому что после пролёта на экране остаётся
+ * он: .flight.is-done гасит все слои, кроме [data-live-frame]. Возьми любой
+ * другой — стык растворял бы фотографию не в ту, что над ним стоит.
+ */
+async function buildSeamLqip() {
+  const last = layers.at(-1);
+  const source = await findOriginal(last.photo);
+  if (!source) return null;
+  const img = sharp(source, { failOn: 'none' }).rotate();
+  const meta = await img.metadata();
+  const height = Math.round(meta.height * SEAM_LQIP.bottom);
+  const buffer = await img
+    .extract({ left: 0, top: meta.height - height, width: meta.width, height })
+    .resize({ width: SEAM_LQIP.width })
+    .toColourspace('srgb')
+    .webp({ quality: SEAM_LQIP.quality, effort: 6 })
+    .toBuffer();
+  return { slug: last.photo, size: buffer.length, dataUri: `data:image/webp;base64,${buffer.toString('base64')}` };
+}
+
 export async function buildImages({ quiet = false } = {}) {
   await fs.mkdir(PHOTO_OUT, { recursive: true });
+  await fs.mkdir(GALLERY_OUT, { recursive: true });
   await fs.mkdir(BUILD, { recursive: true });
 
   const cache = await readCache();
@@ -145,10 +213,23 @@ export async function buildImages({ quiet = false } = {}) {
   const heroSource = await findOriginal(layers[0].photo);
   if (heroSource) manifest.og = await makeOgImage(heroSource);
 
+  // Галерея. Отсутствующий оригинал не роняет сборку — кадр просто выпадает.
+  manifest.gallery = [];
+  const galleryMissing = [];
+  for (const item of gallery.items) {
+    const entry = await processGalleryItem(item);
+    if (entry) manifest.gallery.push(entry); else galleryMissing.push(item.photo);
+  }
+
+  manifest.seam = await buildSeamLqip();
+
   await fs.writeFile(CACHE_FILE, JSON.stringify(cache, null, 2));
   await fs.writeFile(MANIFEST_FILE, JSON.stringify(manifest, null, 2));
 
-  if (!quiet) report(manifest, warnings, missing, await codeAndFontsSize(), await videoSize());
+  if (!quiet) {
+    report(manifest, warnings, missing, await codeAndFontsSize(), await videoSize());
+    reportGallery(manifest, galleryMissing);
+  }
   return manifest;
 }
 
@@ -181,6 +262,33 @@ async function videoSize() {
     const files = v?.variants || [];
     return files.reduce((s, f) => s + (f.size || 0), 0) + (v?.poster?.size || 0);
   } catch { return 0; }
+}
+
+function reportGallery(manifest, missing) {
+  console.log('\nГалерея и стык');
+  if (missing.length) log(`оригиналов нет: ${missing.join(', ')}`);
+  if (!manifest.gallery.length) { log('кадров галереи нет — секция не собирается'); }
+  else {
+    console.table(manifest.gallery.map((g) => ({
+      кадр: g.photo,
+      оригинал: `${g.source.width}×${g.source.height}`,
+      миниатюра: bytes(g.thumb.size),
+      'полный': `${g.full.width}×${g.full.height} ${bytes(g.full.size)}`,
+    })));
+    const thumbs = manifest.gallery.reduce((s, g) => s + g.thumb.size, 0);
+    const fulls = manifest.gallery.reduce((s, g) => s + g.full.size, 0);
+    const overThumb = manifest.gallery.filter((g) => g.thumb.size > GALLERY.thumb.cap);
+    const overFull = manifest.gallery.filter((g) => g.full.size > GALLERY.full.cap);
+    log(`миниатюры ×${manifest.gallery.length}: ${bytes(thumbs)} — входят в transfer-full`);
+    log(`полноразмеры: ${bytes(fulls)} — грузятся по клику, в бюджет страницы не входят`);
+    for (const g of overThumb) log(`внимание: миниатюра ${g.photo} — ${bytes(g.thumb.size)} > ${bytes(GALLERY.thumb.cap)}`);
+    for (const g of overFull) log(`внимание: полноразмер ${g.photo} — ${bytes(g.full.size)} > ${bytes(GALLERY.full.cap)}`);
+  }
+  if (manifest.seam) {
+    const ok = manifest.seam.size <= SEAM_LQIP.cap;
+    log(`LQIP стыка (${manifest.seam.slug}, нижние ${SEAM_LQIP.bottom * 100} %, ${SEAM_LQIP.width} px): ` +
+        `${manifest.seam.size} Б из ${SEAM_LQIP.cap}${ok ? '' : ' — ПЕРЕБОР'}`);
+  }
 }
 
 function report(manifest, warnings, missing, extra, videoBytes) {

@@ -48,11 +48,37 @@ function inkCentre(el) {
 export function createWordmark({ el, line, title }) {
   if (!el || !line || !title) return null;
   let g = null;
+  /**
+   * Последнее применённое значение onOpener.
+   *
+   * Замер обязан заканчиваться повторным применением, иначе узел остаётся
+   * нарисованным по одной геометрии и поставленным по другой. Так и было:
+   * init() вешает document.fonts.ready.then(measure), затем синхронно зовёт
+   * enterFlight(0) → paint → apply(1); apply выставляет разрядку заголовка
+   * (−0.01em), а measure, дойдя очередью следом, первой же строкой сбрасывал
+   * её обратно в разрядку подписи (.10em) и на этом заканчивался.
+   *
+   * Название оставалось набранным подписью, а поставленным — матрицей,
+   * посчитанной под заголовок. Замер на 390: ink названия 334,4 px против
+   * 267,4 px у h1, то есть +25 %; проверка (184,4 + 21 × 2,2) × 1,45 = 334,4.
+   * Строка вылезала за оба поля и садилась на первую строку лида — на iPhone,
+   * где лид переносится на четыре строки, это давало сплошное наложение.
+   *
+   * Состояние было устойчивым: следующий paint случался только когда зритель
+   * начинал листать, а на первом экране он как раз стоит и читает. Тот же
+   * механизм срабатывал на любом resize — поворот, сворачивание адресной
+   * строки, — потому что resize тоже звал measure без apply.
+   */
+  let lastA = null;
 
-  function measure() {
+  /** Чистый замер: только читает геометрию, ничего не применяет. */
+  function measureOnly() {
     // Замер идёт в состоянии покоя: матрица снимается, иначе прочитаются
-    // координаты предыдущего кадра, помноженные сами на себя.
+    // координаты предыдущего кадра, помноженные сами на себя. Разрядка
+    // снимается по той же причине — ls0 обязан прочитаться из стилей, а не
+    // из промежуточного значения, которое туда записал apply.
     const had = el.style.transform;
+    const hadLs = line.style.letterSpacing;
     el.style.transform = '';
     line.style.letterSpacing = '';
     const restCs = getComputedStyle(line);
@@ -61,6 +87,7 @@ export function createWordmark({ el, line, title }) {
     const headCs = getComputedStyle(title);
     const head = inkCentre(title);
     el.style.transform = had;
+    line.style.letterSpacing = hadLs;
     if (!rest || !head) { g = null; return; }
     g = {
       cx: box.left + box.width / 2,
@@ -73,9 +100,18 @@ export function createWordmark({ el, line, title }) {
     };
   }
 
+  /** Перезамер: геометрия новая — значит и матрица, и разрядка обязаны
+   *  пересчитаться сейчас, а не ждать следующего кадра пролёта, которого
+   *  может и не быть. Наружу отдаётся именно эта функция. */
+  function measure() {
+    measureOnly();
+    if (g && lastA !== null) apply(lastA);
+  }
+
   /** a — значение onOpener: 1 на первом экране, 0 на месте подписи. */
   function apply(a) {
-    if (!g) measure();
+    lastA = a;
+    if (!g) measureOnly();
     if (!g) return;
     const s = Math.pow(g.k, a);
     // Куда должен приехать центр ink на этом кадре

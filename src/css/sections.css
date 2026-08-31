@@ -3,12 +3,30 @@
 .after {
   position: relative;
   z-index: var(--z-section);
-  background: var(--void);
+  background: var(--soil-1);
 }
+
+/* Дизеринг на грунте текстовой части. Слой отдельный, а не background на
+   .after: у .after собственный цвет, а плитка обязана лечь поверх него и
+   поверх всего, что нарисуют секции, не перехватывая клики.
+   overlay поверх почти чёрного работает как осветление в пределах одного
+   уровня — ровно то, что размывает ступень градиента. */
+.after::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background-image: var(--grain);
+  opacity: var(--grain-opacity);
+  mix-blend-mode: overlay;
+}
+/* Содержимое — над плиткой. Без этого зерно легло бы на текст, а не под него. */
+.after > * { position: relative; z-index: 1; }
 
 .section {
   padding: clamp(4rem, 12vh, 9rem) var(--gutter);
-  border-top: 1px solid var(--rule);
+  border-top: 1px solid var(--soil-rule);
 }
 .section:first-child { border-top: 0; }
 
@@ -47,7 +65,7 @@
 
 .params { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums lining-nums; }
 .params caption { text-align: left; margin-bottom: 1em; color: var(--brass); font-size: var(--step--1); letter-spacing: .16em; text-transform: uppercase; }
-.params th, .params td { padding: .85em 0; border-top: 1px solid var(--rule); text-align: left; vertical-align: baseline; }
+.params th, .params td { padding: .85em 0; border-top: 1px solid var(--soil-rule); text-align: left; vertical-align: baseline; }
 .params th { font-weight: 400; color: var(--cream-70); width: 55%; }
 .params td { color: var(--cream); }
 
@@ -67,9 +85,9 @@
   justify-content: space-between;
   gap: .5em 2em;
   padding: 1.2em 0;
-  border-top: 1px solid var(--rule);
+  border-top: 1px solid var(--soil-rule);
 }
-.repertoire li:last-child { border-bottom: 1px solid var(--rule); }
+.repertoire li:last-child { border-bottom: 1px solid var(--soil-rule); }
 .repertoire__title { font-family: var(--display); font-size: var(--step-2); }
 .repertoire__period { color: var(--cream-55); font-size: var(--step--1); letter-spacing: .1em; text-transform: uppercase; }
 .repertoire__note { margin-top: 1.5em; color: var(--cream-70); }
@@ -77,7 +95,7 @@
 /* Три модели: колонки со строго совпадающими строками */
 
 .models { width: 100%; border-collapse: collapse; text-align: left; }
-.models th, .models td { padding: 1em .9em; border-top: 1px solid var(--rule); vertical-align: baseline; }
+.models th, .models td { padding: 1em .9em; border-top: 1px solid var(--soil-rule); vertical-align: baseline; }
 .models thead th {
   border-top: 0;
   font-family: var(--display);
@@ -101,7 +119,7 @@
 @media (max-width: 46rem) {
   .models, .models thead, .models tbody, .models tr, .models th, .models td { display: block; }
   .models thead { display: none; }
-  .models tbody tr { border-top: 1px solid var(--rule); padding: .4em 0; }
+  .models tbody tr { border-top: 1px solid var(--soil-rule); padding: .4em 0; }
   .models tbody th { border: 0; padding: 1em 0 .3em; }
   .models tbody td { border: 0; padding: .2em 0; display: flex; gap: .8em; justify-content: space-between; }
   .models tbody td::before {
@@ -143,7 +161,7 @@
 
 .footer {
   padding: 2.5rem var(--gutter);
-  border-top: 1px solid var(--rule);
+  border-top: 1px solid var(--soil-rule);
   color: var(--cream-55);
   font-size: var(--step--1);
   display: flex;
@@ -177,4 +195,408 @@ html:not(.js) .reveal { opacity: 1; transform: none; }
   .contact__list a,
   .contact__list a:hover,
   .contact__list a:active { transition-duration: 1ms; }
+}
+
+/* ------------------------------------------------------------------ *
+ *  Стык пролёта и текста (блок C правки 06)
+ *
+ *  Последний кадр не обрывается линией: под ним лежит его же нижняя треть,
+ *  растянутая и размытая, и уходит в грунт.
+ *
+ *  Почему не backdrop-filter: он заставляет композитор пересчитывать фон под
+ *  каждым кадром прокрутки, и на мобильном это стоит кадров. Здесь размытие
+ *  идёт по статической крохе 20 px шириной — стоимость нулевая и постоянная.
+ * ------------------------------------------------------------------ */
+
+/* Геометрия стыка считается от ВЫСОТЫ КАДРА, а не от ширины окна.
+   Это не косметика: оба требования к стыку заданы долями высоты кадра, и
+   пока величины ехали от vw с потолком в пиксели, они выполнялись на одной
+   ширине и нарушались на трёх.
+
+     --seam-h     полная высота стыка;
+     --seam-lift  наезд на фотографию, ровно половина высоты. Значит нижняя
+                  кромка фотографии всегда приходится на середину стыка,
+                  на любой ширине и любой высоте окна.
+
+   Отсюда два числа.
+
+   Растяжка от кромки до сплошного грунта = --seam-h − --seam-lift = половина
+   высоты стыка. Требование — не короче 25 % высоты кадра; кадр это 100svh,
+   значит --seam-h ≥ 50svh. Взято 54svh: растяжка 27 % с запасом в два пункта.
+
+   Кромка обязана попадать туда, где грунт набрал не меньше 60 % плотности.
+   Она стоит ровно на 50 % высоты стыка, и стопы .seam__wash подобраны так,
+   чтобы на этой отметке было 0,67.
+
+   Прежние значения — наезд clamp(96px, 16vw, 190px) при высоте
+   clamp(140px, 22vw, 240px) + наезд — давали растяжку 16,6 % на 390,
+   16,5 % на 768, 30 % на 1280 и 22,2 % на 1920: из четырёх ширин проходила
+   одна. Кромка при этом попадала на 44 % плотности на 1280 и заметно раньше
+   на 1920, где потолок в 190 px уже не поспевал за высотой кадра, — оттуда
+   и ступень в 12,31 уровня sRGB. */
+.seam {
+  --seam-h: 54svh;
+  --seam-lift: calc(var(--seam-h) / 2);
+}
+
+.seam {
+  position: relative;
+  /* Выше ЗАКОНЧИВШЕГОСЯ пролёта, но не выше идущего.
+     Разница не теоретическая. Стык — блок нормального потока, а в пролёте
+     и первый экран, и сам пролёт лежат fixed, то есть из потока выключены:
+     бокс стыка начинается от верха документа, и его нижняя часть — та, что
+     ниже отрицательного margin-top, — приходится на верх вьюпорта. Страница
+     при этом не прокручена (body.is-flight, overflow: hidden), так что никуда
+     она не уезжает.
+     Пока здесь стояло calc(--z-flight + 1) = 101 против 100 у .flight, эта
+     часть рисовалась ПОВЕРХ живого кадра: от верха окна до высоты стыка за
+     вычетом наезда шла сплошная полоса грунта с жёсткой кромкой. Замерено в
+     состоянии главы: 227 px на 390, 275 на 768, 215 на 1280, 248 на 1907,
+     291 на 1920. На первом экране её не видно — его слой на 400 закрывает
+     весь вьюпорт, — и потому она читалась как дефект кадра, а не стыка.
+     Стыку нужно быть выше только того пролёта, который уже закончился, а тот
+     уходит на --z-section (см. .flight.is-done в flight.css). Двойка тут —
+     ровно на единицу выше и его, и фона .after; ниже остаются зерно .after
+     (0) и всё, что выше по шкале: рельс 500, шапка 600, лайтбокс 800. */
+  z-index: calc(var(--z-section) + 1);
+  height: var(--seam-h);
+  margin-top: calc(-1px - var(--seam-lift));
+  overflow: hidden;
+  /* Фона нет: верхняя часть блока лежит поверх фотографии и обязана её
+     показывать. Грунт приводит .seam__wash своим градиентом. */
+}
+
+.seam__blur {
+  position: absolute;
+  /* Вылет вверх — доля высоты стыка, а не 48 px: маска ниже размечена в
+     процентах от этого элемента, и при постоянном вылете её точки поехали бы
+     вместе с высотой окна. 0,11 даёт те же 48 px на прежней геометрии. */
+  inset: calc(var(--seam-h) * -0.11) 0 0;
+  background: var(--seam-lqip) center / cover no-repeat;
+  /* Размытие сильное и слой приглушён намеренно.
+     LQIP снят с ОРИГИНАЛА кадра, а на экране тот же кадр показан через
+     object-fit: cover, своё кадрирование и масштаб камеры пролёта — то
+     есть видимая полоса и кроха показывают разные куски фотографии.
+     Совместить их нельзя, и при слабом размытии под стыком читается
+     призрак второго кадра: узнаваемые пачки и люстра. Поэтому слой
+     работает не как продолжение фотографии, а как её отсвет: цвет и
+     светлые пятна на своих местах, узнаваемых форм нет. */
+  filter: blur(44px) saturate(.68) brightness(.78);
+  /* Слой один и тот же по обе стороны от кромки фотографии, поэтому он не
+     создаёт перепада, а гасит его: чем плотнее отсвет, тем меньше от кромки
+     остаётся. Значение поднято с .62 — этого требует потолок ступени в
+     2,0 уровня sRGB, см. замер в отчёте. Выше не идём: за отсветом начинает
+     угадываться вторая фотография. */
+  opacity: .72;
+  /* Вылет за края и увеличение обязательны оба: blur берёт пиксели за
+     границей элемента как прозрачные, и без запаса по краям появляется
+     светлая кайма шириной в радиус размытия. */
+  transform: scale(1.18);
+  /* ------------------------------------------------------------------ *
+   *  Маска вводит размытие ПЛАВНО, а не включает на полную с первой
+   *  строки.
+   *
+   *  Первая редакция начинала с #000 на 0 %: размытая кроха ложилась на
+   *  резкую фотографию сразу и в полную силу, и на верхней границе стыка
+   *  появлялась своя горизонталь — вместо убранной. Замерено на 1280:
+   *  скачок 33,66 уровня sRGB между соседними строками, то есть заметнее
+   *  того шва, ради которого блок и заведён.
+   *
+   *  Верхние 48 px элемента лежат ВЫШЕ стыка (inset: -48px) — там маска
+   *  ещё прозрачна и ничего не делает; к верхней кромке стыка размытие
+   *  набирает силу примерно наполовину и доходит до полной к трети высоты.
+   *  Вниз оно сходит в ноль, дальше грунт доводит .seam__wash.
+   * ------------------------------------------------------------------ */
+  -webkit-mask-image: linear-gradient(to bottom,
+    transparent 0%, rgba(0, 0, 0, .18) 16%, rgba(0, 0, 0, .62) 34%, #000 52%,
+    rgba(0, 0, 0, .74) 72%, transparent 100%);
+          mask-image: linear-gradient(to bottom,
+    transparent 0%, rgba(0, 0, 0, .18) 16%, rgba(0, 0, 0, .62) 34%, #000 52%,
+    rgba(0, 0, 0, .74) 72%, transparent 100%);
+}
+
+.seam__wash {
+  position: absolute;
+  inset: 0;
+  /* Пологая середина, а не прямая: линейный сход от прозрачного к грунту
+     даёт видимый перегиб там, где градиент упирается в сплошной цвет. */
+  /* Пологая середина, а не прямая: линейный сход от прозрачного к грунту
+     даёт видимый перегиб там, где градиент упирается в сплошной цвет.
+     Кривая с длинным хвостом, и это не украшение, а арифметика двух
+     требований сразу.
+
+     На 50 % высоты стоит кромка фотографии, и там плотность обязана быть
+     достаточной, чтобы от кромки не осталось ступени. Ступень равна
+     (1 − плотность) × (1 − плотность отсвета) × перепад «кадр минус грунт».
+     Замерено: на 1920 при плотности 0,67 остаётся 5,85 уровня sRGB при
+     потолке 2,0; коэффициент линейный, и 0,90 даёт 1,8.
+
+     При этом сплошным грунт обязан стать не раньше конца стыка: от кромки
+     до него должно оставаться не меньше 25 % высоты кадра, а это ровно
+     вторая половина стыка. Отсюда хвост: последние 10 % плотности
+     размазаны по половине высоты, а не добраны сразу за кромкой. */
+  background: linear-gradient(to bottom,
+    transparent 0%, rgb(18 12 8 / .13) 18%, rgb(18 12 8 / .46) 34%,
+    rgb(18 12 8 / .90) 50%, rgb(18 12 8 / .962) 64%, rgb(18 12 8 / .99) 80%,
+    var(--soil-1) 100%);
+}
+/* Ниже стыка грунт уже сплошной: .after красит себя сам. Стык лишь доводит
+   до него, поэтому его последние проценты обязаны быть ровно --soil-1 —
+   иначе на границе стыка и секций появится вторая линия, тоньше первой. */
+
+.seam__grain {
+  position: absolute;
+  inset: 0;
+  background-image: var(--grain);
+  opacity: var(--grain-opacity);
+  mix-blend-mode: overlay;
+}
+
+/* Без mask-image размытая кроха обрывалась бы собственным нижним краем —
+   ровно та линия, ради которой всё и затевалось. Убираем её; остаётся
+   .seam__wash, и стык просто мягче, без обрыва. */
+@supports not ((mask-image: linear-gradient(#000, #000)) or (-webkit-mask-image: linear-gradient(#000, #000))) {
+  .seam__blur { display: none; }
+}
+
+/* Воздух между низом фотографии и первой строкой текста. Стык даёт
+   140–240 px сверх наезда, и первая секция за ним начинается со своего
+   padding — верхняя граница ей уже не нужна. */
+.seam + .after .section:first-child { padding-top: clamp(3rem, 8vh, 5rem); border-top: 0; }
+
+/* ------------------------------------------------------------------ *
+ *  Видео (E2)
+ *
+ *  Ролик вертикальный, 464 × 848. ТЗ просило 16 : 9; материал пришёл 9 : 16,
+ *  и ориентацию перекодированием не исправить — секция сверстана под то, что
+ *  есть (решение владельца 29.08.2026). Замена на горизонтальный: снять
+ *  vertical: true в content.js, .filmstrip--tall перестанет применяться,
+ *  перевёрстки не потребуется.
+ * ------------------------------------------------------------------ */
+
+.filmstrip { margin: 0; }
+.filmstrip__video {
+  width: 100%;
+  height: auto;
+  background: var(--soil-2);
+  border: 1px solid var(--soil-3);
+  border-radius: var(--radius);
+}
+/* Вертикальный кадр не растягиваем на всю колонку: на десктопе это дало бы
+   полосу высотой в две с половиной высоты экрана. Потолок по высоте, а
+   ширина считается от него. */
+.filmstrip--tall .filmstrip__video {
+  width: auto;
+  max-width: 100%;
+  max-height: min(78vh, 620px);
+  margin-inline: auto;
+}
+.filmstrip__caption {
+  margin-top: 1em;
+  color: var(--cream-70);
+  font-size: var(--step--1);
+  text-align: center;
+}
+
+/* ------------------------------------------------------------------ *
+ *  Галерея (E3)
+ * ------------------------------------------------------------------ */
+
+.shots {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(2, 1fr);
+}
+@media (min-width: 40rem) {          /* 640 px */
+  .shots { grid-template-columns: repeat(3, 1fr); }
+}
+
+.shots__cell { margin: 0; }
+.shots__link {
+  display: block;
+  position: relative;
+  /* Соотношение держится боксом, а не картинкой: до загрузки миниатюры
+     сетка обязана иметь ту же высоту, иначе секция прыгает. */
+  aspect-ratio: 3 / 2;
+  overflow: hidden;
+  background: var(--soil-2);
+  border-radius: var(--radius);
+}
+.shots__link img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: opacity var(--t-out) var(--e-out);
+}
+@media (hover: hover) and (pointer: fine) {
+  .shots__link:hover img { opacity: .82; transition: opacity var(--t-in) var(--e-in); }
+}
+.shots__note { margin-top: 1.5em; color: var(--cream-70); }
+
+/* ------------------------------------------------------------------ *
+ *  Лайтбокс (E3)
+ *
+ *  Свой, без библиотеки. Ловушка фокуса, Esc, стрелки, клик вне кадра,
+ *  свайп и возврат фокуса на исходную миниатюру — в src/js/lightbox.js.
+ * ------------------------------------------------------------------ */
+
+.lightbox {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-lightbox);
+  display: grid;
+  place-items: center;
+  padding: clamp(.75rem, 3vw, 2.5rem);
+}
+/* Атрибут hidden обязан побеждать.
+   Правило [hidden] { display: none } живёт в таблице БРАУЗЕРА, а любое
+   авторское объявление сильнее любого браузерного — независимо от
+   специфичности. То есть display: grid выше перебивал hidden, и закрытое
+   окно оставалось в раскладке: position: fixed, inset: 0, прозрачное — и
+   перехватывающее все нажатия на странице. Галерея и кнопка материалов
+   переставали нажиматься целиком.
+   Поймано приёмкой: клик по миниатюре не доходил до неё, backdrop
+   перехватывал событие. */
+.lightbox[hidden] { display: none; }
+.lightbox__backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgb(9 6 4 / .93);
+}
+.lightbox__frame {
+  position: relative;
+  margin: 0;
+  max-width: min(100%, 1600px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: .9rem;
+}
+.lightbox__img {
+  max-width: 100%;
+  /* Место под подпись и кнопки внизу: без вычета кадр упирается в край. */
+  max-height: calc(100dvh - 9rem);
+  width: auto;
+  height: auto;
+  object-fit: contain;
+  border-radius: var(--radius);
+}
+.lightbox__caption {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: .4em 1.2em;
+  color: var(--cream-70);
+  font-size: var(--step--1);
+  text-align: center;
+  max-width: 60ch;
+}
+.lightbox__count { color: var(--cream-55); font-variant-numeric: tabular-nums lining-nums; }
+
+.lightbox__btn {
+  position: absolute;
+  display: grid;
+  place-items: center;
+  width: 44px;                     /* цель нажатия не меньше 44 × 44 */
+  height: 44px;
+  color: var(--cream);
+  background: rgb(18 12 8 / .72);
+  border: 1px solid var(--soil-3);
+  border-radius: var(--radius);
+}
+.lightbox__btn::before {
+  content: '';
+  width: 11px;
+  height: 11px;
+  border-top: 1.5px solid currentColor;
+  border-right: 1.5px solid currentColor;
+}
+.lightbox__btn--prev { left: clamp(.25rem, 2vw, 1rem); top: 50%; transform: translateY(-50%); }
+.lightbox__btn--prev::before { transform: rotate(-135deg); margin-left: 3px; }
+.lightbox__btn--next { right: clamp(.25rem, 2vw, 1rem); top: 50%; transform: translateY(-50%); }
+.lightbox__btn--next::before { transform: rotate(45deg); margin-right: 3px; }
+.lightbox__btn--close { top: clamp(.25rem, 2vw, 1rem); right: clamp(.25rem, 2vw, 1rem); }
+/* Крестик рисуется теми же двумя гранями, повёрнутыми на 45°: вторая грань
+   идёт псевдоэлементом ::after, чтобы не заводить в разметке пустых span. */
+.lightbox__btn--close::before,
+.lightbox__btn--close::after {
+  content: '';
+  position: absolute;
+  width: 15px;
+  height: 0;
+  border: 0;
+  border-top: 1.5px solid currentColor;
+}
+.lightbox__btn--close::before { transform: rotate(45deg); margin: 0; }
+.lightbox__btn--close::after  { transform: rotate(-45deg); }
+
+/* Кнопки листания стоят по краям экрана, а не кадра: на узком экране кадр
+   занимает всю ширину, и кнопка внутри него закрывала бы изображение. */
+.lightbox__btn--prev, .lightbox__btn--next { position: fixed; }
+
+/* Появление. Гасится при уменьшенном движении — там кадр просто встаёт. */
+.lightbox { opacity: 0; transition: opacity var(--t-in) var(--e-in); }
+.lightbox.is-open { opacity: 1; }
+@media (prefers-reduced-motion: reduce) {
+  .lightbox { transition: none; }
+}
+
+/* ------------------------------------------------------------------ *
+ *  Панель материалов (E4)
+ * ------------------------------------------------------------------ */
+
+.panel {
+  background: var(--soil-2);
+  border: 1px solid var(--soil-3);
+  border-radius: var(--radius);
+  padding: clamp(1.5rem, 4vw, 2.5rem);
+  max-width: 44rem;
+}
+.panel__lede { color: var(--cream-70); max-width: 46ch; }
+.panel__list {
+  list-style: none;
+  margin: 1.5em 0;
+  padding: 0;
+}
+.panel__list li {
+  padding: .7em 0;
+  border-top: 1px solid var(--soil-rule);
+  color: var(--cream);
+}
+.panel__list li:first-child { border-top: 0; padding-top: 0; }
+
+.panel__cta {
+  display: inline-block;
+  padding: .85em 1.6em;
+  border: 1px solid var(--brass);
+  border-radius: var(--radius);
+  color: var(--flame);
+  text-decoration: none;
+  font-size: var(--step--1);
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  transition: background var(--t-out) var(--e-out), border-color var(--t-out) var(--e-out);
+}
+@media (hover: hover) and (pointer: fine) {
+  .panel__cta:hover {
+    background: var(--brass-20);
+    transition: background var(--t-in) var(--e-in), border-color var(--t-in) var(--e-in);
+  }
+}
+/* Ссылки ещё нет. Кнопка не исчезает и никуда не ведёт: она приглушена и
+   несёт aria-disabled — администратор видит, что папка будет, и не тратит
+   клик. Фокус при этом сохранён: кнопку надо находить табом и тогда, когда
+   она выключена, иначе о ней не узнать с клавиатуры. */
+.panel__cta--off {
+  color: var(--cream-55);
+  border-color: var(--soil-3);
+  cursor: not-allowed;
+}
+.panel__updated {
+  margin-top: 1.2em;
+  color: var(--cream-55);
+  font-size: var(--step--1);
 }

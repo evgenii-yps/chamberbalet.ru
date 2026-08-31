@@ -1,219 +1,254 @@
 /**
  * Контраст на БОЕВЫХ кадрах (§9, пункт 5 ТЗ).
  *
- * check-scrim.mjs проверяет сам профиль затемнения на четырёх подставных
- * яркостях. Здесь берём настоящие кадры и меряем их относительную яркость
- * ровно в том прямоугольнике, где стоит подпись, — и уже по ней считаем
- * контраст кремового заголовка, абзаца и латунной факт-строки.
+ * check-scrim.mjs проверяет сам профиль затемнения на подставных яркостях.
+ * Здесь берутся настоящие кадры и меряется их яркость ровно там, где стоят
+ * строки подписи, — и уже по ней считается контраст.
  *
  *
- * ЧТО СЧИТАЕТСЯ ПРИЁМКОЙ И ПОЧЕМУ ИМЕННО ЭТО
+ * ГОНЯТЬ ЦЕЛИКОМ, А НЕ ВЫБОРОЧНО
  *
- * Блокирует сборку контраст по СРЕДНЕЙ яркости фона под подписью. Контраст по
- * p95 считается и печатается, но не роняет сборку.
+ * Любая правка, которая трогает
  *
- * Причина не в мягкости, а в том, что WCAG определён для сплошной заливки:
- * там фон — одно число, и «худшая точка» совпадает со средней. Методики для
- * фотографического фона в стандарте нет вовсе. Перенести на фото формулу
- * буквально можно двумя способами, и оба — интерпретация, а не требование:
+ *   константы SCRIM в check-scrim.mjs,
+ *   покадровые scrimText в src/content.js,
+ *   состав кадров (добавили, убрали, заменили фотографию),
+ *   геометрию подписи (кегли, поля, отступы, прямоугольники BOXES ниже),
  *
- *   по среднему — фон под строкой как одно число. Это ближе всего к тому,
- *     что стандарт вообще описывает, и к тому, что видит глаз: буква стоит
- *     не в одной точке, а поперёк всей текстовой зоны;
- *   по p95 — «самые светлые 5 % площади подписи». Полезная страховка, но
- *     это уже не WCAG, а собственная, более жёсткая мерка. Кадр может
- *     провалить её из-за одной свечи, попавшей в угол прямоугольника под
- *     строкой, где буквы вообще нет.
+ * требует ПОЛНОГО прогона: восемь кадров на четыре строки в четырёх окнах,
+ * все 128 клеток. Проверять «те кадры, которых правка касалась» нельзя.
  *
- * Проверка, которая горит красным всегда, не проверяет ничего: её перестают
- * читать. Поэтому блокирует среднее, а p95 остаётся справочной строкой —
- * по ней видно, какие кадры стоит посмотреть глазами.
+ * Причина в запасе. Худшая клетка живёт на 4,60 : 1 при пороге 4,50 —
+ * десятая доли. Плотность затемнения общая, и снятая с одного кадра десятая
+ * уезжает во все восемь; кегль и поля подписи тоже общие, и сдвиг строки на
+ * несколько пикселей меняет, какой пиксель фотографии под ней окажется самым
+ * светлым. Кадр, который не правили, проваливается ровно так же, как тот,
+ * который правили, — и заметить это можно только полным прогоном.
  *
  *
- * ТЕНЬ ПОД СТРОКОЙ УЧТЕНА
+ * ЧТО ИЗМЕНИЛОСЬ И ПОЧЕМУ
  *
- * У каждой строки подписи есть text-shadow, и он заметно темнит фон вокруг
- * штрихов. Прежняя редакция этой проверки его игнорировала и потому занижала
- * контраст. Альфа тени не выведена формулой, а измерена на отрендеренных
- * пикселях: настоящие шрифты и кегли, полоса вплотную к штрихам, контроль со
- * снятой тенью даёт ровно 0.
+ * Прежняя редакция мерила по СРЕДНЕЙ яркости прямоугольника подписи, брала
+ * яркость прямо из файла оригинала и добавляла к фону собственную тень
+ * строки. Все три допущения завышали результат, и вместе они завышали его
+ * втрое: гейт показывал 12–15 : 1 там, где браузер на готовом кадре давал
+ * 3,0–3,9 : 1. Проверка, которая всегда зелёная, ничего не проверяет.
+ *
+ * Теперь:
+ *
+ *   ПО САМОМУ СВЕТЛОМУ ПИКСЕЛЮ, а не по средней. Буква стоит в конкретной
+ *     точке, и провал контраста случается там, где под ней блик свечи, а не
+ *     там, где среднее по прямоугольнику. Это строже WCAG, но WCAG и не
+ *     описывает фотографический фон вовсе — он определён для сплошной
+ *     заливки, где худшая точка совпадает со средней.
+ *
+ *   В ГЕОМЕТРИИ ПОКАЗА, а не по долям файла. Все восемь оригиналов
+ *     горизонтальные, слой полноэкранный, object-fit: cover, у слоя своё
+ *     кадрирование, а камера пролёта держит кадр увеличенным даже на
+ *     остановке. Доля файла и доля экрана — разные прямоугольники: у
+ *     13-soloist-ready верх файла и то, что реально под шапкой, расходились
+ *     втрое (см. check-topbar-strip.mjs, там та же арифметика).
+ *
+ *   БЕЗ ТЕНИ СТРОКИ В ФОНЕ. Тень принадлежит строке, а не подложке;
+ *     засчитывать её в фон — значит мерить контраст буквы с её же тенью.
+ *
+ *   ЧЕТЫРЕ СТРОКИ, а не три: добавлена рубрика (.layer__kicker) брассом.
+ *     Она и оказалась худшей строкой на всех кадрах — то есть единственная,
+ *     которую прежняя редакция не мерила, была той, что не проходит.
+ *
+ * Покадровое переопределение плотности (scrimText в src/content.js) здесь
+ * учитывается: гейт считает ровно ту плотность, которую соберёт CSS.
  */
 import sharp from 'sharp';
 import path from 'node:path';
 import { ORIGINALS } from './config.mjs';
-import { SCRIM, measure } from './check-scrim.mjs';
+import { SCRIM, densityAt } from './check-scrim.mjs';
 import { layers } from '../src/content.js';
 
-const CREAM = '#F2ECE1';   // заголовок главы
-const CREAM70 = 0.70;      // абзац: тот же кремовый на 70 % прозрачности
-const FLAME = '#F0C070';   // факт-строка (.layer__fact — color: var(--flame))
-const VOID_LUM = 0.0025;
+/** Цвета строк — из src/css/flight.css. Альфа там, где цвет полупрозрачный. */
+const LINES = [
+  { key: 'kicker', label: 'рубрика',      hex: '#C9A063', alpha: 1    },  // var(--brass)
+  { key: 'title',  label: 'заголовок',    hex: '#F2ECE1', alpha: 1    },  // var(--cream)
+  { key: 'body',   label: 'подзаголовок', hex: '#F2ECE1', alpha: 0.70 },  // var(--cream-70)
+  { key: 'fact',   label: 'метаданные',   hex: '#F0C070', alpha: 1    },  // var(--flame)
+];
 
-/** Прямоугольник подписи в долях кадра, y — от НИЗА (как в check-scrim). */
-const CAPTION = { x0: 0.04, x1: 0.52, y0: 0.05, y1: 0.42 };
-/** Поле над текстовой зоной: всё выше 0,45 по высоте от низа. */
-const FIELD_ABOVE = 0.45;
-
-/** Порог контраста и потолок плотности поля. */
 const MIN_RATIO = 4.5;
-const MAX_FIELD = 0.40;
-/** Ниже этого блики свечей сливаются с залом. */
-const MIN_GLOW = 3;
 
 /**
- * Альфа тени в полосе вплотную к штрихам, измеренная в браузере на мобильном
- * вьюпорте (там кегль меньше, тени меньше — оценка консервативная).
- * CSS-источник: .layer__title 0 2px 40px, .layer__body 0 1px 24px,
- * .layer__fact 0 1px 20px, все rgba(7,5,6,.9….95).
+ * Прямоугольники строк в долях ВЬЮПОРТА: x от левого края, y от НИЗА —
+ * тот же отсчёт, что у профиля затемнения. Замерено в браузере на собранной
+ * странице по всем восьми главам, взята объемлющая рамка: строки разной
+ * длины, а порог должен держать самая широкая.
+ *
+ * Перемерять — .build/tools/caption-boxes.mjs (не входит в сборку).
  */
-const SHADOW_ALPHA = { title: 0.116, body: 0.124, fact: 0.080 };
-const SHADOW_RGB = [7, 5, 6];
+const BOXES = {
+  390: {
+    kicker: { x0: 0.0513, x1: 0.9077, y0: 0.3144, y1: 0.3660 },
+    title:  { x0: 0.0513, x1: 0.9077, y0: 0.2182, y1: 0.3275 },
+    body:   { x0: 0.0513, x1: 0.9077, y0: 0.1140, y1: 0.2290 },
+    fact:   { x0: 0.0513, x1: 0.9077, y0: 0.0600, y1: 0.1190 },
+  },
+  768: {
+    kicker: { x0: 0.0400, x1: 0.9000, y0: 0.2754, y1: 0.3410 },
+    title:  { x0: 0.0400, x1: 0.9000, y0: 0.1741, y1: 0.3071 },
+    body:   { x0: 0.0400, x1: 0.6068, y0: 0.1075, y1: 0.2038 },
+    fact:   { x0: 0.0400, x1: 0.5104, y0: 0.0600, y1: 0.1120 },
+  },
+  1280: {
+    kicker: { x0: 0.0400, x1: 0.6025, y0: 0.3773, y1: 0.4673 },
+    title:  { x0: 0.0400, x1: 0.6025, y0: 0.2153, y1: 0.4201 },
+    body:   { x0: 0.0400, x1: 0.3965, y0: 0.1260, y1: 0.2560 },
+    fact:   { x0: 0.0400, x1: 0.3469, y0: 0.0600, y1: 0.1321 },
+  },
+  1920: {
+    kicker: { x0: 0.0375, x1: 0.4125, y0: 0.2950, y1: 0.3617 },
+    title:  { x0: 0.0375, x1: 0.4125, y0: 0.1750, y1: 0.3267 },
+    body:   { x0: 0.0375, x1: 0.2751, y0: 0.1089, y1: 0.2052 },
+    fact:   { x0: 0.0375, x1: 0.2421, y0: 0.0600, y1: 0.1134 },
+  },
+};
+
+/** Окна замера. Мобильное первым: аудитория открывает ссылку с телефона. */
+const VIEWS = [
+  { w: 390,  h: 844  },
+  { w: 768,  h: 1024 },
+  { w: 1280, h: 800  },
+  { w: 1920, h: 1080 },
+];
+
+/**
+ * Масштаб камеры на остановке. Кадр никогда не показывается один к одному:
+ * даже стоя на месте камера держит его увеличенным. Число то же, что в
+ * check-topbar-strip.mjs, и подтверждается qa:demo.
+ */
+const ZOOM = 1.15;
 
 const srgbToLin = (c) => (c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4);
 const relLum = (r, g, b) =>
   0.2126 * srgbToLin(r / 255) + 0.7152 * srgbToLin(g / 255) + 0.0722 * srgbToLin(b / 255);
-
-const hexLum = (hex) => {
-  const n = parseInt(hex.slice(1), 16);
-  return relLum((n >> 16) & 255, (n >> 8) & 255, n & 255);
-};
-
+const hexRgb = (h) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16));
 const ratio = (a, b) => (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05);
 
-/** Яркость кадра под затемнением плотности d. */
-const behind = (photoLum, d) => photoLum * (1 - d) + VOID_LUM * d;
+/** object-position кадра в долях; по умолчанию центр. */
+function cropOf(layer, narrow) {
+  const c = layer.crop || {};
+  const pick = (narrow && c.narrow?.position) || c.position || '50% 50%';
+  const [px, py] = pick.split(/\s+/).map((v) => parseFloat(v) / 100);
+  const scale = Number((narrow && c.narrow?.scale) || c.scale || 1);
+  return { px, py, scale };
+}
 
-const SHADOW_LUM = relLum(...SHADOW_RGB);
-/** Фон под строкой после тени: тень домешивается поверх затемнённого кадра. */
-const withShadow = (bg, alpha) => bg * (1 - alpha) + SHADOW_LUM * alpha;
+/** Раскладка кадра во вьюпорте: масштаб и смещение после cover, кадрирования
+ *  слота и масштаба камеры. Одна формула на оба направления пересчёта. */
+function placement(w, h, view, crop) {
+  const s = Math.max(view.w / w, view.h / h) * crop.scale * ZOOM;
+  return { s, ox: (view.w - w * s) * crop.px, oy: (view.h - h * s) * crop.py };
+}
 
-/** Пиксели прямоугольника: возвращает массив относительных яркостей. */
-async function lumsIn(file, rect) {
-  const img = sharp(file).toColourspace('srgb');
-  const { width, height } = await img.metadata();
-  // y в rect отсчитывается от низа — переводим в координаты сверху вниз.
-  const top = Math.round(height * (1 - rect.y1));
-  const bottom = Math.round(height * (1 - rect.y0));
-  const left = Math.round(width * rect.x0);
-  const right = Math.round(width * rect.x1);
-  const { data, info } = await img
-    .extract({ left, top, width: right - left, height: bottom - top })
-    .resize(160, null, { fit: 'inside' })
+/**
+ * Прямоугольник фотографии под заданным прямоугольником вьюпорта.
+ *
+ * Воспроизводится вся цепочка показа: object-fit: cover, object-position
+ * кадра, собственное приближение слота (scale) и масштаб камеры. Иначе
+ * меряется не то, что видит зритель: cover на мобильном окне показывает
+ * лишь центральную треть ширины горизонтального кадра.
+ */
+function photoRect(w, h, view, box, crop) {
+  const { s, ox, oy } = placement(w, h, view, crop);
+  const toPhoto = (x, y) => ({ x: (x - ox) / s, y: (y - oy) / s });
+  // y в box отсчитывается от низа — переводим в экранные координаты
+  const a = toPhoto(box.x0 * view.w, (1 - box.y1) * view.h);
+  const b = toPhoto(box.x1 * view.w, (1 - box.y0) * view.h);
+  const left = Math.max(0, Math.round(a.x));
+  const top = Math.max(0, Math.round(a.y));
+  const right = Math.min(w, Math.round(b.x));
+  const bottom = Math.min(h, Math.round(b.y));
+  return { left, top, width: Math.max(1, right - left), height: Math.max(1, bottom - top) };
+}
+
+const VOID = hexRgb('#070506');
+
+/** Цвет пикселя фона после затемнения плотности d. */
+const behind = (rgb, d) => rgb.map((c, i) => c * (1 - d) + VOID[i] * d);
+
+/**
+ * Самый светлый пиксель ПОСЛЕ затемнения.
+ *
+ * Считать раздельно — «самый светлый пиксель кадра» и «наименьшая плотность
+ * над строкой» — нельзя: это два худших случая, которые не обязаны сойтись в
+ * одной точке, и вместе они дают запас в никуда. Плотность берётся для
+ * каждого пикселя по его собственному месту на экране, композит собирается
+ * поточечно, максимум ищется уже по нему — ровно как это делает браузер.
+ */
+async function darkestBackdrop(file, meta, view, box, crop, textMax) {
+  const rect = photoRect(meta.width, meta.height, view, box, crop);
+  const { s, ox, oy } = placement(meta.width, meta.height, view, crop);
+  const { data, info } = await sharp(file).toColourspace('srgb')
+    .extract(rect).resize(240, null, { fit: 'inside' })
     .raw().toBuffer({ resolveWithObject: true });
-  const out = [];
-  for (let i = 0; i < data.length; i += info.channels) out.push(relLum(data[i], data[i + 1], data[i + 2]));
-  return out;
-}
-
-const pct = (sorted, p) => sorted[Math.min(sorted.length - 1, Math.round((sorted.length - 1) * p))];
-
-const creamLum = hexLum(CREAM);
-const flameLum = hexLum(FLAME);
-
-/** Абзац — кремовый на 70 %: цвет смешивается с тем, что под ним. */
-const bodyLumOver = (backLum) => hexLum(CREAM) * CREAM70 + backLum * (1 - CREAM70);
-
-/** Три контраста для заданного фона, с учётом тени каждой строки. */
-function trio(bg) {
-  const t = withShadow(bg, SHADOW_ALPHA.title);
-  const b = withShadow(bg, SHADOW_ALPHA.body);
-  const f = withShadow(bg, SHADOW_ALPHA.fact);
-  return { title: ratio(creamLum, t), body: ratio(bodyLumOver(b), b), fact: ratio(flameLum, f) };
-}
-
-const bright = measure(SCRIM, true);
-const normal = measure(SCRIM, false);
-const expectedBright = layers.filter((l) => l.bright).length;
-
-console.log('\nКонтраст на боевых кадрах');
-console.log('  профиль затемнения: поле над фото — обычный', normal.fieldMean.toFixed(3),
-            '/ светлый', bright.fieldMean.toFixed(3), `(потолок ${MAX_FIELD.toFixed(3)})`);
-console.log('  плотность в худшей точке подписи: обычный', normal.capMin.toFixed(3),
-            '/ светлый', bright.capMin.toFixed(3));
-console.log('  тень под строкой учтена: заголовок', SHADOW_ALPHA.title,
-            '· абзац', SHADOW_ALPHA.body, '· факт-строка', SHADOW_ALPHA.fact);
-console.log();
-
-const rows = [];
-const reference = [];
-const problems = [];
-
-for (const layer of layers) {
-  const file = path.join(ORIGINALS, 'photo', layer.photo + '.jpg');
-  const m = layer.bright ? bright : normal;
-  let caption, field;
-  try {
-    caption = (await lumsIn(file, CAPTION)).sort((a, b) => a - b);
-    field = (await lumsIn(file, { x0: 0, x1: 1, y0: FIELD_ABOVE, y1: 1 })).sort((a, b) => a - b);
-  } catch { continue; }
-
-  const capMean = caption.reduce((s, v) => s + v, 0) / caption.length;
-  const capP95 = pct(caption, 0.95);
-
-  const atMean = trio(behind(capMean, m.capMin));   // приёмка
-  const atP95 = trio(behind(capP95, m.capMin));     // справочно
-
-  // Свечи. Затемнение — равномерное умножение, поэтому «гаснут» они не по
-  // абсолютному уровню, а если блик перестаёт отрываться от фона. Меряем
-  // отрыв: во сколько раз ярчайшие блики поля светлее его медианы ПОСЛЕ
-  // затемнения. Меньше 3 — пламя слилось с залом.
-  const fMed = pct(field, 0.5), fTop = pct(field, 0.999);
-  const glow = (behind(fTop, m.fieldMean) + 0.05) / (behind(fMed, m.fieldMean) + 0.05);
-
-  const r1 = (x) => x.toFixed(2) + ':1';
-  rows.push({
-    кадр: layer.photo,
-    пресет: layer.bright ? 'светлый' : 'обычный',
-    'фон ср.': capMean.toFixed(3),
-    'заголовок': r1(atMean.title),
-    'абзац': r1(atMean.body),
-    'факт-строка': r1(atMean.fact),
-    'поле': m.fieldMean.toFixed(3),
-    'отрыв бликов': glow.toFixed(1) + '×',
-  });
-  reference.push({
-    кадр: layer.photo,
-    'фон p95': capP95.toFixed(3),
-    'заголовок': r1(atP95.title),
-    'абзац': r1(atP95.body),
-    'факт-строка': r1(atP95.fact),
-    'ниже порога': [
-      atP95.title < MIN_RATIO ? 'заголовок' : null,
-      atP95.body < MIN_RATIO ? 'абзац' : null,
-      atP95.fact < MIN_RATIO ? 'факт-строка' : null,
-    ].filter(Boolean).join(', ') || '—',
-  });
-
-  // Блокирует только среднее — см. шапку файла.
-  for (const [key, label] of [['title', 'заголовок'], ['body', 'абзац'], ['fact', 'факт-строка']]) {
-    if (atMean[key] < MIN_RATIO) {
-      problems.push(`${layer.photo}: ${label} ${atMean[key].toFixed(2)} : 1 < ${MIN_RATIO} : 1 (по средней яркости фона)`);
+  const kx = rect.width / info.width, ky = rect.height / info.height;
+  let best = -1, rgb = [0, 0, 0];
+  for (let j = 0; j < info.height; j++) {
+    // пиксель картинки -> пиксель оригинала -> точка экрана -> доли вьюпорта
+    const py = rect.top + (j + 0.5) * ky;
+    const yFrac = 1 - (py * s + oy) / view.h;
+    for (let i = 0; i < info.width; i++) {
+      const px = rect.left + (i + 0.5) * kx;
+      const xFrac = (px * s + ox) / view.w;
+      const d = densityAt(SCRIM, xFrac, yFrac, textMax);
+      const k = (j * info.width + i) * info.channels;
+      const mixed = behind([data[k], data[k + 1], data[k + 2]], d);
+      const L = relLum(...mixed);
+      if (L > best) { best = L; rgb = mixed; }
     }
   }
-  if (m.fieldMean > MAX_FIELD) problems.push(`${layer.photo}: поле ${m.fieldMean.toFixed(3)} > ${MAX_FIELD.toFixed(3)}`);
-  if (glow < MIN_GLOW) problems.push(`${layer.photo}: свечи погасли, отрыв бликов ${glow.toFixed(1)}× < ${MIN_GLOW}×`);
+  return { lum: best, rgb };
 }
 
-console.log('Приёмка — по средней яркости фона под подписью');
-console.table(rows);
+if (import.meta.url === `file://${process.argv[1]}`) {
+  console.log('\nКонтраст на боевых кадрах');
+  console.log('  метод: самый светлый пиксель под строкой, в геометрии показа,');
+  console.log(`  без учёта собственной тени строки; порог ${MIN_RATIO} : 1`);
 
-console.log('\nСправочно — по p95 (самые светлые 5 % площади подписи). Сборку не роняет.');
-console.table(reference);
+  const problems = [];
+  for (const view of VIEWS) {
+    const boxes = BOXES[view.w];
+    const rows = [];
+    for (const layer of layers) {
+      const file = path.join(ORIGINALS, 'photo', layer.photo + '.jpg');
+      let meta;
+      try { meta = await sharp(file).metadata(); } catch { continue; }
+      const crop = cropOf(layer, view.w <= 640);
+      const row = {
+        кадр: layer.photo,
+        плотность: (layer.scrimText ?? (layer.bright ? SCRIM.brightMax : SCRIM.textMax)).toFixed(2)
+          + (layer.scrimText ? ' (свой)' : layer.bright ? ' (светл.)' : ''),
+      };
+      const textMax = layer.scrimText ?? (layer.bright ? SCRIM.brightMax : SCRIM.textMax);
+      for (const line of LINES) {
+        const box = boxes[line.key];
+        const spot = await darkestBackdrop(file, meta, view, box, crop, textMax);
+        const fg = hexRgb(line.hex).map((c, i) => c * line.alpha + spot.rgb[i] * (1 - line.alpha));
+        const c = ratio(relLum(...fg), spot.lum);
+        row[line.label] = c.toFixed(2);
+        if (c < MIN_RATIO) {
+          problems.push(`${view.w}px, ${layer.photo}: ${line.label} ${c.toFixed(2)} : 1 < ${MIN_RATIO} : 1`);
+        }
+      }
+      rows.push(row);
+    }
+    if (!rows.length) { console.log('\n   оригиналов нет — проверять нечего\n'); process.exit(0); }
+    console.log(`\nОкно ${view.w} × ${view.h}`);
+    console.table(rows);
+  }
 
-const below = reference.filter((r) => r['ниже порога'] !== '—');
-if (below.length) {
-  console.log(`   по p95 ниже ${MIN_RATIO} : 1 — ${below.length} кадр(ов): ` +
-              below.map((r) => `${r.кадр} (${r['ниже порога']})`).join('; '));
-  console.log('   это справочная мерка, не WCAG — посмотреть глазами, решение принимается отдельно.');
-} else {
-  console.log(`   по p95 все кадры тоже выше ${MIN_RATIO} : 1`);
+  if (problems.length) {
+    console.error('\nНиже порога:');
+    problems.forEach((p) => console.error('  ×', p));
+    console.error('\n   поднимать не общее значение, а scrimText нужного кадра в src/content.js\n');
+    process.exit(1);
+  }
+  console.log('\n   сходится\n');
 }
-
-console.log(`\nсветлых кадров: ${rows.filter((r) => r.пресет === 'светлый').length} (в src/content.js: ${expectedBright})`);
-
-if (problems.length) {
-  console.error('\nНе сходится:');
-  problems.forEach((p) => console.error('  ', p));
-  process.exit(1);
-}
-console.log('\n   сходится\n');
