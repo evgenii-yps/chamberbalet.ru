@@ -23,6 +23,11 @@
     "lcp": "node scripts/qa/lcp.mjs",
     "lighthouse": "node scripts/qa/lighthouse.mjs",
     "qa:accept": "node scripts/qa/accept.mjs",
+    "qa:rest": "node scripts/qa/rest.mjs",
+    "qa:contrast": "node scripts/qa/contrast-live.mjs",
+    "qa:fit": "node scripts/qa/fit-frame.mjs",
+    "qa:seam": "node scripts/qa/seam.mjs",
+    "qa:chapter": "node scripts/qa/chapter-top.mjs",
     "qa:wordmark": "node scripts/qa/wordmark-widths.mjs"
   },
   "devDependencies": {
