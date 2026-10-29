@@ -22,3 +22,12 @@ html[data-mode="big"] .mk__t { text-shadow: 0 0 18px rgba(103, 176, 153, .55); }
   .top.is-menu-open .mpanel__foot { opacity: 1; transition-delay: 450ms; }
 }
 .top.is-hidden:has(.is-menu-open) { transform: none; }
+
+/* ============================== пиктограммы ============================== */
+@media (prefers-reduced-motion: no-preference) {
+  /* линия «рисуется» (stroke-dashoffset наследуется в <use>); каскад — через --i родителя */
+  .anim :is(.why__ico, .chips .ico, .step__ico, .inv__ico, .person__c .ico, .qrcard__n .ico) { stroke-dasharray: 1; stroke-dashoffset: 0; transition: transform 200ms var(--ease-out), stroke-dashoffset 700ms var(--ease-out); transition-delay: 0s, calc(var(--i, 0) * 60ms); }
+  .anim :is(.why__ico, .chips .ico, .step__ico, .inv__ico, .person__c .ico, .qrcard__n .ico):not(.is-in) { stroke-dashoffset: 1.02; }
+  /* hover карточки: лёгкий сдвиг и поворот */
+  .why:hover .why__ico, .chips li:hover .ico, .step:hover .step__ico, .inv:hover .inv__ico { transform: translateY(-2px) rotate(3deg); }
+}
