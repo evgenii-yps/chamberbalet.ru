@@ -22,6 +22,15 @@ function leavingSectionUnderViewport(next) {
   });
 }
 
+/** Какие разделы появятся и какие уйдут при смене режима. */
+export function sectionsFor(next) {
+  const all = [...document.querySelectorAll('section[data-modes]')];
+  return {
+    entering: all.filter((el) => el.hidden && shown(el, next)),
+    leaving: all.filter((el) => !el.hidden && !shown(el, next)),
+  };
+}
+
 /** Подпись и кнопки первого экрана. */
 function paintHero(mode) {
   const d = data.modes[mode];

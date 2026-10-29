@@ -1,0 +1,45 @@
+/* ===== Состояния знака {НЕ}: работают и без анимации ===== */
+.mk__ne { max-width: 2.4em; overflow: clip; overflow-clip-margin: .4em; }
+html[data-mode="chamber"] .mk__ne { max-width: 0; transform: scaleX(0); opacity: 0; }
+html[data-mode="chamber"] .mk__b { opacity: .5; }
+html[data-mode="big"] .mk__t { text-shadow: 0 0 18px rgba(103, 176, 153, .55); }
+
+@media (prefers-reduced-motion: no-preference) {
+  /* ---- 6.1 смена режима ---- */
+  .mk__ne {
+    transform-origin: 0 50%;
+    transition: max-width 600ms var(--ease-curtain), transform 600ms var(--ease-curtain), opacity 400ms var(--ease-curtain);
+  }
+  .mk__b { transition: opacity 600ms var(--ease-curtain); }
+  .mk__t { transition: text-shadow 400ms var(--ease-out); }
+  html.ne-flash .mk__t { animation: ne-glow 900ms var(--ease-out); }
+  @keyframes ne-glow {
+    0% { text-shadow: 0 0 0 rgba(103, 176, 153, 0); }
+    35% { text-shadow: 0 0 28px rgba(103, 176, 153, .95); }
+    100% { text-shadow: 0 0 18px rgba(103, 176, 153, .55); }
+  }
+  .seg__run { transition: transform 360ms var(--ease-out); }
+  .seg__b { transition: color 200ms var(--ease-out); }
+
+  /* занавес: View Transitions */
+  ::view-transition-old(root), ::view-transition-new(root) { animation: none; mix-blend-mode: normal; }
+  html[data-vt="center"]::view-transition-new(root) { animation: vt-center 800ms var(--ease-curtain) both; }
+  html[data-vt="down"]::view-transition-new(root) { animation: vt-down 900ms var(--ease-curtain) both; }
+  @keyframes vt-center { from { clip-path: inset(0 50%); } to { clip-path: inset(0 0); } }
+  @keyframes vt-down { from { clip-path: inset(0 0 100% 0); } to { clip-path: inset(0); } }
+
+  /* ---- 6.3 первая загрузка: одна сцена ≤ 1.6 с, только в первую сессию ---- */
+  .js:not(.seen) .mark__l1, .js:not(.seen) .mark__l2, .js:not(.seen) .mark__l3 {
+    animation: line-in 500ms var(--ease-out) both;
+  }
+  .js:not(.seen) .mark__l2 { animation-delay: 120ms; }
+  .js:not(.seen) .mark__l3 { animation-delay: 240ms; }
+  @keyframes line-in { from { clip-path: inset(100% 0 0 0); } to { clip-path: inset(0); } }
+  .js:not(.seen) .hero__slogan, .js:not(.seen) .hero__mode, .js:not(.seen) .seg--big, .js:not(.seen) .hero__cta {
+    animation: fade-in 300ms linear both; animation-delay: 1000ms;
+  }
+  .js:not(.seen) .hero__mode { animation-delay: 1100ms; }
+  .js:not(.seen) .seg--big { animation-delay: 1200ms; }
+  .js:not(.seen) .hero__cta { animation-delay: 1300ms; }
+  @keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
+}
