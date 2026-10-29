@@ -209,7 +209,7 @@ export function createRenderer({ fonts, media }) {
     return `<section class="sec sec--2 rep" id="rep" aria-labelledby="rep-h">
   <div class="wrap">
     <h2 class="h2" id="rep-h">${t(r.title)}</h2>
-    <p class="lead">${t(r.lead)}</p>
+    <p class="lead">${t(r.lead(r.groups.reduce((n, g) => n + g.items.length, 0)))}</p>
     <div class="tabs" data-tabs>
       <div class="tabs__list" role="tablist" aria-label="${esc(r.tabsLabel)}">${tabs}<i class="tabs__bar" aria-hidden="true"></i></div>
     ${panels}
@@ -326,6 +326,8 @@ export function createRenderer({ fonts, media }) {
       <h3 class="h3">${t(m.listTitle)}</h3>
       <ul class="mats__list">${m.list.map((x) => `<li>${t(x)}</li>`).join('')}</ul>
       <a class="btn" href="${m.link.href}" target="_blank" rel="noopener">${t(m.link.label)}</a>
+      <h3 class="h3 h3--gap">${t(m.contactsTitle)}</h3>
+      <ul class="mats__contacts">${C.footer.contacts.map((c) => `<li><a href="${c.href}"${c.external ? ' target="_blank" rel="noopener"' : ''}>${t(c.label)}</a></li>`).join('')}</ul>
     </div>
   </div>
 </section>`;

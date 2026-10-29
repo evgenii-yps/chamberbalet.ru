@@ -303,3 +303,7 @@ html[data-mode="all"] .v--all, html[data-mode="chamber"] .v--chamber, html[data-
 /* До применения режима скриптом: те же разделы не мигают при ?mode= */
 html[data-mode="chamber"]:not(.modes-ready) [data-modes="all big"],
 html[data-mode="big"]:not(.modes-ready) [data-modes="all chamber"] { display: none; }
+.mats__contacts { margin-top: 20px; border-top: 1px solid var(--hair); }
+.mats__contacts li { padding: 12px 0; border-bottom: 1px solid var(--hair); }
+.mats__contacts a { color: var(--cream); text-underline-offset: 4px; }
+.mats__contacts a:hover { color: var(--patina); }
