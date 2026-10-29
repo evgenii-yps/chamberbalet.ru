@@ -1,577 +1,524 @@
 /**
- * Разметка собирается здесь из src/content.js. Ни одной видимой строки в
- * шаблоне: тексты правятся в одном файле и попадают и в HTML, и в JSON-LD.
- *
- * Заглушка (PLACEHOLDER) в продакшн-сборке скрывает блок целиком — лучше
- * отсутствующий блок, чем «__ЗАПОЛНИТЬ__» на живом сайте. В отладочной
- * сборке она рисуется видимой пометкой.
+ * Разметка страницы v2. Тексты — из src/content.js, пиктограммы — из
+ * src/icons.js, медиа — из media/media.json через build-media.mjs.
  */
 import * as C from '../src/content.js';
-import { PHOTO_WIDTHS, GALLERY_EAGER } from './config.mjs';
+import { spriteSvg, ico } from '../src/icons.js';
+import { qrSvg } from './qr.mjs';
 
-/** sizes: кадр показывается вплоть до масштаба 2,6, поэтому 100vw занижает
- *  потребность и браузер берёт слишком мелкий вариант. */
-export const SIZES = 'min(160vw, 2560px)';
-
-/** Заголовок главы содержит <br> — для aria-label его надо снять. */
-export const stripTags = (s) => String(s).replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+const NB = '\u00a0';
 
 export const esc = (s) => String(s)
-  .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
-  .replace(/"/g, '&quot;');
+  .replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('"', '&quot;');
 
-/** Значения, которые нельзя показывать. */
-const blank = C.isBlank;
+/** Неразрывные пробелы: после предлогов и союзов до трёх букв, в инициалах, перед тире, у чисел. */
+export function typo(s) {
+  return s
+    .replace(/(?<=(?:^|[\s«(])[А-Яа-яЁёA-Za-z]{1,3}) (?=\S)/g, NB)
+    .replace(/(?<=(?:^|[\s«(])[А-ЯЁ]\.) (?=[А-ЯЁ])/g, NB)
+    .replace(/ (?=[—–])/g, NB)
+    .replace(/(?<=\d) (?=[×мчк]|мин|сезон|стран)/g, NB)
+    .replace(/(?<=×) /g, NB);
+}
 
-export function createRenderer({
-  debug = false,
-  images = { photos: {}, og: null, gallery: [], seam: null },
-  video = { sources: [], poster: [] },
-  sectionVideo = { source: null, poster: null },
-  fonts = { faces: [] },
-}) {
-  /**
-   * Заполненное значение → само значение.
-   * Пустое → null в проде (блок исчезает) или пометка в отладке.
-   */
-  const val = (v) => {
-    if (!blank(v)) return esc(v);
-    return debug ? '<span class="placeholder">' + esc(C.PLACEHOLDER) + '</span>' : null;
-  };
-  /** Блок целиком показываем, только если есть хоть одно заполненное значение. */
-  const any = (values) => debug || values.some((v) => !blank(v));
+/** Строка в разметку: экранирование, типографика, {НЕ} → span. */
+export const t = (s) => typo(esc(s)).replaceAll('{НЕ}', '<span class="ne-i">{НЕ}</span>');
+const attr = (s) => esc(typo(s)).replaceAll('{НЕ}', '{НЕ}');
 
-  const photoOf = (name) => images.photos?.[name];
+/** Заголовок: [обычное, ключевое слово патиной]. */
+const parts = (p) => `${t(p[0])}<span class="k">${t(p[1])}</span>`;
 
-  /** <picture> с источниками по убыванию предпочтения. */
-  function picture(layer, { eager = false, priority = false } = {}) {
-    const photo = photoOf(layer.photo);
-    if (!photo) return '';
+/** Знак {НЕ}: скобки, слово и линия-пульс. */
+const mk = () =>
+  '<span class="mk"><span class="mk__b" aria-hidden="true">{</span>' +
+  '<span class="mk__ne"><span class="mk__t">НЕ</span><i class="mk__ul"></i></span>' +
+  '<span class="mk__b" aria-hidden="true">}</span></span>';
 
-    const byExt = {};
-    for (const v of photo.variants) (byExt[v.ext] ||= []).push(v);
-    for (const list of Object.values(byExt)) list.sort((a, b) => a.width - b.width);
+/** Фраза по словам — маска, каскад задаёт --i. */
+function words(s, start = 0) {
+  return typo(esc(s)).split(' ').map((w, i) =>
+    `<span class="w" style="--i:${start + i}"><span>${w}</span></span>`).join(' ');
+}
 
-    const srcset = (list) => list.map((v) => `/assets/photo/${v.file} ${v.width}w`).join(', ');
-    const sources = ['avif', 'webp']
-      .filter((ext) => byExt[ext]?.length)
-      .map((ext) => `<source type="${byExt[ext][0].mime}" srcset="${srcset(byExt[ext])}" sizes="${SIZES}">`);
+/** Детерминированный «случай»: сборка воспроизводима. */
+function rng(seed) {
+  let x = seed;
+  return () => ((x = (x * 1664525 + 1013904223) % 4294967296) / 4294967296);
+}
 
-    const jpg = byExt.jpg || [];
-    if (!jpg.length) return '';
-    const fallback = jpg.find((v) => v.width >= 1280) || jpg[jpg.length - 1];
-    const largest = jpg[jpg.length - 1];
+export function createRenderer({ fonts, media, warnings = [] }) {
+  const registry = {};      // слоты, которые открывает плеер
+  const modesAttr = (modes) => (modes ? ` data-modes="${modes.join(' ')}"` : '');
 
-    const attrs = [
-      `src="/assets/photo/${fallback.file}"`,
-      `srcset="${srcset(jpg)}"`,
-      `sizes="${SIZES}"`,
-      `width="${largest.width}"`,
-      `height="${largest.height}"`,
-      `alt="${esc(layer.alt)}"`,
-      eager ? 'decoding="async"' : 'loading="lazy" decoding="async"',
-      priority ? 'fetchpriority="high"' : '',
-    ].filter(Boolean).join(' ');
+  /* ------------------------------- медиа ------------------------------- */
 
-    return `<picture>${sources.join('')}<img ${attrs}></picture>`;
-  }
+  const playBtn = (id, label, group) =>
+    `<button type="button" class="play" data-play="${id}"${group ? ` data-group="${group}"` : ''} aria-label="${attr(C.ui.play)}: ${attr(label)}">${ico('play')}</button>`;
 
-  /** Постер видео: тот же <picture>, всегда виден, пока ролик не готов. */
-  function posterPicture() {
-    if (!video.poster?.length) return '';
-    const byExt = Object.fromEntries(video.poster.map((p) => [p.ext, p]));
-    const sources = ['avif', 'webp'].filter((e) => byExt[e])
-      .map((e) => `<source type="${byExt[e].mime}" srcset="/assets/photo/${byExt[e].file}">`);
-    if (!byExt.jpg) return '';
-    return `<picture>${sources.join('')}<img src="/assets/photo/${byExt.jpg.file}" alt="" width="1920" height="1080" fetchpriority="high" decoding="async"></picture>`;
-  }
-
-  /* ------------------------------- пролёт ------------------------------- */
-
-  /** Подпись главы. Живёт в своём кадре: так она есть и без JS, и для поиска. */
-  function caption(chapter, number, total) {
-    const id = `chapter-${number + 1}-title`;
-    return [
-      '<div class="layer__caption">',
-      `<p class="layer__kicker">${esc(chapter.kicker)}` +
-        `<span class="layer__no">${String(number + 1).padStart(2, '0')} / ${String(total).padStart(2, '0')}</span></p>`,
-      `<h2 class="layer__title" id="${id}">${chapter.title}</h2>`,
-      `<p class="layer__body">${esc(chapter.body)}</p>`,
-      `<p class="layer__fact">${esc(chapter.fact)}</p>`,
-      '</div>',
-    ].join('');
-  }
-
-  function renderLayer(layer, i) {
-    // В разметке стоит только нулевой кадр, остальные — в <noscript>: в пролёте
-    // все слои лежат в области просмотра, и loading="lazy" их бы не удержал.
-    //
-    // Нулевой оставлен инлайном не ради пролёта, а потому что это тот же файл,
-    // что и фон первого экрана: разведи их — и одна загрузка станет двумя.
-    // Остальные кадры пролёта до первого действия пользователя не нужны, а
-    // весом соревнуются с кадром LCP; их поднимает main.js после отрисовки.
-    const inHtml = i < 1;
-    const photoInner = inHtml
-      ? picture(layer, { eager: true, priority: true })
-      : `<noscript>${picture(layer)}</noscript>`;
-
-    const chapter = layer.chapter;
-    const number = chapter ? C.chapters.findIndex((c) => c.index === i) : -1;
-    const label = chapter ? `${chapter.kicker}. ${stripTags(chapter.title)}` : layer.alt;
-
-    // Кадрирование слота едет инлайновыми переменными, а не классом на каждый
-    // слайд: значения живут в content.js, и добавление слайда не должно
-    // требовать правки CSS. Пустые не печатаются — в CSS у каждой свой var().
-    const crop = layer.crop || {};
-    const cropVars = [
-      crop.position && `--crop:${crop.position}`,
-      crop.scale && `--crop-scale:${crop.scale}`,
-      crop.origin && `--crop-origin:${crop.origin}`,
-      crop.narrow?.position && `--crop-n:${crop.narrow.position}`,
-      crop.narrow?.scale && `--crop-scale-n:${crop.narrow.scale}`,
-      crop.narrow?.origin && `--crop-origin-n:${crop.narrow.origin}`,
-    ].filter(Boolean).join(';');
-
-    return [
-      `<article class="layer${layer.tall ? ' layer--tall' : ''}"`,
-      // --scrim-frame инлайном: из него ::after кадра берёт свою плотность по
-      // наследованию, а main.js копирует то же значение на экранный слой.
-      ` style="--i:${i}${layer.scrimText ? `;--scrim-frame:${layer.scrimText}` : ''}"`,
-      ` data-index="${i}" data-chapter="${esc(label)}"`,
-      layer.bright ? ' data-bright' : '',
-      layer.topScrim ? ' data-top-scrim' : '',
-      chapter ? ` aria-labelledby="chapter-${number + 1}-title"` : ` aria-label="${esc(layer.alt)}"`,
-      '>',
-      `<div class="layer__photo" data-photo="${esc(layer.photo)}"` +
-        (cropVars ? ` style="${cropVars}"` : '') + `>${photoInner}</div>`,
-      chapter ? caption(chapter, number, C.chapters.length) : '',
-      '</article>',
-    ].join('');
-  }
-
-  /** Первый экран: фотография, поверх неё видео, если оно собрано. */
-  function renderOpener() {
-    const heroLayer = C.layers.find((l) => l.photo === C.hero.photo) || C.layers[0];
-    const videoEl = video.sources?.length
-      ? `<video class="opener__video" muted loop playsinline preload="metadata" aria-hidden="true" tabindex="-1"` +
-        (video.poster?.find((p) => p.ext === 'jpg')
-          ? ` poster="/assets/photo/${video.poster.find((p) => p.ext === 'jpg').file}"` : '') +
-        ` data-sources='${JSON.stringify(video.sources.map((s) => ({ src: `/assets/video/${s.file}`, type: s.mime, width: s.width })))}'></video>`
-      : '';
-
-    return [
-      '<section class="opener" aria-labelledby="opener-title">',
-      '<div class="opener__bg">',
-      picture({ ...heroLayer, alt: '' }, { eager: true, priority: true }),
-      videoEl,
-      `<div class="opener__veil"${heroLayer.bright ? ' data-bright' : ''}` +
-        (heroLayer.scrimText ? ` style="--scrim-frame:${heroLayer.scrimText}"` : '') +
-        ' aria-hidden="true"></div>',
-      '</div>',
-      '<div class="opener__in">',
-      `<p class="opener__kicker">${esc(C.hero.kicker)}</p>`,
-      `<h1 class="opener__title" id="opener-title">${esc(C.site.organisation.name)}</h1>`,
-      `<p class="opener__lede">${esc(C.hero.lede)}</p>`,
-      '</div>',
-      '</section>',
-    ].join('');
-  }
-
-  function renderFlight() {
-    const layersHtml = C.layers.map(renderLayer).join('');
-    const dots = C.chapters.map((c, n) =>
-      `<button type="button" class="rail__dot" data-stop="${n + 1}" aria-current="false">` +
-      `<span class="visually-hidden">${esc(`${n + 1}. ${c.kicker}. ${stripTags(c.title)}`)}</span></button>`).join('');
-
-    return [
-      renderOpener(),
-      `<div class="flight" style="--count:${C.layers.length}">`,
-      `<div class="flight__world">${layersHtml}</div>`,
-      // Затемнение внутри пролёта: один контекст наложения на кадры,
-      // затемнение и подписи — тогда порядок отрисовки следует числам
-      '<div class="flight__scrim" aria-hidden="true"></div>',
-      '</div>',
-      `<p class="hint">${esc(C.hero.scrollHint)}</p>`,
-      `<nav class="rail" aria-label="${esc(C.ui.railLabel)}">${dots}</nav>`,
-      '<p class="visually-hidden" id="flight-live" aria-live="polite"></p>',
-    ].join('');
-  }
-
-  /* ------------------------------- секции ------------------------------- */
-
-  const section = (id, inner, extra = '') =>
-    `<section class="section${extra}" id="${id}"><div class="section__inner reveal">${inner}</div></section>`;
-
-  function renderRequirements() {
-    const r = C.requirements;
-    const groups = r.groups.map((g) =>
-      `<div class="group"><h3 class="group__title">${esc(g.title)}</h3><p class="group__body">${esc(g.body)}</p></div>`).join('');
-
-    const rows = r.table.rows
-      .map((row) => ({ row, value: val(row.value) }))
-      .filter(({ value }) => value !== null)                  // пустая строка исчезает целиком
-      .map(({ row, value }) => `<tr><th scope="row">${esc(row.label)}</th><td>${value}</td></tr>`)
-      .join('');
-
-    const table = rows
-      ? `<table class="params"><caption>${esc(r.table.caption)}</caption><tbody>${rows}</tbody></table>`
-      : '';
-
-    return section(r.id, [
-      `<p class="kicker">${esc(r.kicker)}</p>`,
-      `<h2 class="section__title">${esc(r.title)}</h2>`,
-      `<div class="groups">${groups}</div>`,
-      table,
-    ].join(''));
-  }
-
-  /* ---------------------- стык, видео, галерея, файлы ---------------------- */
-
-  /**
-   * Стык. Растворяет последний кадр пролёта в тёплом грунте.
-   *
-   * Размытие идёт по заранее подготовленной крохе (LQIP), а не через
-   * backdrop-filter: тот на мобильном при прокрутке роняет кадры, потому что
-   * заставляет композитор пересчитывать фон под каждым кадром движения. Здесь
-   * размывается статическая картинка 20 px шириной — стоимость нулевая.
-   *
-   * Блок декоративный целиком: aria-hidden, в поток чтения не входит.
-   */
-  function renderSeam() {
-    if (!images.seam) return '';
-    return [
-      '<div class="seam" aria-hidden="true">',
-      '<div class="seam__blur"></div>',
-      '<div class="seam__wash"></div>',
-      '<div class="seam__grain"></div>',
-      '</div>',
-    ].join('');
+  function picture(m, { sizes = '100vw', alt = '' } = {}) {
+    const set = (arr) => arr.map((x) => `${x.url} ${x.w}w`).join(', ');
+    const last = m.jpg[m.jpg.length - 1];
+    return `<picture><source type="image/webp" srcset="${set(m.webp)}" sizes="${sizes}">` +
+      `<img src="${m.jpg[0].url}" srcset="${set(m.jpg)}" sizes="${sizes}" alt="${esc(alt || m.alt)}" width="${m.width}" height="${m.height}" loading="lazy" decoding="async"></picture>`;
   }
 
   /**
-   * Видео.
-   *
-   * preload="none" и никакого poster в разметке: атрибут ставит JS, когда
-   * секция входит в область просмотра. Поставь его здесь — и постер уедет в
-   * первую загрузку, где ему делать нечего.
-   *
-   * Контролы нативные. Никаких iframe YouTube / VK / Rutube: внешние запросы,
-   * вес, трекеры и риск, что у площадки этот домен закрыт.
+   * Слот медиа. Нет файла — заглушка (свечение, зерно, подпись слота).
+   * o: type, cls, ratio, play (кнопка Play), group, sizes, parallax, tag (скрыть подпись у реального).
    */
-  function renderVideoSection() {
-    const v = C.videoSection;
-    const src = sectionVideo.source;
-    if (!src) return '';
-    const caption = val(v.caption);
-    return section(v.id, [
-      `<p class="kicker">${esc(v.kicker)}</p>`,
-      `<h2 class="section__title">${esc(v.title)}</h2>`,
-      `<figure class="filmstrip${v.vertical ? ' filmstrip--tall' : ''}">`,
-      `<video class="filmstrip__video" controls preload="none" playsinline`,
-      ` width="${src.width}" height="${src.height}"`,
-      ` data-poster="/assets/photo/${sectionVideo.poster.file}">`,
-      `<source src="/assets/video/${src.file}" type="${src.mime}">`,
-      '</video>',
-      caption ? `<figcaption class="filmstrip__caption">${caption}</figcaption>` : '',
-      '</figure>',
-    ].join(''), ' section--video');
+  function slotMedia(slot, o = {}) {
+    const m = media[slot.id];
+    const type = o.type || slot.type || 'img';
+    const ratio = o.ratio || slot.ratio;
+    const style = ratio ? ` style="aspect-ratio:${ratio}"` : '';
+    const E = o.el || 'div';
+    const cls = `media${o.cls ? ' ' + o.cls : ''}${o.parallax ? ' media--par' : ''}`;
+    const par = o.parallax ? ' data-fx="par"' : o.fx ? ` data-fx="${o.fx}"` : '';
+    const label = (m && m.caption) || slot.tag;
+    const wrap = (c, inner, extra = '') => `<${E} class="${c}" data-slot="${slot.id}"${style}${extra}><${E} class="media__in"${par}>${inner}</${E}>`;
+
+    if (type === 'inline') {
+      registry[slot.id] = m && (m.src || m.poster)
+        ? { kind: 'video', src: m.src || null, poster: m.poster || null, caption: m.caption || slot.tag }
+        : { kind: 'ph', caption: slot.tag };
+    }
+
+    if (type === 'bg' && m && (m.src || m.poster)) {
+      if (o.full) registry[slot.id] = { kind: 'video', src: m.full || m.src || null, poster: m.poster || null, caption: m.caption || slot.tag };
+      return wrap(cls, `<video class="media__bg" muted loop playsinline preload="none"${m.poster ? ` poster="${m.poster}"` : ''} data-bg${m.src ? ` data-src="${m.src}"` : ''}></video>`) + `</${E}>`;
+    }
+    if (type === 'inline' && m && (m.src || m.poster)) {
+      return wrap(`${cls} is-real`, (m.poster ? `<img src="${m.poster}" alt="" loading="lazy" decoding="async">` : '') +
+        (m.preview ? `<video class="media__prev" muted loop playsinline preload="none" data-src="${m.preview}"></video>` : '')) +
+        `${playBtn(slot.id, label, o.group)}${m.caption ? `<span class="tag">${t(m.caption)}</span>` : ''}</${E}>`;
+    }
+    if (type === 'img' && m && m.jpg) {
+      if (o.lightbox) registry[slot.id] = { kind: 'img', src: m.jpg[m.jpg.length - 1].url, caption: m.alt || slot.tag };
+      return wrap(`${cls} is-real`, picture(m, { sizes: o.sizes || '(min-width:1000px) 50vw, 100vw', alt: slot.tag })) + `</${E}>`;
+    }
+    // заглушка: свечение, зерно, подпись слота
+    if (o.lightbox) registry[slot.id] = { kind: 'ph', caption: slot.tag };
+    if (o.full) registry[slot.id] = { kind: 'ph', caption: slot.tag };
+    const kind = (type === 'inline' || type === 'bg') ? 'video' : /^(face|person|director)/.test(slot.id) ? 'portrait' : ratio === '3 / 4' ? 'poster' : 'photo';
+    return wrap(`${cls} is-ph ph-${kind}`, '') +
+      `${type === 'inline' ? playBtn(slot.id, slot.tag, o.group) : ''}<span class="tag${o.tagRight ? ' tag--r' : ''}">${t(slot.tag)}</span></${E}>`;
   }
 
-  /**
-   * Галерея. Разметка полная и без JS: миниатюры — обычные ссылки на
-   * полноразмер. Лайтбокс перехватывает клик, когда скрипт жив; когда нет,
-   * кадр просто открывается по ссылке.
-   */
-  function renderGallery() {
-    const g = C.gallery;
-    const items = images.gallery || [];
-    if (!items.length) return '';
-
-    const cells = items.map((item, i) => [
-      `<li class="shots__cell">`,
-      `<a class="shots__link" href="/assets/gallery/${item.full.file}"`,
-      ` data-full="/assets/gallery/${item.full.file}"`,
-      ` data-width="${item.full.width}" data-height="${item.full.height}"`,
-      ` data-alt="${esc(item.alt)}"`,
-      ` aria-label="${esc(g.ui.open)}: ${esc(item.alt)}">`,
-      `<img src="/assets/gallery/${item.thumb.file}" alt="${esc(item.alt)}"`,
-      ` width="${item.thumb.width}" height="${item.thumb.height}"`,
-      i < GALLERY_EAGER ? ' decoding="async"' : ' loading="lazy" decoding="async"',
-      '>',
-      '</a></li>',
-    ].join('')).join('');
-
-    return section(g.id, [
-      `<p class="kicker">${esc(g.kicker)}</p>`,
-      `<h2 class="section__title">${esc(g.title)}</h2>`,
-      `<ul class="shots">${cells}</ul>`,
-      `<p class="shots__note">${esc(g.note)}</p>`,
-    ].join(''));
+  /** Плитка кадра: вся плитка — кнопка лайтбокса. */
+  function tile(slot, cls = '', group = 'gallery') {
+    const inner = slotMedia(slot, { type: 'img', lightbox: true, el: 'span', sizes: '(min-width:1000px) 33vw, 50vw' });
+    return `<button type="button" class="tile ${cls}" data-play="${slot.id}" data-group="${group}" aria-label="${attr(C.ui.openPhoto)}: ${attr(slot.tag)}">${inner}</button>`;
   }
 
-  /** Лайтбокс. Один узел на всю галерею, пустой до открытия. */
-  function renderLightbox() {
-    const g = C.gallery;
-    if (!(images.gallery || []).length) return '';
-    return [
-      '<div class="lightbox" id="lightbox" role="dialog" aria-modal="true"',
-      ` aria-label="${esc(g.ui.label)}" hidden>`,
-      '<div class="lightbox__backdrop" data-close></div>',
-      '<figure class="lightbox__frame">',
-      '<img class="lightbox__img" alt="">',
-      '<figcaption class="lightbox__caption"><span class="lightbox__alt"></span>',
-      '<span class="lightbox__count"></span></figcaption>',
-      '</figure>',
-      `<button type="button" class="lightbox__btn lightbox__btn--prev" data-prev>`,
-      `<span class="visually-hidden">${esc(g.ui.prev)}</span></button>`,
-      `<button type="button" class="lightbox__btn lightbox__btn--next" data-next>`,
-      `<span class="visually-hidden">${esc(g.ui.next)}</span></button>`,
-      `<button type="button" class="lightbox__btn lightbox__btn--close" data-close>`,
-      `<span class="visually-hidden">${esc(g.ui.close)}</span></button>`,
-      '</div>',
-    ].join('');
+  /* ------------------------------ служебное ------------------------------ */
+
+  function renderPreload() {
+    return (fonts.faces || []).filter((f) => f.preload)
+      .map((f) => `<link rel="preload" href="/assets/fonts/${f.file}" as="font" type="font/woff2" crossorigin>`).join('\n');
   }
 
-  /**
-   * Панель материалов.
-   *
-   * Ссылки пока нет. Кнопка при этом не исчезает и не ведёт в никуда: она
-   * приглушена и несёт aria-disabled, а рядом стоит строка о том, что папку
-   * ещё собирают. Администратор видит, что материалы будут, и не тратит клик.
-   */
-  function renderMaterials() {
-    const m = C.materials;
-    const href = blank(m.href) ? null : m.href;
-    const updated = val(m.updated);
-    const list = m.items.map((i) => `<li>${esc(i)}</li>`).join('');
-
-    const button = href
-      ? `<a class="panel__cta" href="${esc(href)}" target="_blank" rel="noopener noreferrer">${esc(m.cta)}</a>`
-      : `<span class="panel__cta panel__cta--off" role="link" aria-disabled="true" tabindex="0">${esc(m.cta)}</span>`;
-
-    return section(m.id, [
-      `<p class="kicker">${esc(m.kicker)}</p>`,
-      `<h2 class="section__title">${esc(m.title)}</h2>`,
-      '<div class="panel">',
-      `<p class="panel__lede">${esc(m.lede)}</p>`,
-      `<ul class="panel__list">${list}</ul>`,
-      button,
-      updated
-        ? `<p class="panel__updated">${esc(m.updatedLabel)}: ${updated}</p>`
-        : `<p class="panel__updated">${esc(m.pending)}</p>`,
-      '</div>',
-    ].join(''));
-  }
-
-  function renderStats() {
-    const s = C.statsSection;
-    if (!any(s.items.map((i) => i.value))) return '';       // все слоты пусты — блока нет
-    const items = s.items
-      .map((i) => ({ i, value: val(i.value) }))
-      .filter(({ value }) => value !== null)
-      .map(({ i, value }) => `<div class="figure"><p class="figure__value">${value}</p><p class="figure__label">${esc(i.label)}</p></div>`)
-      .join('');
-    if (!items) return '';
-    return section(s.id, `<h2 class="section__title">${esc(s.title)}</h2><div class="figures">${items}</div>`);
-  }
-
-  function renderRepertoire() {
-    const r = C.repertoire;
-    const items = r.items.map((i) =>
-      `<li><span class="repertoire__title">${esc(i.title)}</span><span class="repertoire__period">${esc(i.period)}</span></li>`).join('');
-    return section(r.id, [
-      `<p class="kicker">${esc(r.kicker)}</p>`,
-      `<h2 class="section__title">${esc(r.title)}</h2>`,
-      `<ul class="repertoire">${items}</ul>`,
-      `<p class="repertoire__note">${esc(r.note)}</p>`,
-    ].join(''));
-  }
-
-  function renderModels() {
-    const m = C.models;
-    const head = m.columns.map((c) => `<th scope="col">${esc(c.title)}</th>`).join('');
-    const body = m.rows.map((row) => {
-      const cells = row.values
-        .map((v, n) => `<td data-column="${esc(m.columns[n].title)}"><span>${esc(v)}</span></td>`).join('');
-      return `<tr><th scope="row">${esc(row.label)}</th>${cells}</tr>`;
-    }).join('');
-
-    return section(m.id, [
-      `<p class="kicker">${esc(m.kicker)}</p>`,
-      `<h2 class="section__title">${esc(m.title)}</h2>`,
-      `<p class="section__lede">${esc(m.lede)}</p>`,
-      `<table class="models"><thead><tr><td></td>${head}</tr></thead><tbody>${body}</tbody></table>`,
-      `<p class="models__closing">${esc(m.closing)}</p>`,
-    ].join(''));
-  }
-
-  function renderContact() {
-    const s = C.contactSection;
-    const linkFor = (key, value) => {
-      if (blank(value)) return null;
-      if (key === 'phone') return `<a href="tel:${esc(String(value).replace(/[^\d+]/g, ''))}">${esc(value)}</a>`;
-      if (key === 'email') return `<a href="mailto:${esc(value)}">${esc(value)}</a>`;
-      if (key === 'telegram') {
-        const handle = String(value).replace(/^@/, '');
-        return `<a href="https://t.me/${esc(handle)}" rel="noopener">${esc(value)}</a>`;
-      }
-      return esc(value);
-    };
-
-    const entries = Object.entries(s.labels)
-      .map(([key, label]) => ({ label, value: linkFor(key, C.contact[key]) ?? val(C.contact[key]) }))
-      .filter(({ value }) => value !== null);
-
-    const list = entries.length
-      ? `<dl class="contact__list">${entries.map((e) => `<dt>${esc(e.label)}</dt><dd>${e.value}</dd>`).join('')}</dl>`
-      : '';
-
-    return section(s.id, [
-      `<p class="kicker">${esc(s.kicker)}</p>`,
-      `<h2 class="section__title contact__title" tabindex="-1">${esc(s.title)}</h2>`,
-      `<p class="contact__body">${esc(s.body)}</p>`,
-      list,
-      `<p class="contact__note">${esc(s.note)}</p>`,
-    ].join(''));
-  }
-
-  /**
-   * Порядок секций — E1 правки 06, под вопросы администратора площадки в том
-   * порядке, в каком они возникают:
-   *
-   *   стык        — граница пролёта и текста;
-   *   видео       — «как это выглядит вживую?»;
-   *   что от зала — «что вы у меня попросите?»  первое возражение, не ждёт;
-   *   репертуар   — «что вы можете сыграть?»;
-   *   три модели  — «как считаем деньги?»;
-   *   галерея     — «покажите больше, чем восемь кадров»;
-   *   материалы   — «дайте файлы, мне надо согласовать»;
-   *   контакт     — «с кем говорить?».
-   *
-   * «Театр в цифрах» стоит там же, где стоял, и в проде не выводится вовсе:
-   * все её значения — заглушки.
-   */
-  function renderSections() {
-    // Стык стоит ПЕРЕД .after, а не внутри него. Ему надо наехать на низ
-    // последнего кадра, а .after непрозрачен и своим фоном обрезал бы
-    // фотографию ровно той линией, которую стык и должен убрать.
-    return renderSeam() + `<div class="after">${[
-      renderVideoSection(),
-      renderRequirements(),
-      renderStats(),
-      renderRepertoire(),
-      renderModels(),
-      renderGallery(),
-      renderMaterials(),
-      renderContact(),
-    ].join('')}</div>` +
-    // Лайтбокс стоит СНАРУЖИ .after намеренно. У .after свой контекст
-    // наложения (z-index: var(--z-section)), и любой ребёнок внутри него
-    // не может подняться выше самого .after — то есть выше 1, тогда как
-    // пролёт лежит на 100. Модальное окно оказалось бы под фотографией.
-    renderLightbox();
-  }
-
-  function renderTopbar() {
-    return [
-      '<header class="topbar">',
-      `<span class="topbar__name">${esc(C.site.organisation.name)}</span>`,
-      '</header>',
-      // Летящее название. Стоит рядом с шапкой, а не внутри неё: шапка
-      // position: absolute и уезжает вместе со страницей, а морфинг идёт по
-      // экрану. Разметка декоративная — читающему её озвучил бы h1 первого
-      // экрана, поэтому aria-hidden. Без JS узел скрыт стилями, и название
-      // на первом экране несёт h1, как и до фазы 2.
-      '<div class="wordmark" aria-hidden="true">',
-      `<span class="wordmark__line">${esc(C.site.organisation.name)}</span>`,
-      '</div>',
-    ].join('');
-  }
-
-  function renderFooter() {
-    const year = C.ui.footer;
-    return `<footer class="footer"><span>${esc(year)}</span><span>${esc(C.site.organisation.city)}</span></footer>`;
-  }
-
-  /* ----------------------------- метаданные ----------------------------- */
-
-  function renderSocial() {
-    const og = images.og ? `${C.site.url.replace(/\/$/, '')}/assets/photo/${images.og.file}` : null;
-    const tags = [
-      `<meta property="og:type" content="website">`,
-      `<meta property="og:locale" content="ru_RU">`,
-      `<meta property="og:site_name" content="${esc(C.site.organisation.name)}">`,
-      `<meta property="og:title" content="${esc(C.site.ogTitle)}">`,
-      `<meta property="og:description" content="${esc(C.site.ogDescription)}">`,
-      `<meta property="og:url" content="${esc(C.site.url)}">`,
-      og ? `<meta property="og:image" content="${esc(og)}">` : '',
-      og ? `<meta property="og:image:width" content="1200">` : '',
-      og ? `<meta property="og:image:height" content="630">` : '',
-      `<meta name="twitter:card" content="${og ? 'summary_large_image' : 'summary'}">`,
-      `<meta name="twitter:title" content="${esc(C.site.ogTitle)}">`,
-      `<meta name="twitter:description" content="${esc(C.site.ogDescription)}">`,
-      og ? `<meta name="twitter:image" content="${esc(og)}">` : '',
-    ];
-    return tags.filter(Boolean).join('\n');
-  }
-
-  /** JSON-LD. Заглушки не выводим вовсе. */
   function renderJsonLd() {
     const data = {
       '@context': 'https://schema.org',
-      '@type': 'PerformingArtsTheatre',
-      name: C.site.organisation.name,
+      '@type': 'PerformingArtsTheater',
+      name: C.site.name,
       description: C.site.description,
       url: C.site.url,
-      address: {
-        '@type': 'PostalAddress',
-        addressLocality: C.site.organisation.city,
-        addressCountry: C.site.organisation.country,
-      },
+      founder: { '@type': 'Person', name: C.troupe.director.name },
+      address: { '@type': 'PostalAddress', addressLocality: C.site.city, addressCountry: 'RU' },
+      telephone: '+79052327890',
+      email: 'lesya84@yandex.ru',
     };
-    if (!blank(C.contact.phone)) data.telephone = C.contact.phone;
-    if (!blank(C.contact.email)) data.email = C.contact.email;
-    if (images.og) data.image = `${C.site.url.replace(/\/$/, '')}/assets/photo/${images.og.file}`;
     return `<script type="application/ld+json">${JSON.stringify(data)}</script>`;
   }
 
-  /**
-   * Нулевой кадр просим заранее и с высоким приоритетом; вместе с ним —
-   * кириллические начертания, которыми набран первый экран. Без этого swap
-   * успевает перерисовать заголовок и даёт сдвиг макета.
-   */
-  function renderPreload() {
-    const out = [];
-    for (const face of fonts.faces || []) {
-      // Латиница веса 400 предзагружается наравне с кириллицей, хотя видимого
-      // латинского текста на первом экране нет. Пробел и точка попадают в
-      // латинскую подрезку (unicode-range с U+20), и без предзагрузки её
-      // ширины приезжают позже первой отрисовки. Текст первого экрана
-      // центрирован построчно, поэтому смена ширин двигает каждую строку —
-      // замерено до 47,53 px по x. Это давало CLS 0,000826 у Lighthouse.
-      if (face.weight !== 400) continue;
-      out.push(`<link rel="preload" as="font" type="font/woff2" crossorigin href="/assets/fonts/${face.file}">`);
-    }
-    // Предзагружаем только нулевой кадр — он же фон первого экрана. Остальные
-    // семь появляются в DOM уже после его отрисовки, и предзагрузка отняла бы
-    // полосу у кадра LCP ровно тогда, когда она нужнее всего.
-    for (const layer of C.layers.slice(0, 1)) {
-      const photo = photoOf(layer.photo);
-      if (!photo) continue;
-      const avif = photo.variants.filter((v) => v.ext === 'avif').sort((a, b) => a.width - b.width);
-      if (!avif.length) continue;
-      out.push(
-        `<link rel="preload" as="image" type="image/avif" fetchpriority="high" ` +
-        `imagesrcset="${avif.map((v) => `/assets/photo/${v.file} ${v.width}w`).join(', ')}" imagesizes="${SIZES}">`
-      );
-    }
-    return out.join('\n');
+  /** Данные для скриптов: подписи режимов, подписи плеера, реестр медиа. Единственный источник — content.js. */
+  function renderAppData() {
+    const data = {
+      lead: Object.fromEntries(Object.entries(C.hero.lead).map(([k, v]) => [k, t(v)])),
+      ne: { remove: C.ui.neRemove, restore: C.ui.neRestore },
+      ui: C.ui,
+      media: registry,
+    };
+    return `<script type="application/json" id="app-data">${JSON.stringify(data).replaceAll('<', '\\u003c')}</script>`;
   }
 
-  return {
-    renderFlight, renderSections, renderTopbar, renderFooter, renderSocial, renderJsonLd,
-    renderPreload, posterPicture,
-  };
-}
+  const sprite = () => spriteSvg();
 
-export { PHOTO_WIDTHS };
+  /* --------------------------------- шапка --------------------------------- */
+
+  function seg(kind) {
+    const label = (s) => (kind === 'big' ? s.big : s.mini);
+    return `<div class="seg seg--${kind}" role="group" aria-label="${esc(kind === 'big' ? C.ui.bigSwitchLabel : C.ui.switchLabel)}">` +
+      '<i class="seg__run" aria-hidden="true"></i>' +
+      C.switcher.map((s) =>
+        `<button type="button" class="seg__b" data-set-mode="${s.mode}" aria-pressed="${s.mode === 'all'}">` +
+        `<span class="seg__l">${t(label(s))}</span>` +
+        (kind === 'big' ? `<span class="seg__s">${t(s.sub)}</span>` : '') +
+        '</button>').join('') +
+      '</div>';
+  }
+
+  function renderTopbar() {
+    const links = (cls) => C.menu.map((m) =>
+      `<a class="${cls}" href="${m.href}"${modesAttr(m.modes)}>${t(m.label)}</a>`).join('');
+    const contacts = C.quickContacts.map((c) =>
+      `<a class="mpanel__c" href="${c.href}"${c.external ? ' target="_blank" rel="noopener"' : ''}>${ico(c.icon)}<span>${t(c.label)}</span></a>`).join('');
+    return `<header class="top" id="topbar">
+  <div class="top__bar">
+    <a class="brand" href="#top" aria-label="${attr(C.site.name)} — наверх"><span class="brand__t" aria-hidden="true">${typo('Театр')} ${mk()} Камерного${NB}балета</span></a>
+    <nav class="menu" id="menu" aria-label="${esc(C.ui.menuNav)}">${links('menu__a')}<i class="menu__run" aria-hidden="true"></i></nav>
+    ${seg('mini')}
+    <button type="button" class="burger" aria-expanded="false" aria-controls="mpanel" aria-label="${esc(C.ui.menuOpen)}" data-open="${esc(C.ui.menuOpen)}" data-close="${esc(C.ui.menuClose)}"><span class="burger__i" aria-hidden="true"></span></button>
+  </div>
+  <i class="top__progress" aria-hidden="true"></i>
+  <div class="mpanel" id="mpanel" aria-label="${esc(C.ui.menuNav)}">
+    <nav class="mpanel__nav" aria-label="${esc(C.ui.menuNav)}">${C.menu.map((m, i) => `<a class="mpanel__a" href="${m.href}"${modesAttr(m.modes)} style="--i:${i}"><span>${t(m.label)}</span></a>`).join('')}</nav>
+    <div class="mpanel__foot">${seg('panel')}<div class="mpanel__contacts">${contacts}</div></div>
+  </div>
+</header>`;
+  }
+
+  /* ------------------------------ первый экран ------------------------------ */
+
+  function renderArc() {
+    const n = 15;
+    const rand = rng(29102026);
+    let out = '<div class="arc">';
+    for (let i = 0; i < n; i++) {
+      const a = Math.PI * (i / (n - 1));
+      const x = (50 - 47 * Math.cos(a)).toFixed(2);
+      const y = (Math.sin(a) * 100).toFixed(2);
+      const ord = Math.min(i, n - 1 - i);
+      const period = (2.5 + rand() * 2).toFixed(2);
+      const phase = (-rand() * 4.5).toFixed(2);
+      out += `<b class="arc__f" style="--x:${x}%;--y:${y}%;--ord:${ord}"><i style="--p:${period}s;--ph:${phase}s"></i></b>`;
+    }
+    return out + '</div>';
+  }
+
+  function renderHero() {
+    const h = C.hero;
+    const sizers = ['all', 'chamber', 'big'].map((k) => `<span class="hero__sz" aria-hidden="true">${t(h.lead[k])}</span>`).join('');
+    return `<section class="hero" id="top" aria-label="${esc(C.ui.theatreAria)}" data-hero>
+  <div class="hero__halves" aria-hidden="true">
+    <div class="hero__half hero__half--l">${slotMedia(h.left, { type: 'bg', cls: 'hero__m' })}</div>
+    <div class="hero__half hero__half--r">${slotMedia(h.right, { type: 'bg', cls: 'hero__m', tagRight: true })}</div>
+  </div>
+  <div class="hero__shade" aria-hidden="true"></div>
+  <div class="hero__fx" aria-hidden="true">
+    <i class="seam"></i>
+    <div class="beams"><i class="beam beam--1"></i><i class="beam beam--2"></i><i class="beam beam--3"></i></div>
+    ${renderArc()}
+    <div class="grain"></div>
+    <div class="cursor-light"></div>
+  </div>
+  <div class="hero__in">
+    <h1 class="mark" aria-label="${attr(C.site.name)}, ${esc(h.by)}">
+      <span class="mark__l1">${t(h.line1)} <button type="button" class="ne" data-ne aria-label="${esc(C.ui.neRemove)}">${mk()}</button></span>
+      <span class="mark__l2">${t(h.line2)}</span>
+    </h1>
+    <p class="hero__by">${t(h.by)}</p>
+    <div class="hero__mode">
+      <p class="hero__cap" id="mode-cap" aria-live="polite">${t(h.lead.all)}</p>
+      ${sizers}
+    </div>
+    ${seg('big')}
+  </div>
+  <a class="cue" href="#manifest" aria-label="${esc(C.ui.scrollCueLabel)}">${t(C.ui.scrollCue)}<span class="cue__l" aria-hidden="true"></span></a>
+</section>`;
+  }
+
+  /* -------------------------------- манифест -------------------------------- */
+
+  function renderManifest() {
+    const m = C.manifest;
+    const variants = ['all', 'chamber', 'big'].map((k) => {
+      const [a, b] = m.lead[k];
+      const na = a.split(' ').length;
+      return `<span class="mv mv--${k}">${words(a)} <span class="k">${words(b, na)}</span></span>`;
+    }).join('');
+    const why = m.why.map((w, i) => `<div class="why" style="--i:${i}"><i class="why__line" aria-hidden="true"></i>${ico(w.icon, 'why__ico')}<h2 class="h3">${t(w.title)}</h2><p>${t(w.text)}</p></div>`).join('');
+    return `<section class="sec manifest" id="manifest" aria-label="О театре" data-reveal>
+  <div class="wrap">
+    <p class="manifest__lead" data-words>${variants}</p>
+    <p class="manifest__text">${t(m.text)}</p>
+    <div class="why-grid">${why}</div>
+  </div>
+</section>`;
+  }
+
+  /* ------------------------------- два масштаба ------------------------------- */
+
+  function box(kind, name, kicker, d) {
+    return `<div class="box box--${kind}"><p class="box__k">${t(kicker)}</p><p class="box__n">${t(name)}</p>` +
+      `<p class="box__nums"><span><span class="num" data-count>${d.art}</span><span class="num__l">${t(C.scale.artists)}</span></span>` +
+      `<span><span class="num" data-count>${d.trip}</span><span class="num__l">${t(C.scale.trip)}</span></span></p>` +
+      `<p class="box__cast">${t(d.cast)}</p></div>`;
+  }
+
+  function renderScale() {
+    const s = C.scale;
+    const cards = s.flagships.map((f) => `<article class="card-wide" data-reveal>
+      <div class="card-wide__media shutter">${slotMedia(f.slot, { sizes: '(min-width:1000px) 45vw, 100vw' })}</div>
+      <div class="card-wide__body">
+        <h3 class="card-wide__t">${t(f.name)}</h3>
+        <p class="card-wide__cr">${t(f.credits)}</p>
+        <p class="card-wide__tx">${t(f.text)}</p>
+        <div class="boxes">${box('big', s.bigName, s.bigKicker, f.big)}${box('ch', s.chName, s.chKicker, f.ch)}</div>
+      </div>
+    </article>`).join('');
+    const g = s.gala;
+    return `<section class="sec sec--3 scale" id="scale" aria-labelledby="scale-h">
+  <div class="wrap">
+    <h2 class="h2 h2--rule" id="scale-h">${parts(s.title)}</h2>
+    <p class="lead">${t(s.lead)}</p>
+    <div class="cards">${cards}
+    <article class="card-wide card-wide--gala" data-reveal>
+      <div class="card-wide__media shutter">${slotMedia(g.slot, { sizes: '(min-width:1000px) 45vw, 100vw' })}</div>
+      <div class="card-wide__body card-wide__body--row">
+        <div class="gala__t"><p class="gala__k">${t(g.kicker)}</p><h3 class="card-wide__t card-wide__t--s">${t(g.name)}</h3><p>${t(g.text)}</p></div>
+        <p class="gala__nums"><span><span class="num num--l" data-count>${g.soloists}</span><span class="num__l">${t(g.soloistsLabel)}</span></span><span><span class="num num--l" data-count>${g.trip}</span><span class="num__l">${t(g.tripLabel)}</span></span></p>
+      </div>
+    </article></div>
+  </div>
+</section>`;
+  }
+
+  /* -------------------------------- главы вечера -------------------------------- */
+
+  function renderEvening() {
+    const e = C.evening;
+    const ch = e.chapters.map((c, i) => `<article class="chapter${i % 2 ? ' chapter--rev' : ''}" data-reveal>
+      <div class="chapter__media shutter">${slotMedia(c.slot, { parallax: true, ratio: c.slot.ratio, group: 'chapters', sizes: '(min-width:1000px) 55vw, 100vw' })}</div>
+      <div class="chapter__text"><p class="chapter__n">${c.n}</p><h3 class="chapter__t mask"><span>${t(c.title)}</span></h3><p>${t(c.text)}</p><p class="chapter__fact">${t(c.fact)}</p></div>
+    </article>`).join('');
+    return `<section class="sec evening" id="evening" aria-labelledby="evening-h" data-modes="all chamber">
+  <div class="wrap"><h2 class="h2 h2--rule" id="evening-h">${parts(e.title)}</h2></div>
+  <div class="evening__list" data-line><i class="evening__line" aria-hidden="true"></i>${ch}</div>
+</section>`;
+  }
+
+  /* ---------------------------------- видеозал ---------------------------------- */
+
+  function renderVideo() {
+    const v = C.video;
+    const vert = v.vertical.map((s) => `<div class="ribbon__i">${slotMedia(s, { group: 'video', cls: 'v-vert' })}</div>`).join('');
+    return `<section class="sec sec--3 video" id="video" aria-labelledby="video-h">
+  <div class="wrap">
+    <div class="video__head"><h2 class="h2" id="video-h">${parts(v.title)}</h2><p class="video__lead">${t(v.lead)}</p></div>
+    <div class="video__main shutter" data-reveal>${slotMedia(v.main, { ratio: '16 / 9', group: 'video' })}</div>
+    <div class="ribbon" data-drag><div class="ribbon__track">${vert}</div></div>
+    <p class="video__link"><a href="${v.archive.href}" target="_blank" rel="noopener">${t(v.archive.label)}</a></p>
+  </div>
+</section>`;
+  }
+
+  /* ---------------------------------- репертуар ---------------------------------- */
+
+  function renderRow(it) {
+    const v = ['all', 'chamber', 'big'].map((k) => `<span class="v v--${k}">${t(C.versionLine[k])}</span>`).join('');
+    return `<details class="row">
+        <summary class="row__sum"><span class="row__name">${t(it.name)}</span><span class="row__meta">${t(it.meta)}</span>${ico('plus', 'row__plus')}</summary>
+        <div class="row__body"><div class="row__in"><p class="row__text">${t(it.text)}</p><p class="row__ver">${v}</p></div></div>
+      </details>`;
+  }
+
+  function renderRep() {
+    const r = C.rep;
+    const total = r.groups.reduce((n, g) => n + g.items.length, 0);
+    const posters = r.posters.map((p) => `<a class="poster" href="#rep-list">
+        <div class="poster__m">${slotMedia(p.slot, { sizes: '(min-width:1000px) 25vw, 50vw' })}</div>
+        <p class="poster__k">${t(p.kind)}</p><h3 class="poster__t">${t(p.name)}</h3><p class="poster__meta">${t(p.meta)}</p></a>`).join('');
+    const tabs = r.groups.map((g, i) =>
+      `<button type="button" role="tab" class="tabs__t" id="tab-${i}" aria-controls="panel-${i}" aria-selected="${i === 0}" tabindex="${i === 0 ? 0 : -1}"><span>${t(g.tab)}</span><span class="tabs__n">${g.items.length}</span></button>`).join('');
+    const panels = r.groups.map((g, i) =>
+      `<div class="panel" role="tabpanel" id="panel-${i}" aria-labelledby="tab-${i}"${i === 0 ? '' : ' data-later'}>
+      <h3 class="panel__h">${t(g.tab)}</h3>
+      <p class="panel__note">${t(g.note)}</p>
+      <div class="rows">${g.items.map(renderRow).join('\n      ')}</div>
+    </div>`).join('\n    ');
+    return `<section class="sec rep" id="rep" aria-labelledby="rep-h">
+  <div class="wrap">
+    <div class="rep__head"><div><h2 class="h2 h2--rule" id="rep-h">${t(r.title)}</h2></div><p class="rep__lead">${t(r.lead(total))}</p></div>
+    <div class="posters">${posters}</div>
+    <div class="tabs" id="rep-list" data-tabs>
+      <div class="tabs__list" role="tablist" aria-label="${esc(r.tabsLabel)}">${tabs}<i class="tabs__bar" aria-hidden="true"></i></div>
+    ${panels}
+    </div>
+  </div>
+</section>`;
+  }
+
+  /* ----------------------------------- труппа ----------------------------------- */
+
+  function renderTroupe() {
+    const d = C.troupe.director;
+    const tr = C.troupe;
+    const facts = d.facts.map((f) => `<div class="dl__r"><dt>${t(f[0])}</dt><dd>${t(f[1])}</dd></div>`).join('');
+    const ach = tr.achievements.map((a, i) => `<div class="ach" style="--i:${i}"><p class="ach__v"${/\d/.test(a.value) ? ' data-count' : ''}>${t(a.value)}</p><p class="ach__t">${t(a.text)}</p></div>`).join('');
+    const faces = tr.faces.map((f) => `<div class="face"><div class="face__m">${slotMedia(f.slot, { sizes: '250px' })}</div><p class="face__n">${t(f.name)}</p><p class="face__s">${t(f.short)}</p></div>`).join('');
+    const all = tr.all.map((s) => `<div class="all__i"><p class="all__n">${t(s.name)}</p><p class="all__b">${t(s.bio)}</p></div>`).join('');
+    return `<section class="sec troupe" id="troupe" aria-labelledby="troupe-h">
+  <div class="troupe__dir wrap">
+    <div class="dir__ph shutter" data-reveal>${slotMedia(d.slot, { fx: 'zoom', cls: 'dir__m', sizes: '(min-width:1000px) 40vw, 100vw' })}</div>
+    <div class="dir__t" data-reveal>
+      <p class="eyebrow">${t(d.role)}</p>
+      <h2 class="dir__n" id="troupe-h">${t(d.name)}</h2>
+      <p class="dir__lead">${t(d.lead)}</p>
+      <dl class="dl">${facts}</dl>
+    </div>
+  </div>
+  <div class="wrap ach-grid" data-reveal>${ach}</div>
+  <div class="wrap"><h3 class="h2-s">${t(tr.facesTitle)}</h3><p class="faces__lead">${t(tr.facesLead)}</p></div>
+  <div class="ribbon ribbon--faces" data-drag><div class="ribbon__track">${faces}</div></div>
+  <div class="wrap"><details class="row row--all">
+    <summary class="row__sum"><span class="row__name">${t(tr.allTitle(tr.all.length))}</span>${ico('plus', 'row__plus')}</summary>
+    <div class="row__body"><div class="row__in row__in--wide"><div class="all">${all}</div></div></div>
+  </details></div>
+</section>`;
+  }
+
+  /* ---------------------------------- площадкам ---------------------------------- */
+
+  function renderVenues() {
+    const v = C.venues;
+    const params = v.params.map((p) => `<div class="param"><dt>${t(p.label)}</dt><dd class="param__v" data-count>${esc(p.value)}</dd></div>`).join('');
+    const bring = v.bring.map((b, i) => `<li style="--i:${i}">${ico(b.icon)}<span>${t(b.label)}</span></li>`).join('');
+    const need = v.need.map((n) => `<div class="need__r"><h4>${t(n.title)}</h4><p>${t(n.text)}</p></div>`).join('');
+    const models = v.models.map((m, i) => `<div class="model" style="--i:${i}"><p class="model__n">${m.n}</p><h4 class="model__t">${t(m.title)}</h4>` +
+      v.modelRows.map((r, j) => `<p class="model__k">${t(r)}</p><p class="model__v">${t(m.cells[j])}</p>`).join('') + '</div>').join('');
+    const qr = qrSvg(media['qr-rider']?.url || C.contacts.riderQr.url, esc(C.contacts.riderQr.tag));
+    return `<section class="sec sec--light venues" id="venues" aria-labelledby="venues-h" data-modes="all chamber">
+  <div class="torn" aria-hidden="true" data-reveal></div>
+  <div class="wrap">
+    <p class="eyebrow">${t(v.eyebrow)}</p>
+    <h2 class="h2 h2--rule" id="venues-h">${parts(v.title)}</h2>
+    <dl class="params" aria-label="${esc(v.paramsLabel)}" data-reveal>${params}</dl>
+    <div class="venues__cols">
+      <div>
+        <h3 class="h3 h3--s">${t(v.bringTitle)}</h3>
+        <ul class="chips" data-reveal>${bring}</ul>
+        <h3 class="h3 h3--s h3--gap">${t(v.needTitle)}</h3>
+        <div class="need">${need}</div>
+      </div>
+      <aside class="rider" aria-label="${esc(v.rider.aria)}" data-reveal>
+        <div class="qrbox">${qr}</div>
+        <div><p class="rider__t">${t(v.rider.title)}</p><p class="rider__x">${t(v.rider.text)}</p><a href="${v.rider.link.href}">${t(v.rider.link.label)}</a></div>
+      </aside>
+    </div>
+    <h3 class="h2-s h2-s--gap">${t(v.modelsTitle)}</h3>
+    <p class="models__lead">${t(v.modelsLead)}</p>
+    <div class="models" data-reveal>${models}</div>
+    <p class="models__note">${t(v.modelsNote)}</p>
+    <a class="btn btn--on-light" href="${v.cta.href}">${t(v.cta.label)}</a>
+  </div>
+</section>`;
+  }
+
+  /* ---------------------------------- заказчикам ---------------------------------- */
+
+  function renderClients() {
+    const c = C.clients;
+    const steps = c.steps.map((s, i) => `<li class="step" style="--i:${i}"><div class="step__m shutter">${slotMedia(s.slot, { sizes: '(min-width:1000px) 30vw, 100vw' })}</div>
+      <div class="step__h">${ico(s.icon, 'step__ico')}<h3>${t(s.t)}</h3></div><p>${t(s.d)}</p></li>`).join('');
+    const formats = c.formats.map((f, i) => `<div class="fmt" style="--i:${i}"><h4>${t(f.t)}</h4><p class="fmt__p">${t(f.p)}</p><p>${t(f.d)}</p></div>`).join('');
+    const prem = c.premieres.map((p, i) => `<div class="prem" style="--i:${i}"><p class="prem__k">${t(p.kicker)}</p><h4>${t(p.t)}</h4><p>${t(p.d)}</p></div>`).join('');
+    return `<section class="sec sec--3 clients" id="clients" aria-labelledby="clients-h" data-modes="all big">
+  <div class="clients__bg">${slotMedia(c.video, { type: 'bg', cls: 'clients__m', parallax: true, full: true })}${playBtn(c.video.id, c.video.tag, null)}</div>
+  <div class="wrap">
+    <p class="eyebrow">${t(c.eyebrow)}</p>
+    <h2 class="h2 h2--rule" id="clients-h">${parts(c.title)}</h2>
+    <p class="lead">${t(c.lead)}</p>
+    <ol class="steps" data-reveal>${steps}</ol>
+    <h3 class="h2-s h2-s--gap">${t(c.formatsTitle)}</h3>
+    <p class="clients__fl">${t(c.formatsLead)}</p>
+    <div class="fmts" data-reveal>${formats}</div>
+    <div class="prems" data-reveal>${prem}</div>
+    <a class="btn" href="${c.cta.href}">${t(c.cta.label)}</a>
+  </div>
+</section>`;
+  }
+
+  /* ----------------------------------- гастроли ----------------------------------- */
+
+  function renderTour() {
+    const g = C.tour;
+    const list = (b) => `<div><p class="tour__k">${t(b.kicker)}</p><h3 class="tour__h">${t(b.title)}</h3><ul class="dots">${b.items.map((x, i) => `<li style="--i:${i}"><i class="dot" aria-hidden="true"></i><span>${t(x)}</span></li>`).join('')}</ul></div>`;
+    const design = g.design.map((d) => `<div class="opt"><div class="opt__m shutter">${slotMedia(d.slot, { sizes: '(min-width:1000px) 45vw, 100vw' })}</div><div class="opt__b"><p class="opt__n">${t(d.n)}</p><h4>${t(d.t)}</h4><p>${t(d.d)}</p></div></div>`).join('');
+    const invite = g.invite.map((s, i) => `<li class="inv" style="--i:${i}"><p class="inv__n">${s.n}</p>${ico(s.icon, 'inv__ico')}<h4>${t(s.t)}</h4><p>${t(s.d)}</p></li>`).join('');
+    return `<section class="sec sec--light tour" id="tour" aria-labelledby="tour-h">
+  <div class="torn" aria-hidden="true" data-reveal></div>
+  <div class="wrap">
+    <p class="eyebrow">${t(g.eyebrow)}</p>
+    <h2 class="h2" id="tour-h">${t(g.title[0])}<br><span class="k">${t(g.title[1])}</span></h2>
+    <i class="tour__rule" aria-hidden="true"></i>
+    <div class="tour__cols" data-reveal>${list(g.theatre)}${list(g.host)}</div>
+    <h3 class="h2-s h2-s--gap">${t(g.designTitle)}</h3>
+    <div class="opts">${design}</div>
+    <p class="tour__note">${t(g.designNote)}</p>
+    <h3 class="h2-s h2-s--gap">${t(g.inviteTitle)}</h3>
+    <ol class="invite" data-reveal>${invite}</ol>
+    <a class="btn btn--on-light" href="${g.cta.href}">${t(g.cta.label)}</a>
+  </div>
+</section>`;
+  }
+
+  /* ------------------------------------ кадры ------------------------------------ */
+
+  function renderGallery() {
+    const g = C.gallery;
+    return `<section class="sec gallery" id="gallery" aria-labelledby="gallery-h">
+  <div class="wrap"><h2 class="h2" id="gallery-h">${t(g.title)}</h2>
+  <div class="mosaic" data-reveal>${g.tiles.map((x, i) => tile(x.slot, `${x.cls || ''}`.trim()).replace('<button ', `<button style="--i:${i}" `)).join('')}</div></div>
+</section>`;
+  }
+
+  /* ----------------------------------- контакты ----------------------------------- */
+
+  function renderContacts() {
+    const c = C.contacts;
+    const line = (icon, text, href, ext) => (href
+      ? `<a href="${href}"${ext ? ' target="_blank" rel="noopener"' : ''}>${ico(icon)}<span>${t(text)}</span></a>`
+      : `<span class="pending">${ico(icon)}<span>${t(text)}</span></span>`);
+    const people = c.people.map((p, i) => `<div class="person" style="--i:${i}">
+      <div class="person__h"><div class="person__m">${slotMedia(p.slot, { sizes: '96px' })}</div><div><p class="person__n">${t(p.name)}</p><p class="person__r">${t(p.role)}</p></div></div>
+      <p class="person__a">${t(p.about)}</p>
+      <p class="person__c">${line('phone', p.tel, p.telHref)}${line('mail', p.mail, p.mailHref)}${line('telegram', p.tg, p.tgHref, true)}</p>
+    </div>`).join('');
+    const qrs = c.qr.map((q) => `<a class="qrcard" href="${q.url}" target="_blank" rel="noopener"><div class="qrbox qrbox--s">${qrSvg(media[q.id]?.url || q.url, esc(q.tag))}</div><span class="qrcard__t"><span class="qrcard__n">${ico(q.icon)}${t(q.title)}</span><span class="qrcard__x">${t(q.text)}</span></span></a>`).join('');
+    return `<section class="sec sec--4 contacts" id="contacts" aria-labelledby="contacts-h">
+  <div class="wrap">
+    <h2 class="h2" id="contacts-h">${parts(c.title)}</h2>
+    <p class="contacts__lead">${t(c.lead)}</p>
+    <div class="people" data-reveal>${people}</div>
+    <div class="qrs" data-reveal>${qrs}</div>
+  </div>
+</section>`;
+  }
+
+  /* ------------------------------------ футер ------------------------------------ */
+
+  function renderFooter() {
+    const f = C.footer;
+    const bottom = f.bottom.map((b) => `<span>${t(b)}</span>`).join('<span aria-hidden="true"> · </span>');
+    return `<footer class="foot">
+  <div class="wrap">
+    <p class="foot__big" aria-hidden="true">${typo('Театр')} ${mk()} Камерного${NB}балета</p>
+    <div class="foot__grid">
+      <div><p class="foot__x foot__x--first">${t(f.brand.role)}<br>${t(f.brand.producer)}</p></div>
+      <div><h2 class="foot__h">${t(f.chamber.title)}</h2><p class="foot__x">${t(f.chamber.text)}</p></div>
+      <div><h2 class="foot__h">${t(f.tour.title)}</h2><p class="foot__x">${t(f.tour.text)}</p></div>
+    </div>
+    <p class="foot__bottom">${bottom}</p>
+  </div>
+</footer>`;
+  }
+
+  function renderSections() {
+    return [renderManifest(), renderScale(), renderEvening(), renderVideo(), renderRep(), renderTroupe(),
+      renderVenues(), renderClients(), renderTour(), renderGallery(), renderContacts()].join('\n');
+  }
+
+  return { renderTopbar, renderHero, renderSections, renderFooter, renderJsonLd, renderPreload, renderAppData, sprite };
+}

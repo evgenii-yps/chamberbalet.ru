@@ -1,94 +1,52 @@
 /**
  * Сборка. Результат — папка dist/, её и заливаем на хостинг.
  *
- *   npm run build          продакшн: заглушки скрывают блок целиком
- *   npm run build:debug    отладка: заглушки видны пометкой
- *
- * Конвейеры фото и видео работают вхолостую: пока оригиналов нет, сборка
- * проходит, страница живёт на ровном поле сцены, консоль чистая.
+ *   npm run build              продакшн
+ *   ROBOTS=deny npm run build  то же + robots.txt с Disallow: / (пока сайт закрыт)
+ *   BUILD_COMMENTS=keep ...    оставить комментарии в CSS/JS
  */
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import crypto from 'node:crypto';
 import sharp from 'sharp';
-import { ROOT, SRC, DIST, BUILD, BUILD_ASSETS, bytes } from './config.mjs';
-import { buildImages } from './build-images.mjs';
-import { buildVideo } from './build-video.mjs';
+import { ROOT, SRC, DIST, BUILD, bytes } from './config.mjs';
 import { buildFonts } from './build-fonts.mjs';
 import { createRenderer, esc } from './render.mjs';
-import { scrimCss } from './check-scrim.mjs';
+import { buildMedia } from './build-media.mjs';
+import { bundleJs } from './bundle-js.mjs';
 import { stripComments } from './strip-comments.mjs';
 import * as C from '../src/content.js';
 
-const DEBUG = process.env.BUILD_MODE === 'debug';
-/** ROBOTS=deny — собрать с запретом индексации целиком.
- *
- *  Нужно, пока сайт опубликован, но ещё не готов показываться в поиске:
- *  залит на тестовый поддомен или ждёт заполнения контактов. Умолчание —
- *  обычный robots.txt, разрешающий обход. Флаг ничего больше не меняет:
- *  sitemap.xml генерируется в обоих режимах, он корректен сам по себе.
- *
- *      ROBOTS=deny npm run build
- */
 const ROBOTS_DENY = process.env.ROBOTS === 'deny';
-/**
- * Комментарии в dist/. Умолчание — снимать.
- *
- * Комментарии этого проекта несут решения и замеры, и в исходнике они
- * остаются целиком. Но браузеру они не нужны, а бюджет за них платит:
- * на сборке правки 06 — 20,4 КиБ из 37,7 под brotli, то есть больше
- * половины гейта `code` уходило на текст, который никто не читает.
- * Гейт после этого меряет код, а не прозу.
- *
- *     BUILD_COMMENTS=keep npm run build
- */
 const KEEP_COMMENTS = process.env.BUILD_COMMENTS === 'keep';
 const hash = (data) => crypto.createHash('sha256').update(data).digest('hex').slice(0, 8);
+const exists = (f) => fs.access(f).then(() => true, () => false);
 
 async function emptyDist() {
   await fs.rm(DIST, { recursive: true, force: true });
   await fs.mkdir(DIST, { recursive: true });
 }
 
-/**
- * Медиа кодируются в .build/assets и оттуда копируются. Кодирование AVIF на
- * восемь кадров идёт минуты — терять его при каждой сборке нельзя.
- */
-async function copyAssets() {
-  try { await fs.access(BUILD_ASSETS); } catch { return 0; }
-  await fs.cp(BUILD_ASSETS, path.join(DIST, 'assets'), { recursive: true });
-  let total = 0;
-  const walk = async (dir) => {
-    for (const entry of await fs.readdir(dir, { withFileTypes: true })) {
-      const full = path.join(dir, entry.name);
-      if (entry.isDirectory()) await walk(full);
-      else total += (await fs.stat(full)).size;
-    }
-  };
-  await walk(BUILD_ASSETS);
-  return total;
+/* ---------------------------------- стили ---------------------------------- */
+
+/** Зерно плёнки: один маленький PNG, а не SVG-фильтр — тот растрируется на CPU под каждый кадр-заглушку. */
+async function noiseCss() {
+  const n = 128;
+  const px = Buffer.alloc(n * n);
+  let x = 20261029;
+  for (let i = 0; i < px.length; i++) { x = (x * 1664525 + 1013904223) >>> 0; px[i] = 90 + ((x >>> 24) % 110); }
+  const png = await sharp(px, { raw: { width: n, height: n, channels: 1 } }).png({ compressionLevel: 9 }).toBuffer();
+  return `:root{--noise:url("data:image/png;base64,${png.toString('base64')}")}`;
 }
 
-/* ------------------------- стили: один файл ------------------------- */
-
-async function buildCss(fontCss, seam) {
-  const order = ['tokens.css', 'base.css', 'flight.css', 'sections.css'];
-  const parts = [];
-  if (fontCss) parts.push('/* шрифты: самохостинг, ноль внешних запросов */\n' + fontCss);
-  // LQIP стыка приезжает из конвейера изображений: он считается от последнего
-  // кадра пролёта, а тот меняется вместе с content.js. Держать эту строку в
-  // исходном CSS значило бы обновлять её руками при каждой замене кадра.
-  if (seam) {
-    parts.push('/* стык: нижние 30 % последнего кадра, 20 px, WebP q40 — ' +
-               `${seam.size} Б */\n:root { --seam-lqip: url("${seam.dataUri}"); }`);
+async function buildCss(fontCss) {
+  const parts = ['/* шрифты */\n' + fontCss, await noiseCss()];
+  const files = (await fs.readdir(path.join(SRC, 'css'))).filter((f) => f.endsWith('.css'));
+  const order = ['tokens.css', 'base.css', 'sections.css', 'blocks.css', 'motion.css'];
+  for (const name of order.filter((n) => files.includes(n))) {
+    parts.push(`/* ${name} */\n` + await fs.readFile(path.join(SRC, 'css', name), 'utf8'));
   }
-  for (const name of order) {
-    let css = await fs.readFile(path.join(SRC, 'css', name), 'utf8');
-    // Затемнение собирается из чисел SCRIM, которые проверяет check-scrim.mjs
-    css = css.replace('/*{{scrim}}*/', scrimCss());
-    parts.push(`/* ${name} */\n` + css);
-  }
-  let css = parts.join('\n\n');
+  let css = parts.join('\n');
   if (!KEEP_COMMENTS) css = stripComments(css, 'css');
   const file = `app.${hash(css)}.css`;
   await fs.mkdir(path.join(DIST, 'assets', 'css'), { recursive: true });
@@ -96,118 +54,63 @@ async function buildCss(fontCss, seam) {
   return { file, size: Buffer.byteLength(css) };
 }
 
-/* --------------- скрипты: хэш в имени, импорты переписываются --------------- */
-
-const JS_FILES = ['flight.js', 'nav.js', 'hero-video.js', 'observe.js', 'reveal.js',
-                  'lightbox.js', 'stage-video.js', 'wordmark.js', 'main.js'];
+/* ---------------------------------- скрипты ---------------------------------- */
 
 async function buildJs() {
-  const outDir = path.join(DIST, 'assets', 'js');
-  await fs.mkdir(outDir, { recursive: true });
-
-  const sources = new Map();
-  for (const name of JS_FILES) sources.set(name, await fs.readFile(path.join(SRC, 'js', name), 'utf8'));
-
-  const deps = new Map();
-  for (const [name, code] of sources) {
-    deps.set(name, [...code.matchAll(/from\s+'\.\/([\w.-]+\.js)'/g)].map((m) => m[1]));
-  }
-
-  // Топологический порядок: сначала листья, чтобы имя было известно раньше ссылки
-  const emitted = new Map();
-  const visit = async (name, seen = new Set()) => {
-    if (emitted.has(name)) return emitted.get(name);
-    if (seen.has(name)) throw new Error(`циклический импорт: ${name}`);
-    seen.add(name);
-    let code = sources.get(name);
-    for (const dep of deps.get(name)) {
-      const emittedDep = await visit(dep, seen);
-      code = code.replaceAll(`'./${dep}'`, `'./${emittedDep.file}'`);
-    }
-    if (!KEEP_COMMENTS) code = stripComments(code, 'js');
-    const file = `${name.replace(/\.js$/, '')}.${hash(code)}.js`;
-    await fs.writeFile(path.join(outDir, file), code);
-    const entry = { file, size: Buffer.byteLength(code) };
-    emitted.set(name, entry);
-    return entry;
-  };
-
-  for (const name of JS_FILES) await visit(name);
-  return { entry: emitted.get('main.js'), total: [...emitted.values()].reduce((s, e) => s + e.size, 0) };
+  const code = await bundleJs({ keepComments: KEEP_COMMENTS });
+  const file = `app.${hash(code)}.js`;
+  await fs.mkdir(path.join(DIST, 'assets', 'js'), { recursive: true });
+  await fs.writeFile(path.join(DIST, 'assets', 'js', file), code);
+  return { entry: { file, size: Buffer.byteLength(code) }, total: Buffer.byteLength(code) };
 }
 
-/* ------------------------------- иконки ------------------------------- */
+/* ------------------------------ иконки и мета ------------------------------ */
 
 const FAVICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-  <rect width="64" height="64" fill="#070506"/>
-  <path d="M32 12c5 6 8 10 8 15a8 8 0 0 1-16 0c0-5 3-9 8-15z" fill="#F0C070"/>
-  <rect x="29" y="35" width="6" height="15" fill="#C9A063"/>
+  <rect width="64" height="64" fill="#131110"/>
+  <path d="M20 12c-6 0-7 3-7 8v6c0 4-2 6-5 6 3 0 5 2 5 6v6c0 5 1 8 7 8M44 12c6 0 7 3 7 8v6c0 4 2 6 5 6-3 0-5 2-5 6v6c0 5-1 8-7 8" fill="none" stroke="#67B099" stroke-width="3.5" stroke-linecap="round"/>
+  <path d="M25 24v16M25 24l10 16M35 24v16" fill="none" stroke="#67B099" stroke-width="3.5" stroke-linecap="square"/>
 </svg>`;
 
 async function buildIcons() {
   await fs.writeFile(path.join(DIST, 'favicon.svg'), FAVICON_SVG);
   const svg = Buffer.from(FAVICON_SVG);
-  const png = (size) => sharp(svg, { density: 384 }).resize(size, size).png({ compressionLevel: 9 }).toBuffer();
+  const png = (s) => sharp(svg, { density: 384 }).resize(s, s).png({ compressionLevel: 9 }).toBuffer();
   await fs.writeFile(path.join(DIST, 'apple-touch-icon.png'), await png(180));
   await fs.mkdir(path.join(DIST, 'assets', 'icons'), { recursive: true });
   await fs.writeFile(path.join(DIST, 'assets', 'icons', 'icon-192.png'), await png(192));
   await fs.writeFile(path.join(DIST, 'assets', 'icons', 'icon-512.png'), await png(512));
-  await fs.writeFile(path.join(DIST, 'favicon.ico'), await png(32));   // ico не нужен современным, но пусть лежит
 }
-
-/* ----------------------- служебные файлы ----------------------- */
 
 async function buildMeta() {
   const origin = C.site.url.replace(/\/$/, '');
   await fs.writeFile(path.join(DIST, 'robots.txt'), ROBOTS_DENY
-    ? `User-agent: *\nDisallow: /\n`
+    ? 'User-agent: *\nDisallow: /\n'
     : `User-agent: *\nAllow: /\n\nSitemap: ${origin}/sitemap.xml\n`);
-
   const today = new Date().toISOString().slice(0, 10);
   await fs.writeFile(path.join(DIST, 'sitemap.xml'),
-    `<?xml version="1.0" encoding="UTF-8"?>\n` +
-    `<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n` +
-    `  <url><loc>${origin}/</loc><lastmod>${today}</lastmod><changefreq>monthly</changefreq><priority>1.0</priority></url>\n` +
-    `</urlset>\n`);
-
+    `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n` +
+    `  <url><loc>${origin}/</loc><lastmod>${today}</lastmod></url>\n</urlset>\n`);
   await fs.writeFile(path.join(DIST, 'site.webmanifest'), JSON.stringify({
-    name: C.site.organisation.name,
-    short_name: C.site.organisation.name,
-    lang: C.site.lang,
-    start_url: '/',
-    display: 'standalone',
-    background_color: C.site.themeColor,
-    theme_color: C.site.themeColor,
+    name: C.site.name, short_name: 'Камерный балет', lang: C.site.lang, start_url: '/', display: 'standalone',
+    background_color: C.site.themeColor, theme_color: C.site.themeColor,
     icons: [
       { src: '/assets/icons/icon-192.png', sizes: '192x192', type: 'image/png' },
       { src: '/assets/icons/icon-512.png', sizes: '512x512', type: 'image/png' },
-      { src: '/favicon.svg', sizes: 'any', type: 'image/svg+xml' },
     ],
   }, null, 2));
-
-  const htaccess = path.join(ROOT, '.htaccess');
-  await fs.copyFile(htaccess, path.join(DIST, '.htaccess')).catch(() => {
-    console.warn('   .htaccess не найден в корне репозитория');
-  });
+  await fs.copyFile(path.join(ROOT, '.htaccess'), path.join(DIST, '.htaccess'));
 }
 
-/* ------------------------------- сборка ------------------------------- */
+/* ----------------------------------- сборка ----------------------------------- */
 
 async function main() {
-  console.log(DEBUG ? 'Сборка: отладочная (заглушки видны)' : 'Сборка: продакшн (заглушки скрывают блок)');
   await emptyDist();
-
-  const images = await buildImages();
-  const video = await buildVideo();
+  await fs.mkdir(BUILD, { recursive: true });
   const fonts = await buildFonts();
-
-  const R = createRenderer({
-    debug: DEBUG, images, video, fonts,
-    sectionVideo: video.section || { source: null, poster: null },
-  });
-
-  const mediaSize = await copyAssets();
-  const css = await buildCss(fonts.css, images.seam);
+  const { manifest: media, warnings } = await buildMedia();
+  const R = createRenderer({ fonts, media });
+  const css = await buildCss(fonts.css);
   const js = await buildJs();
   await buildIcons();
   await buildMeta();
@@ -219,44 +122,32 @@ async function main() {
     description: esc(C.site.description),
     canonical: esc(C.site.url),
     themeColor: esc(C.site.themeColor),
-    skipLink: esc(C.ui.skipLink),
-    loaderMark: esc(C.ui.loading),
-    social: R.renderSocial(),
+    skipLink: esc(C.site.skipLink),
     preload: R.renderPreload(),
     styles: `<link rel="stylesheet" href="/assets/css/${css.file}">`,
+    sprite: R.sprite(),
     topbar: R.renderTopbar(),
-    flight: R.renderFlight(),
+    hero: R.renderHero(),
     sections: R.renderSections(),
     footer: R.renderFooter(),
+    appData: R.renderAppData(),     // после sections: реестр медиа наполняется при отрисовке
     jsonld: R.renderJsonLd(),
-    script: `<script type="module" src="/assets/js/${js.entry.file}"></script>`,
+    script: `<script defer src="/assets/js/${js.entry.file}"></script>`,
   };
-
   let html = template;
-  for (const [key, value] of Object.entries(slots)) {
-    html = html.replaceAll(`<!--{{${key}}}-->`, value);
-  }
+  for (const [k, v] of Object.entries(slots)) html = html.replaceAll(`<!--{{${k}}}-->`, v);
   const left = html.match(/<!--\{\{(\w+)\}\}-->/);
-  if (left) throw new Error(`в шаблоне остался незаполненный слот: ${left[1]}`);
-
+  if (left) throw new Error(`в шаблоне остался слот: ${left[1]}`);
   await fs.writeFile(path.join(DIST, 'index.html'), html);
 
-  // Вес шрифтов и кода — в .build/weights.json: по нему build-images.mjs
-  // считает первую строку бюджета (изображения + шрифты + код).
-  const fontsSize = fonts.faces.reduce((s, f) => s + f.size, 0);
-  const codeAndFonts = css.size + js.total + Buffer.byteLength(html) + fontsSize;
-  await fs.writeFile(
-    path.join(BUILD, 'weights.json'),
-    JSON.stringify({ codeAndFonts, css: css.size, js: js.total, html: Buffer.byteLength(html), fonts: fontsSize }, null, 2),
-  );
-
   console.log('\nСтраница');
-  console.log('   index.html      ', bytes(Buffer.byteLength(html)));
-  console.log('   стили           ', bytes(css.size), `→ /assets/css/${css.file}`);
-  console.log('   скрипты         ', bytes(js.total), `→ /assets/js/${js.entry.file}`);
-  console.log('   шрифты          ', bytes(fonts.faces.reduce((s, f) => s + f.size, 0)), `(${fonts.faces.length} файлов)`);
-  console.log('   медиа и шрифты  ', bytes(mediaSize), 'в assets/');
-  if (ROBOTS_DENY) console.log('   robots.txt      ', 'Disallow: / — индексация запрещена (ROBOTS=deny)');
+  console.log('   index.html ', bytes(Buffer.byteLength(html)));
+  console.log('   стили      ', bytes(css.size), `→ /assets/css/${css.file}`);
+  console.log('   скрипты    ', bytes(js.total), `→ /assets/js/${js.entry.file}`);
+  console.log('   шрифты     ', bytes(fonts.faces.reduce((s, f) => s + f.size, 0)), `(${fonts.faces.length} файлов)`);
+  console.log('   слоты медиа', Object.keys(media).join(', ') || 'пусто: везде заглушки (media/media.json)');
+  warnings.forEach((w) => console.warn('   ⚠', w));
+  if (ROBOTS_DENY) console.log('   robots.txt  Disallow: / (ROBOTS=deny)');
   console.log('\n   готово: dist/\n');
 }
 
