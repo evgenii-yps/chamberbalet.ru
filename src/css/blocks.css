@@ -362,3 +362,168 @@ html[data-mode="chamber"] .tour { border-top: 6px solid var(--patina-dark); }
 .pnav--prev { left: calc(var(--gutter) - 10px); transform: scaleX(-1); }
 .pnav--next { right: calc(var(--gutter) - 10px); }
 html.player-open { overflow: hidden; }
+
+.foot__x--first { margin-top: 0; }
+
+/* ---- заглушки: тон по типу слота, чтобы до прихода фото блоки не сливались ---- */
+/* видео — тёплое свечение, как от свечей */
+.is-ph.ph-video .media__in {
+  background:
+    radial-gradient(55% 60% at 50% 78%, rgba(255, 190, 110, .34), transparent 72%),
+    radial-gradient(30% 30% at 22% 30%, rgba(255, 170, 90, .10), transparent 70%),
+    linear-gradient(180deg, #1D1612, #110D0B);
+}
+/* портреты — холоднее, с патиной */
+.is-ph.ph-portrait .media__in {
+  background:
+    radial-gradient(46% 40% at 50% 36%, rgba(103, 176, 153, .26), transparent 72%),
+    radial-gradient(70% 40% at 50% 100%, rgba(103, 176, 153, .12), transparent 70%),
+    linear-gradient(180deg, #131B18, #0C100F);
+}
+/* афиши 3:4 — вертикальный луч */
+.is-ph.ph-poster .media__in {
+  background:
+    linear-gradient(90deg, transparent 34%, rgba(245, 235, 209, .11) 50%, transparent 66%),
+    radial-gradient(60% 40% at 50% 100%, rgba(255, 196, 120, .20), transparent 70%),
+    linear-gradient(180deg, #1A1613, #100D0B);
+}
+.sec--light .is-ph.ph-portrait .media__in { background: radial-gradient(46% 40% at 50% 36%, rgba(5, 56, 48, .16), transparent 72%), linear-gradient(180deg, #E3E6D2, #D2D8C2); }
+.sec--light .is-ph.ph-video .media__in { background: radial-gradient(55% 60% at 50% 78%, rgba(184, 134, 43, .28), transparent 72%), linear-gradient(180deg, #E9DDBF, #DED0AE); }
+
+/* ============ телефон (< 700 px): короче, лентами, без второстепенных строк ============ */
+@media (max-width: 699px) {
+  :root { --sec-y: 56px; }
+  .h2 { font-size: 2.125rem; }
+  .h2--rule::after { margin-top: 18px; }
+  .lead { margin-top: 16px; }
+  .manifest { padding-top: 72px; }
+  .manifest__text { margin-top: 24px; }
+  .why-grid { margin-top: 36px; gap: 28px; }
+  .scale .lead { margin-bottom: 28px; }
+  .card-wide__media, .card-wide--gala .card-wide__media { min-height: 220px; }
+  .card-wide__body { padding: 24px 18px; }
+  .card-wide__tx { margin: 12px 0 18px; }
+  .box { padding: 16px; }
+  .box__nums, .gala__nums { gap: 16px; }
+  .num { font-size: 2rem; }
+  .num--l { font-size: 2.5rem; }
+
+  /* главы вечера: медиа 4:3, без строки fact */
+  .evening { padding-bottom: 8px; }
+  .chapter { padding-block: 22px; gap: 14px; }
+  .chapter__media .media { aspect-ratio: 4 / 3 !important; }
+  .chapter__fact { display: none; }
+  .chapter__t { margin: 6px 0 10px; }
+  .evening__line { display: none; }
+
+  /* ленты со snap: афиши и вертикальные видео */
+  .posters { display: flex; gap: 12px; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; margin-inline: calc(var(--gutter) * -1); padding-inline: var(--gutter); margin-top: 28px; }
+  .posters::-webkit-scrollbar { display: none; }
+  .poster { flex: 0 0 62%; scroll-snap-align: start; }
+  .ribbon__i { flex-basis: 58%; }
+  .v-vert { max-height: 420px; }
+  .video__main { margin-top: 24px; }
+  .video__head { gap: 12px; }
+  .tabs { margin-top: 44px; }
+  .tabs__list { gap: 4px 20px; }
+  .tabs__t { font-size: 1.125rem; }
+  .row__sum { padding-block: 16px; }
+
+  .troupe__dir { gap: 24px; }
+  .dir__ph { max-width: 70%; }
+  .dir__lead { margin: 14px 0 18px; }
+  .ach-grid { padding-top: 36px; gap: 20px; }
+  .troupe .h2-s { margin-top: 36px; }
+  .faces__lead { margin-bottom: 20px; }
+  .ribbon--faces .ribbon__i, .face { flex-basis: 170px; }
+  .row--all { margin-top: 24px; }
+
+  .params { margin-top: 28px; }
+  .param { padding: 16px 12px 16px 0; }
+  .venues__cols { margin-top: 36px; gap: 28px; }
+  .h2-s--gap { margin-top: 44px; }
+  .model { padding: 18px 0; }
+  .models__note { margin: 18px 0; }
+  .rider { flex-direction: column; align-items: flex-start; }
+
+  .clients__bg { height: 300px; margin-bottom: 40px; }
+  .clients .lead { margin-bottom: 28px; }
+  .steps { gap: 24px; }
+  .step__m .media { aspect-ratio: 16 / 9; }
+  .fmt { padding: 16px 0; }
+  .prems { margin: 36px 0 28px; }
+  .prem { padding: 20px; }
+
+  .tour__rule { margin: 18px 0 24px; }
+  .tour__cols { gap: 28px; }
+  .opt__b { padding: 16px; }
+  .invite { margin-bottom: 20px; }
+  .inv { padding: 14px 14px 14px 0; }
+  .inv__n { font-size: 2.5rem; }
+
+  /* «Кадры»: две колонки, шесть плиток */
+  .mosaic { margin-top: 24px; grid-auto-rows: 132px; gap: 8px; }
+  .tile:nth-child(7) { display: none; }
+
+  .contacts__lead { margin: 14px 0 28px; }
+  .person { padding: 18px; gap: 12px; }
+  .foot { padding-top: 44px; }
+  .foot__big { margin-bottom: 36px; }
+  .foot__grid { gap: 24px; }
+  .foot__bottom { margin-top: 32px; }
+}
+
+@media (max-width: 699px) {
+  body { font-size: 1rem; }
+  /* вторая волна сокращений: карточки лентами со snap */
+  .why-grid, .steps, .models, .opts {
+    display: flex; gap: 14px; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none;
+    margin-inline: calc(var(--gutter) * -1); padding-inline: var(--gutter);
+  }
+  .why-grid::-webkit-scrollbar, .steps::-webkit-scrollbar, .models::-webkit-scrollbar, .opts::-webkit-scrollbar { display: none; }
+  .why, .step, .model, .opt { flex: 0 0 78%; scroll-snap-align: start; }
+  .step { flex-basis: 72%; }
+  .model { border: 1px solid rgba(19, 17, 16, .25); padding: 18px; }
+  .models { border-top: 0; }
+  .boxes { grid-template-columns: 1fr 1fr; gap: 8px; }
+  .box__n { font-size: 1.0625rem; margin-bottom: 8px; }
+  .box__k { font-size: .75rem; }
+  .box__cast { font-size: .8125rem; }
+  .num { font-size: 1.75rem; }
+  .card-wide__media, .card-wide--gala .card-wide__media { min-height: 170px; }
+  .chapter__text > p { font-size: 1rem; }
+  .manifest__lead { font-size: 2rem; }
+  .why-grid { margin-top: 24px; }
+  .why { padding-bottom: 4px; }
+}
+
+@media (max-width: 699px) {
+  .people, .invite, .ach-grid, .qrs {
+    display: flex; gap: 12px; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none;
+    margin-inline: calc(var(--gutter) * -1); padding-inline: var(--gutter);
+  }
+  .people::-webkit-scrollbar, .invite::-webkit-scrollbar, .ach-grid::-webkit-scrollbar, .qrs::-webkit-scrollbar { display: none; }
+  .person, .ach, .qrcard { flex: 0 0 82%; scroll-snap-align: start; }
+  .inv { flex: 0 0 62%; scroll-snap-align: start; }
+  .ach-grid { padding-top: 28px; padding-bottom: 8px; }
+  .qrs { margin-top: 12px; }
+  .dots li { padding: 8px 0; font-size: .9375rem; }
+  .chapter { padding-block: 14px; gap: 10px; }
+  .chapter__media .media { aspect-ratio: 4 / 3 !important; }
+  .tour__h { font-size: 1.625rem; }
+  .need__r { padding: 12px 0; }
+  .card-wide__t { font-size: 2rem; }
+}
+
+@media (max-width: 699px) {
+  .fmts, .prems {
+    display: flex; gap: 12px; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none;
+    margin-inline: calc(var(--gutter) * -1); padding-inline: var(--gutter);
+  }
+  .fmts::-webkit-scrollbar, .prems::-webkit-scrollbar { display: none; }
+  .fmt, .prem { flex: 0 0 78%; scroll-snap-align: start; }
+  .fmt { border: 1px solid rgba(245, 235, 209, .18); padding: 18px; }
+  .fmts { border-top: 0; }
+  .prems { margin-block: 12px 28px; }
+  .clients__fl { margin-bottom: 16px; }
+}

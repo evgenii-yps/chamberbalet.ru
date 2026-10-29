@@ -99,7 +99,8 @@ export function createRenderer({ fonts, media, warnings = [] }) {
     // заглушка: свечение, зерно, подпись слота
     if (o.lightbox) registry[slot.id] = { kind: 'ph', caption: slot.tag };
     if (o.full) registry[slot.id] = { kind: 'ph', caption: slot.tag };
-    return wrap(`${cls} is-ph`, '') +
+    const kind = (type === 'inline' || type === 'bg') ? 'video' : /^(face|person|director)/.test(slot.id) ? 'portrait' : ratio === '3 / 4' ? 'poster' : 'photo';
+    return wrap(`${cls} is-ph ph-${kind}`, '') +
       `${type === 'inline' ? playBtn(slot.id, slot.tag, o.group) : ''}<span class="tag${o.tagRight ? ' tag--r' : ''}">${t(slot.tag)}</span></${E}>`;
   }
 
@@ -505,7 +506,7 @@ export function createRenderer({ fonts, media, warnings = [] }) {
   <div class="wrap">
     <p class="foot__big" aria-hidden="true">${typo('Театр')} ${mk()} Камерного${NB}балета</p>
     <div class="foot__grid">
-      <div><p class="foot__mark">${t(C.hero.line1)} <span class="ne-i">{НЕ}</span><br>${t(C.hero.line2)}</p><p class="foot__x">${t(f.brand.role)}<br>${t(f.brand.producer)}</p></div>
+      <div><p class="foot__x foot__x--first">${t(f.brand.role)}<br>${t(f.brand.producer)}</p></div>
       <div><h2 class="foot__h">${t(f.chamber.title)}</h2><p class="foot__x">${t(f.chamber.text)}</p></div>
       <div><h2 class="foot__h">${t(f.tour.title)}</h2><p class="foot__x">${t(f.tour.text)}</p></div>
     </div>

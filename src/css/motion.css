@@ -39,7 +39,10 @@ html[data-mode="big"] .mk__t { text-shadow: 0 0 18px rgba(103, 176, 153, .55); }
 .hero__in { transform: translate3d(0, calc(var(--hs, 0) * -70px), 0); }
 
 /* шов между половинами — линия патины, только в режиме «Весь театр» */
-.seam { position: absolute; top: 0; bottom: 0; left: 50%; width: 1px; background: linear-gradient(transparent, var(--patina) 30%, var(--patina) 70%, transparent); opacity: 0; }
+.seam {                    /* шов обрывается над знаком: ни текст, ни подпись он не пересекает */
+  position: absolute; top: var(--top-h); left: 50%; width: 1px; height: calc(var(--seam-end, 18%) - var(--top-h) + 28px);
+  background: linear-gradient(transparent, var(--patina) 35%, var(--patina) 65%, transparent); opacity: 0;
+}
 html[data-mode="all"] .seam { opacity: .8; }
 
 /* Вариант Б: обе стопкой, граница едет через clip-path, открывшееся видео «оседает» 1,06 → 1 */
