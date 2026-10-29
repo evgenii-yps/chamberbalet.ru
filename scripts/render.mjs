@@ -66,7 +66,10 @@ export function createRenderer({ fonts, media }) {
   /** Подписи режимов отдаём скрипту данными: единственный источник — content.js. */
   function renderModesData() {
     const data = {
-      modes: C.modes,
+      modes: Object.fromEntries(Object.entries(C.modes).map(([k, m]) => [k, {
+        caption: t(m.caption),
+        buttons: m.buttons.map((b) => ({ label: t(b.label), href: b.href })),
+      }])),
       ne: { remove: C.ui.neRemove, restore: C.ui.neRestore },
     };
     return `<script type="application/json" id="modes-data">${JSON.stringify(data).replaceAll('<', '\\u003c')}</script>`;

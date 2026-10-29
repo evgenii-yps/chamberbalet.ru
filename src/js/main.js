@@ -1,1 +1,3 @@
-/* PR 1: каркас без поведения. Режимы и компоненты — в следующих PR. */
+import { initModes } from './mode.js';
+
+initModes();

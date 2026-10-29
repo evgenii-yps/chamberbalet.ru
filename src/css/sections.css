@@ -295,3 +295,7 @@ html[data-mode="all"] .v--all, html[data-mode="chamber"] .v--chamber, html[data-
 .foot__bottom { margin-top: 56px; padding-top: 20px; border-top: 1px solid var(--hair); }
 .foot__bottom p { color: var(--muted); font-size: .875rem; max-width: none; }
 @media (min-width: 800px) { .foot__grid { grid-template-columns: 1fr 1.2fr 1fr; gap: 64px; } }
+
+/* До применения режима скриптом: те же разделы не мигают при ?mode= */
+html[data-mode="chamber"]:not(.modes-ready) [data-modes="all big"],
+html[data-mode="big"]:not(.modes-ready) [data-modes="all chamber"] { display: none; }
