@@ -16,16 +16,16 @@ export function initHeader() {
   const panel = $('#mpanel');
   let hovering = false;
 
-  /* ---- плотная после первого экрана ---- */
-  const solidAt = () => Math.round(top.getBoundingClientRect().height);
-  new IntersectionObserver(([e]) => top.classList.toggle('is-solid', !e.isIntersecting),
-    { rootMargin: `-${solidAt()}px 0px 0px 0px` }).observe(hero);
+  /* ---- плотная после первого экрана: считаем по положению прокрутки, а не по событию пересечения,
+          чтобы прыжок (scrollTo, якорь, восстановление позиции) тоже давал верное состояние ---- */
+  const syncSolid = () => top.classList.toggle('is-solid', scrollY > hero.offsetHeight - top.offsetHeight);
 
   /* ---- прячется вниз, возвращается вверх; прогресс чтения ---- */
   let lastY = scrollY, ticking = false, acc = 0;
   const frame = () => {
     ticking = false;
     const y = scrollY;
+    syncSolid();
     const dy = y - lastY;
     lastY = y;
     const max = document.documentElement.scrollHeight - innerHeight;
@@ -42,6 +42,9 @@ export function initHeader() {
   top.addEventListener('pointerenter', () => { hovering = true; top.classList.remove('is-hidden'); });
   top.addEventListener('pointerleave', () => { hovering = false; });
   top.addEventListener('focusin', () => top.classList.remove('is-hidden'));
+  addEventListener('resize', syncSolid);
+  addEventListener('pageshow', syncSolid);
+  syncSolid();
   frame();
 
   /* ---- меню на телефоне ---- */
