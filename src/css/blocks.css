@@ -339,3 +339,27 @@ html[data-mode="chamber"] .tour { border-top: 6px solid var(--patina-dark); }
 .foot__h { font: 400 1.375rem/1.2 var(--font-display); color: var(--ink); }
 .foot__h + .foot__x { margin-top: 10px; }
 .foot__bottom { margin-top: 56px; padding-top: 18px; border-top: 1px solid var(--hair); font-size: .8125rem; color: var(--muted); }
+
+/* ================================ видеоплеер ================================ */
+.player { position: fixed; inset: 0; z-index: 90; color: var(--cream); }
+.player__bg { position: absolute; inset: 0; background: rgba(19, 17, 16, .96); }
+.player__stage { position: absolute; inset: 0 0 90px 0; display: grid; place-items: center; pointer-events: none; padding: 56px 16px 0; }
+.player__frame { position: relative; background: #000; pointer-events: auto; transform-origin: 0 0; max-width: 100%; }
+.player__frame video, .player__frame img { width: 100%; height: 100%; object-fit: contain; display: block; }
+.player__frame .media { position: absolute; inset: 0; }
+.player__cap { position: absolute; left: 0; right: 0; bottom: 64px; padding: 0 var(--gutter); text-align: center; font-size: .9375rem; color: var(--cream-2); pointer-events: none; }
+.player__bar {
+  position: absolute; left: 50%; bottom: 14px; transform: translateX(-50%); width: min(720px, calc(100% - 2 * var(--gutter)));
+  display: flex; align-items: center; gap: 12px;
+}
+.pbtn { flex: none; width: 44px; height: 44px; display: grid; place-items: center; padding: 0; cursor: pointer; background: none; border: 0; color: var(--cream); }
+.pbtn:hover { color: var(--patina); }
+.pbtn .ico { width: 26px; height: 26px; }
+.pbar { position: relative; flex: 1 1 auto; height: 2px; background: rgba(245, 235, 209, .25); cursor: pointer; }
+.pbar::before { content: ''; position: absolute; inset: -18px 0; }
+.pbar__f { position: absolute; inset: 0; background: var(--patina); transform-origin: 0 50%; transform: scaleX(0); display: block; }
+.pclose { position: absolute; top: 10px; right: calc(var(--gutter) - 10px); }
+.pnav { position: absolute; top: 50%; margin-top: -22px; }
+.pnav--prev { left: calc(var(--gutter) - 10px); transform: scaleX(-1); }
+.pnav--next { right: calc(var(--gutter) - 10px); }
+html.player-open { overflow: hidden; }

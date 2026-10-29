@@ -4,6 +4,8 @@ import { initTabs } from './components.js';
 import { initHeader } from './header.js';
 import { initReveals } from './reveal.js';
 import { initDecor } from './decor.js';
+import { initMedia } from './media.js';
+import { initPlayer } from './player.js';
 import { store } from './store.js';
 
 initModes({ scene });
@@ -11,5 +13,7 @@ initTabs();
 initHeader();
 initReveals();
 initDecor();
+initMedia();
+initPlayer();
 // Вступительная сцена — один раз за сессию
 store.set('ne-seen', '1', 'session');
