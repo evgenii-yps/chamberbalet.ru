@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="<!--{{lang}}-->">
+<html lang="<!--{{lang}}-->" class="no-js" data-mode="all">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
@@ -8,50 +8,39 @@
 <link rel="canonical" href="<!--{{canonical}}-->">
 <meta name="theme-color" content="<!--{{themeColor}}-->">
 <meta name="color-scheme" content="dark">
-
-<!--{{social}}-->
-
+<meta property="og:type" content="website">
+<meta property="og:locale" content="ru_RU">
+<meta property="og:title" content="<!--{{title}}-->">
+<meta property="og:description" content="<!--{{description}}-->">
+<meta property="og:url" content="<!--{{canonical}}-->">
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <link rel="manifest" href="/site.webmanifest">
-
 <script>
-/* Раскладка пролёта включается сразу, до первой отрисовки: иначе страница
-   рисуется стопкой в девять экранов и потом схлопывается.
-   Если скрипт так и не доехал, через восемь секунд откатываемся к обычной
-   прокручиваемой стопке — чёрный экран не остаётся ни при каких условиях. */
+/* Режим и флаги — до первой отрисовки, чтобы страница не мигала.
+   URL важнее localStorage; без скрипта остаётся .no-js и режим all. */
 (function () {
-  var d = document.documentElement;
-  d.classList.add('js');
-  setTimeout(function () {
-    if (!d.classList.contains('ready')) d.classList.remove('js');
-  }, 8000);
+  var d = document.documentElement, m = null, ok = /^(all|chamber|big)$/;
+  d.className = d.className.replace('no-js', 'js');
+  try { var q = new URLSearchParams(location.search).get('mode'); if (ok.test(q)) m = q; } catch (e) {}
+  if (!m) { try { m = localStorage.getItem('ne-mode'); } catch (e) {} if (!ok.test(m)) m = 'all'; }
+  d.setAttribute('data-mode', m);
+  try { if (sessionStorage.getItem('ne-seen')) d.className += ' seen'; } catch (e) {}
+  try { if (localStorage.getItem('ne-touched')) d.className += ' touched'; } catch (e) {}
 })();
 </script>
-
 <!--{{preload}}-->
 <!--{{styles}}-->
 </head>
 <body>
-
-<a class="skip-link" href="#kontakt"><!--{{skipLink}}--></a>
-
-<div class="loader" role="status" aria-label="Загрузка">
-  <div>
-    <p class="loader__mark"><!--{{loaderMark}}--></p>
-    <div class="loader__bar"></div>
-  </div>
-</div>
-
+<a class="skip-link" href="#rep"><!--{{skipLink}}--></a>
 <!--{{topbar}}-->
-
-<main>
-  <!--{{flight}}-->
-  <!--{{sections}}-->
+<main id="main">
+<!--{{hero}}-->
+<!--{{sections}}-->
 </main>
-
 <!--{{footer}}-->
-
+<!--{{modesData}}-->
 <!--{{jsonld}}-->
 <!--{{script}}-->
 </body>
