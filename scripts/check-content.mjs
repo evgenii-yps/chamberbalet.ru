@@ -11,22 +11,24 @@ const text = html.replace(/<script[\s\S]*?<\/script>/g, '').replace(/<[^>]+>/g, 
 const full = html.replaceAll('\\u003c', '<').replace(/<[^>]+>/g, ' ').replaceAll('&nbsp;', ' ').replaceAll('\u00a0', ' ').replace(/\s+/g, ' ').replace(/\s+([.,;:!?—–])/g, ' $1');
 const fails = [];
 const warns = [];
+const placeholders = C.contacts.people.flatMap((p) => [p.tel, p.mail, p.tg]).filter((x) => /^\[/.test(x));
+if (placeholders.length) warns.push(`заглушки в контактах (ждут данных): ${placeholders.join(', ')}`);
 const must = (ok, msg) => { if (!ok) fails.push(msg); };
 
 for (const w of ['Купить', 'купить', 'МЧС', 'постоянная труппа', 'репетиционный зал', 'штатная постановочная']) {
   must(!text.includes(w), `в тексте есть «${w}»`);
 }
 must(!/(?:\d{1,2}\s(?:января|февраля|марта|апреля|мая|июня|июля|августа|сентября|октября|ноября|декабря))/.test(text), 'в тексте есть дата афиши');
-must(C.troupe.soloists.length === 23, `солистов ${C.troupe.soloists.length}, в кнопке 23`);
-must(/\(23\)/.test(C.troupe.showAll), 'кнопка не про 23');
+must(C.troupe.all.length === 27, `в списке труппы ${C.troupe.all.length}, в заголовке 27`);
+must(C.rep.groups.reduce((n, g) => n + g.items.length, 0) === 24, 'репертуар: не 24 названия');
 
-
-for (const id of ['top', 'rep', 'venues', 'clients', 'troupe', 'contacts']) must(html.includes(`id="${id}"`), `нет якоря #${id}`);
+for (const id of ['top', 'manifest', 'scale', 'evening', 'video', 'rep', 'troupe', 'venues', 'clients', 'tour', 'gallery', 'contacts']) must(html.includes(`id="${id}"`), `нет якоря #${id}`);
 for (const m of C.menu) must(html.includes(`href="${m.href}"`), `меню: нет ${m.href}`);
 // все видимые строки content.js попадают в разметку
-const walk = (v, out = []) => (typeof v === 'string' ? out.push(v) : v && typeof v === 'object' && Object.values(v).forEach((x) => walk(x, out)), out);
+const TECH = new Set(['id', 'type', 'ratio', 'icon', 'href', 'url', 'telHref', 'mailHref', 'tgHref', 'cls', 'n', 'qr']);
+const walk = (v, out = []) => (typeof v === 'string' ? out.push(v) : v && typeof v === 'object' && Object.entries(v).forEach(([k, x]) => { if (!TECH.has(k)) walk(x, out); }), out);
 const skip = new Set([C.site.url, C.site.themeColor, C.site.lang]);
-for (const s of walk([C.about, { ...C.rep, lead: '' }, C.venues, C.clients, C.troupe, C.materials, C.hero, C.modes, C.versionLine])) {
+for (const s of walk([C.manifest, C.scale, C.evening, C.video, C.rep, C.troupe, C.venues, C.clients, C.tour, C.gallery, C.contacts, C.hero, C.versionLine, C.footer])) {
   if (skip.has(s) || /^(#|https?:)/.test(s) || s === '') continue;
   const plain = s.replace(/\s+/g, ' ');
   must(text.includes(plain) || full.replace(/ +/g, ' ').includes(plain.replace(/ +/g, ' ')) || html.includes(plain.replaceAll('&', '&amp;')) || html.includes(plain.replaceAll(' ', ' ')) , `не попало в разметку: ${plain.slice(0, 50)}`);

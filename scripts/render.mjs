@@ -73,7 +73,7 @@ export function createRenderer({ fonts, media, warnings = [] }) {
     const style = ratio ? ` style="aspect-ratio:${ratio}"` : '';
     const E = o.el || 'div';
     const cls = `media${o.cls ? ' ' + o.cls : ''}${o.parallax ? ' media--par' : ''}`;
-    const par = o.parallax ? ' data-fx="par"' : '';
+    const par = o.parallax ? ' data-fx="par"' : o.fx ? ` data-fx="${o.fx}"` : '';
     const label = (m && m.caption) || slot.tag;
     const wrap = (c, inner, extra = '') => `<${E} class="${c}" data-slot="${slot.id}"${style}${extra}><${E} class="media__in"${par}>${inner}</${E}>`;
 
@@ -360,7 +360,7 @@ export function createRenderer({ fonts, media, warnings = [] }) {
     const all = tr.all.map((s) => `<div class="all__i"><p class="all__n">${t(s.name)}</p><p class="all__b">${t(s.bio)}</p></div>`).join('');
     return `<section class="sec troupe" id="troupe" aria-labelledby="troupe-h">
   <div class="troupe__dir wrap">
-    <div class="dir__ph shutter" data-reveal>${slotMedia(d.slot, { parallax: false, cls: 'dir__m', sizes: '(min-width:1000px) 40vw, 100vw' })}</div>
+    <div class="dir__ph shutter" data-reveal>${slotMedia(d.slot, { fx: 'zoom', cls: 'dir__m', sizes: '(min-width:1000px) 40vw, 100vw' })}</div>
     <div class="dir__t" data-reveal>
       <p class="eyebrow">${t(d.role)}</p>
       <h2 class="dir__n" id="troupe-h">${t(d.name)}</h2>
@@ -389,7 +389,7 @@ export function createRenderer({ fonts, media, warnings = [] }) {
       v.modelRows.map((r, j) => `<p class="model__k">${t(r)}</p><p class="model__v">${t(m.cells[j])}</p>`).join('') + '</div>').join('');
     const qr = qrSvg(media['qr-rider']?.url || C.contacts.riderQr.url, esc(C.contacts.riderQr.tag));
     return `<section class="sec sec--light venues" id="venues" aria-labelledby="venues-h" data-modes="all chamber">
-  <div class="torn" aria-hidden="true"></div>
+  <div class="torn" aria-hidden="true" data-reveal></div>
   <div class="wrap">
     <p class="eyebrow">${t(v.eyebrow)}</p>
     <h2 class="h2 h2--rule" id="venues-h">${parts(v.title)}</h2>
@@ -447,7 +447,7 @@ export function createRenderer({ fonts, media, warnings = [] }) {
     const design = g.design.map((d) => `<div class="opt"><div class="opt__m shutter">${slotMedia(d.slot, { sizes: '(min-width:1000px) 45vw, 100vw' })}</div><div class="opt__b"><p class="opt__n">${t(d.n)}</p><h4>${t(d.t)}</h4><p>${t(d.d)}</p></div></div>`).join('');
     const invite = g.invite.map((s, i) => `<li class="inv" style="--i:${i}"><p class="inv__n">${s.n}</p>${ico(s.icon, 'inv__ico')}<h4>${t(s.t)}</h4><p>${t(s.d)}</p></li>`).join('');
     return `<section class="sec sec--light tour" id="tour" aria-labelledby="tour-h">
-  <div class="torn" aria-hidden="true"></div>
+  <div class="torn" aria-hidden="true" data-reveal></div>
   <div class="wrap">
     <p class="eyebrow">${t(g.eyebrow)}</p>
     <h2 class="h2" id="tour-h">${t(g.title[0])}<br><span class="k">${t(g.title[1])}</span></h2>

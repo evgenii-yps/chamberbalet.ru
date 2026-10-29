@@ -156,3 +156,104 @@ html[data-mode="chamber"] .ne .mk__ul { opacity: 0; }
 .media__prev { position: absolute; inset: 0; opacity: 0; }
 .media__prev.is-on { opacity: 1; }
 @media (prefers-reduced-motion: no-preference) { .media__prev { transition: opacity 300ms linear; } }
+
+/* ============================ анимации блоков 2–12 ============================ */
+.media--par .media__in { transform: translate3d(0, var(--py, 0px), 0); }
+.dir__m .media__in { transform: scale(var(--zs, 1)); }
+.face .media__in, .person__m .media__in { filter: grayscale(1); }
+.face:hover .media__in, .face.is-color .media__in { filter: none; }
+.face__n { background: linear-gradient(var(--patina), var(--patina)) 0 100% / 0 2px no-repeat; display: inline; }
+.face:hover .face__n, .face.is-color .face__n { background-size: 100% 2px; }
+.people.is-in .person__m .media__in, .no-js .person__m .media__in { filter: none; }
+.poster .media__in { transition: transform 700ms var(--ease-out); }
+
+@media (prefers-reduced-motion: no-preference) {
+  .poster:hover .media__in { transform: scale(1.04); }
+  .poster__k, .poster__t, .poster__meta { transition: transform 300ms var(--ease-out), color 200ms linear; }
+  .poster:hover .poster__k, .poster:hover .poster__t, .poster:hover .poster__meta { transform: translateY(-6px); }
+  .face .media__in, .person__m .media__in { transition: filter 600ms linear; }
+  .people.is-in .person__m .media__in { transition-delay: calc(var(--i, 0) * 120ms); }
+  .face__n { transition: background-size 300ms var(--ease-out); }
+
+  /* линейки под заголовками рисуются слева направо */
+  .anim .h2--rule:not(.is-in)::after { transform: scaleX(0); }
+  .anim .h2--rule::after { transition: transform 600ms var(--ease-out); }
+
+  /* шторки: медиа раскрывается снизу вверх */
+  /* клип на дочернем .media: наблюдатель следит за самой обёрткой, у неё клипа нет */
+  .anim .shutter:not(.is-in) > * { clip-path: inset(100% 0 0 0); }
+  .anim .shutter > * { transition: clip-path 900ms var(--ease-curtain); }
+
+  /* 2. манифест: фраза по словам, линии доводов, числа */
+  .anim .manifest__lead:not(.is-in) .w > span { transform: translateY(105%); }
+  .anim .w > span { transition: transform 700ms var(--ease-out); transition-delay: calc(var(--i) * 40ms); }
+  .anim .why-grid:not(.is-in) .why__line { transform: scaleX(0); }
+  .anim .why__line { transition: transform 700ms var(--ease-out); transition-delay: calc(var(--i, 0) * 120ms); }
+  .anim .why-grid:not(.is-in) .why { opacity: 0; }
+  .anim .why { transition: opacity 500ms linear; transition-delay: calc(200ms + var(--i, 0) * 120ms); }
+
+  /* 3. два масштаба: колонки гаснут и подсвечиваются плавно */
+  .box { transition: opacity 400ms linear, border-color 400ms linear, background-color 400ms linear; }
+
+  /* 4. главы: заголовок маской, номер выезжает */
+  .anim .chapter:not(.is-in) .chapter__n { opacity: 0; transform: translateX(-16px); }
+  .anim .chapter__n { transition: opacity 500ms linear, transform 600ms var(--ease-out); transition-delay: 300ms; }
+  .anim .chapter__t { overflow: hidden; padding-bottom: .1em; margin-bottom: 8px; }
+  .anim .chapter:not(.is-in) .chapter__t > span { transform: translateY(105%); }
+  .anim .chapter__t > span { transition: transform 800ms var(--ease-out); transition-delay: 200ms; }
+  .anim .chapter:not(.is-in) .chapter__text > p:not(.chapter__n) { opacity: 0; }
+  .anim .chapter__text > p { transition: opacity 600ms linear; transition-delay: 450ms; }
+
+  /* 8. площадкам: край надрывается, плашки каскадом, QR модулями */
+  .torn.is-in { animation: tear 600ms var(--ease-out); }
+  @keyframes tear { from { transform: translateY(8px); } to { transform: none; } }
+  .anim .chips:not(.is-in) li { opacity: 0; transform: translateY(8px); }
+  .anim .chips li { transition: opacity 400ms linear, transform 400ms var(--ease-out); transition-delay: calc(var(--i) * 60ms); }
+  .anim .models:not(.is-in) .model { opacity: 0; transform: translateY(12px); }
+  .anim .model { transition: opacity 500ms linear, transform 500ms var(--ease-out); transition-delay: calc(var(--i) * 90ms); }
+  .anim :is(.rider, .qrs):not(.is-in) .qr path { opacity: 0; }
+  .anim .qr path { transition: opacity 200ms linear; transition-delay: calc(var(--i) * 5ms); }
+
+  /* 7. труппа: достижения проявляются снизу */
+  .anim .ach-grid:not(.is-in) .ach { opacity: 0; transform: translateY(20px); }
+  .anim .ach { transition: opacity 600ms linear, transform 600ms var(--ease-out); transition-delay: calc(var(--i) * 120ms); }
+
+  /* 9. заказчикам: шаги, форматы, премьеры */
+  .anim .steps:not(.is-in) .step, .anim .fmts:not(.is-in) .fmt, .anim .prems:not(.is-in) .prem { opacity: 0; transform: translateY(14px); }
+  .anim .step, .anim .fmt, .anim .prem { transition: opacity 500ms linear, transform 600ms var(--ease-out); transition-delay: calc(var(--i) * 90ms); }
+
+  /* 10. гастроли: полная линейка, маркеры-квадраты, строки, шаги с линией прогресса */
+  .anim .tour .h2:not(.is-in) + .tour__rule { transform: scaleX(0); }
+  .anim .tour__rule { transition: transform 1000ms var(--ease-curtain); }
+  .anim .tour__cols:not(.is-in) .dot { transform: scale(0); }
+  .anim .dot { transition: transform 300ms var(--ease-out); transition-delay: calc(var(--i) * 70ms); }
+  .anim .tour__cols:not(.is-in) .dots li > span { opacity: 0; }
+  .anim .dots li > span { transition: opacity 400ms linear; transition-delay: calc(100ms + var(--i) * 70ms); }
+  .inv:not(:last-child)::after {
+    content: ''; position: absolute; top: 55px; left: 46px; right: 70px; height: 1px; background: var(--patina-dark);
+    transform-origin: 0 50%;
+  }
+  .anim .invite:not(.is-in) .inv::after { transform: scaleX(0); }
+  .anim .inv::after { transition: transform 600ms var(--ease-out); transition-delay: calc(var(--i) * 220ms); }
+  .anim .invite:not(.is-in) .inv > * { opacity: 0; }
+  .anim .inv > * { transition: opacity 500ms linear; transition-delay: calc(var(--i) * 220ms); }
+
+  /* 11. кадры: плитки раскрываются шторками в разных направлениях (шахматно) */
+  .anim .mosaic:not(.is-in) .tile:nth-child(3n + 1) { clip-path: inset(100% 0 0 0); }
+  .anim .mosaic:not(.is-in) .tile:nth-child(3n + 2) { clip-path: inset(0 0 100% 0); }
+  .anim .mosaic:not(.is-in) .tile:nth-child(3n) { clip-path: inset(0 100% 0 0); }
+  .anim .tile { transition: clip-path 800ms var(--ease-curtain); transition-delay: calc(var(--i, 0) * 70ms); }
+
+  /* 12. контакты */
+  .anim .people:not(.is-in) .person, .anim .qrs:not(.is-in) .qrcard { opacity: 0; transform: translateY(14px); }
+  .anim .person, .anim .qrcard { transition: opacity 500ms linear, transform 600ms var(--ease-out); transition-delay: calc(var(--i, 0) * 100ms); }
+
+  /* футер: «НЕ» пульсирует свечением раз в 6 с */
+  .foot__big .mk__t { animation: foot-glow 6s ease-in-out infinite; }
+  @keyframes foot-glow {
+    0%, 80%, 100% { text-shadow: 0 0 0 rgba(103, 176, 153, 0); }
+    90% { text-shadow: 0 0 28px rgba(103, 176, 153, .9); }
+  }
+}
+.inv__n { position: relative; }
+@media (max-width: 700px) { .inv:not(:last-child)::after { display: none; } }
