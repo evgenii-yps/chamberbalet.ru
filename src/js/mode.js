@@ -1,18 +1,18 @@
 /**
  * Режим страницы: одно состояние на <html data-mode="all|chamber|big">.
  * Всё остальное — CSS-селекторами; скрипт держит только то, что CSS не умеет:
- * hidden у разделов, подписи первого экрана, aria, URL и localStorage.
+ * hidden у разделов, подпись первого экрана, aria, URL и localStorage.
  */
 import { store } from './store.js';
 
 export const MODES = ['all', 'chamber', 'big'];
 const root = document.documentElement;
-const data = JSON.parse(document.getElementById('modes-data').textContent);
+const data = JSON.parse(document.getElementById('app-data').textContent);
 
 export const getMode = () => root.dataset.mode;
 const shown = (el, mode) => el.dataset.modes.split(' ').includes(mode);
 
-/** Раздел, внутри которого сейчас находится зритель и который скроется. */
+/** Раздел под серединой экрана, который скроется. */
 function leavingSectionUnderViewport(next) {
   const mid = innerHeight / 2;
   return [...document.querySelectorAll('section[data-modes]')].some((el) => {
@@ -31,19 +31,7 @@ export function sectionsFor(next) {
   };
 }
 
-/** Подпись и кнопки первого экрана. */
-function paintHero(mode) {
-  const d = data.modes[mode];
-  const cap = document.getElementById('mode-cap');
-  if (cap) cap.innerHTML = d.caption;
-  document.querySelectorAll('[data-hero-btn]').forEach((a, i) => {
-    a.innerHTML = d.buttons[i].label;
-    a.setAttribute('href', d.buttons[i].href);
-    a.classList.toggle('btn--ghost', i !== 0);
-  });
-}
-
-/** Синхронное применение режима: никаких анимаций, только состояние. */
+/** Синхронное применение режима: только состояние, без движения. */
 export function applyMode(mode) {
   root.dataset.mode = mode;
   document.querySelectorAll('[data-modes]').forEach((el) => { el.hidden = !shown(el, mode); });
@@ -53,7 +41,8 @@ export function applyMode(mode) {
   document.querySelectorAll('[data-ne]').forEach((b) => {
     b.setAttribute('aria-label', mode === 'chamber' ? data.ne.restore : data.ne.remove);
   });
-  paintHero(mode);
+  const cap = document.getElementById('mode-cap');
+  if (cap) cap.innerHTML = data.lead[mode];
 }
 
 function syncUrl(mode) {
@@ -61,10 +50,10 @@ function syncUrl(mode) {
     const url = new URL(location.href);
     url.searchParams.set('mode', mode);
     history.replaceState(null, '', url);
-  } catch { /* file:// и прочее — URL не обязателен */ }
+  } catch { /* file:// и песочницы — адрес не обязателен */ }
 }
 
-/** Смена по действию зрителя: хранит выбор и адрес, прокручивает к началу при необходимости. */
+/** Смена по действию зрителя: хранит выбор и адрес, при необходимости прокручивает к #top. */
 export function setMode(next, { scene } = {}) {
   if (!MODES.includes(next) || next === getMode()) return;
   const jump = leavingSectionUnderViewport(next);

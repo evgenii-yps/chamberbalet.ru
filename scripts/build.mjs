@@ -9,9 +9,11 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import crypto from 'node:crypto';
 import sharp from 'sharp';
-import { ROOT, SRC, DIST, BUILD, MEDIA, bytes } from './config.mjs';
+import { ROOT, SRC, DIST, BUILD, bytes } from './config.mjs';
 import { buildFonts } from './build-fonts.mjs';
-import { createRenderer, esc, typo } from './render.mjs';
+import { createRenderer, esc } from './render.mjs';
+import { buildMedia } from './build-media.mjs';
+import { bundleJs } from './bundle-js.mjs';
 import { stripComments } from './strip-comments.mjs';
 import * as C from '../src/content.js';
 
@@ -30,7 +32,7 @@ async function emptyDist() {
 async function buildCss(fontCss) {
   const parts = ['/* шрифты */\n' + fontCss];
   const files = (await fs.readdir(path.join(SRC, 'css'))).filter((f) => f.endsWith('.css'));
-  const order = ['tokens.css', 'base.css', 'sections.css', 'motion.css'];
+  const order = ['tokens.css', 'base.css', 'sections.css', 'blocks.css', 'motion.css'];
   for (const name of order.filter((n) => files.includes(n))) {
     parts.push(`/* ${name} */\n` + await fs.readFile(path.join(SRC, 'css', name), 'utf8'));
   }
@@ -45,31 +47,11 @@ async function buildCss(fontCss) {
 /* ---------------------------------- скрипты ---------------------------------- */
 
 async function buildJs() {
-  const outDir = path.join(DIST, 'assets', 'js');
-  await fs.mkdir(outDir, { recursive: true });
-  const names = (await fs.readdir(path.join(SRC, 'js'))).filter((f) => f.endsWith('.js'));
-  const sources = new Map();
-  for (const n of names) sources.set(n, await fs.readFile(path.join(SRC, 'js', n), 'utf8'));
-  const emitted = new Map();
-  const visit = async (name, seen = new Set()) => {
-    if (emitted.has(name)) return emitted.get(name);
-    if (seen.has(name)) throw new Error(`циклический импорт: ${name}`);
-    seen.add(name);
-    let code = sources.get(name);
-    const deps = [...code.matchAll(/from\s+'\.\/([\w.-]+\.js)'/g)].map((m) => m[1]);
-    for (const dep of deps) {
-      const e = await visit(dep, seen);
-      code = code.replaceAll(`'./${dep}'`, `'./${e.file}'`);
-    }
-    if (!KEEP_COMMENTS) code = stripComments(code, 'js');
-    const file = `${name.replace(/\.js$/, '')}.${hash(code)}.js`;
-    await fs.writeFile(path.join(outDir, file), code);
-    const entry = { file, size: Buffer.byteLength(code) };
-    emitted.set(name, entry);
-    return entry;
-  };
-  for (const n of names) await visit(n);
-  return { entry: emitted.get('main.js'), total: [...emitted.values()].reduce((s, e) => s + e.size, 0) };
+  const code = await bundleJs({ keepComments: KEEP_COMMENTS });
+  const file = `app.${hash(code)}.js`;
+  await fs.mkdir(path.join(DIST, 'assets', 'js'), { recursive: true });
+  await fs.writeFile(path.join(DIST, 'assets', 'js', file), code);
+  return { entry: { file, size: Buffer.byteLength(code) }, total: Buffer.byteLength(code) };
 }
 
 /* ------------------------------ иконки и мета ------------------------------ */
@@ -110,36 +92,13 @@ async function buildMeta() {
   await fs.copyFile(path.join(ROOT, '.htaccess'), path.join(DIST, '.htaccess'));
 }
 
-/* ----------------------------- слоты изображений ----------------------------- */
-
-/** Слот есть, только если файл лежит в media/. Нет файла — нет и узла в разметке. */
-async function scanMedia() {
-  const out = {};
-  const copy = async (name) => {
-    await fs.mkdir(path.join(DIST, 'media'), { recursive: true });
-    await fs.copyFile(path.join(MEDIA, name), path.join(DIST, 'media', name));
-    return `/media/${name}`;
-  };
-  for (const base of ['hero-chamber', 'hero-big']) {
-    const video = [];
-    for (const [ext, type] of [['webm', 'video/webm'], ['mp4', 'video/mp4']]) {
-      if (await exists(path.join(MEDIA, `${base}.${ext}`))) video.push({ src: await copy(`${base}.${ext}`), type });
-    }
-    const jpg = await exists(path.join(MEDIA, `${base}.jpg`)) ? await copy(`${base}.jpg`) : null;
-    if (video.length) out[base] = { video, poster: jpg };
-    else if (jpg) out[base] = { image: jpg };
-  }
-  if (await exists(path.join(MEDIA, 'olesya.jpg'))) out.olesya = await copy('olesya.jpg');
-  return out;
-}
-
 /* ----------------------------------- сборка ----------------------------------- */
 
 async function main() {
   await emptyDist();
   await fs.mkdir(BUILD, { recursive: true });
   const fonts = await buildFonts();
-  const media = await scanMedia();
+  const { manifest: media, warnings } = await buildMedia();
   const R = createRenderer({ fonts, media });
   const css = await buildCss(fonts.css);
   const js = await buildJs();
@@ -156,13 +115,14 @@ async function main() {
     skipLink: esc(C.site.skipLink),
     preload: R.renderPreload(),
     styles: `<link rel="stylesheet" href="/assets/css/${css.file}">`,
+    sprite: R.sprite(),
     topbar: R.renderTopbar(),
     hero: R.renderHero(),
     sections: R.renderSections(),
     footer: R.renderFooter(),
-    modesData: R.renderModesData(),
+    appData: R.renderAppData(),     // после sections: реестр медиа наполняется при отрисовке
     jsonld: R.renderJsonLd(),
-    script: `<script type="module" src="/assets/js/${js.entry.file}"></script>`,
+    script: `<script defer src="/assets/js/${js.entry.file}"></script>`,
   };
   let html = template;
   for (const [k, v] of Object.entries(slots)) html = html.replaceAll(`<!--{{${k}}}-->`, v);
@@ -175,7 +135,8 @@ async function main() {
   console.log('   стили      ', bytes(css.size), `→ /assets/css/${css.file}`);
   console.log('   скрипты    ', bytes(js.total), `→ /assets/js/${js.entry.file}`);
   console.log('   шрифты     ', bytes(fonts.faces.reduce((s, f) => s + f.size, 0)), `(${fonts.faces.length} файлов)`);
-  console.log('   слоты медиа', Object.keys(media).join(', ') || 'пусто (фон — рисованный декор)');
+  console.log('   слоты медиа', Object.keys(media).join(', ') || 'пусто: везде заглушки (media/media.json)');
+  warnings.forEach((w) => console.warn('   ⚠', w));
   if (ROBOTS_DENY) console.log('   robots.txt  Disallow: / (ROBOTS=deny)');
   console.log('\n   готово: dist/\n');
 }

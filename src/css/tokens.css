@@ -2,8 +2,8 @@
    Пары и контрасты проверяет scripts/check-contrast.mjs. */
 :root {
   --ground: #131110;       /* грунт */
-  --ground-2: #1A1715;     /* шаг тона: «Спектакли», «Материалы» */
-  --ground-3: #0C0B0A;     /* «Заказчикам», футер */
+  --ground-2: #1A1715;     /* шаг тона: «Контакты» */
+  --ground-3: #0C0B0A;     /* «Два масштаба», «Видеозал», «Заказчикам» */
   --ink: #F5FFFA;          /* заголовки на грунте, 18.4:1 */
   --cream: #F5EBD1;        /* основной текст, 15.9:1; грунт светлой полосы */
   --cream-2: #D9D0BA;      /* вторичный текст на грунте */
@@ -19,10 +19,8 @@
   --ease-out: cubic-bezier(.2, .7, .2, 1);
   --ease-curtain: cubic-bezier(.7, 0, .2, 1);
 
-  --gutter: 16px;
-  --top-h: 100px;
-  --sec-y: clamp(64px, 9vw, 128px);
-}
-@media (min-width: 980px) {
-  :root { --gutter: 40px; --top-h: 64px; }
+  --gutter: clamp(16px, 4vw, 32px);
+  --top-h: 72px;
+  --sec-y: clamp(80px, 11vw, 150px);
+  --max: 1360px;
 }

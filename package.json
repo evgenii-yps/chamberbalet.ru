@@ -16,6 +16,7 @@
   "devDependencies": {
     "@fontsource/golos-text": "^5.2.8",
     "@fontsource/prata": "^5.2.8",
+    "qrcode-generator": "^2.0.4",
     "sharp": "^0.34.5"
   }
 }
