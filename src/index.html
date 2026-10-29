@@ -25,6 +25,10 @@
   try { var q = new URLSearchParams(location.search).get('mode'); if (ok.test(q)) m = q; } catch (e) {}
   if (!m) { try { m = localStorage.getItem('ne-mode'); } catch (e) {} if (!ok.test(m)) m = 'all'; }
   d.setAttribute('data-mode', m);
+  /* вариант занавеса первого экрана: ?hero=a|b, по умолчанию a */
+  var h = 'a';
+  try { var hq = new URLSearchParams(location.search).get('hero'); if (/^[ab]$/.test(hq)) { h = hq; localStorage.setItem('ne-hero', hq); } else { var hs = localStorage.getItem('ne-hero'); if (/^[ab]$/.test(hs)) h = hs; } } catch (e) {}
+  d.setAttribute('data-hero', h);
   try { if (sessionStorage.getItem('ne-seen')) d.className += ' seen'; } catch (e) {}
   try { if (localStorage.getItem('ne-touched')) d.className += ' touched'; } catch (e) {}
 })();

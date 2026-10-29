@@ -31,18 +31,26 @@ export function sectionsFor(next) {
   };
 }
 
-/** Синхронное применение режима: только состояние, без движения. */
-export function applyMode(mode) {
+/** Подпись первого экрана. */
+export function paintCaption(mode) {
+  const cap = document.getElementById('mode-cap');
+  if (cap) cap.innerHTML = data.lead[mode];
+}
+
+/**
+ * Применение режима: только состояние, без движения.
+ * keep — разделы, которые ещё должны остаться на экране (их скроет сцена после затухания).
+ */
+export function applyMode(mode, { keep = [], caption = true } = {}) {
   root.dataset.mode = mode;
-  document.querySelectorAll('[data-modes]').forEach((el) => { el.hidden = !shown(el, mode); });
+  document.querySelectorAll('[data-modes]').forEach((el) => { el.hidden = !shown(el, mode) && !keep.includes(el); });
   document.querySelectorAll('[data-set-mode]').forEach((b) => {
     b.setAttribute('aria-pressed', String(b.dataset.setMode === mode));
   });
   document.querySelectorAll('[data-ne]').forEach((b) => {
     b.setAttribute('aria-label', mode === 'chamber' ? data.ne.restore : data.ne.remove);
   });
-  const cap = document.getElementById('mode-cap');
-  if (cap) cap.innerHTML = data.lead[mode];
+  if (caption) paintCaption(mode);
   document.dispatchEvent(new Event('modechange'));
 }
 
@@ -54,19 +62,26 @@ function syncUrl(mode) {
   } catch { /* file:// и песочницы — адрес не обязателен */ }
 }
 
-/** Смена по действию зрителя: хранит выбор и адрес, при необходимости прокручивает к #top. */
+/**
+ * Смена по действию зрителя: хранит выбор и адрес. Движение отдаётся сцене,
+ * которой достаётся контекст: что появится, что уйдёт и как применить состояние.
+ */
 export function setMode(next, { scene } = {}) {
   if (!MODES.includes(next) || next === getMode()) return;
   const jump = leavingSectionUnderViewport(next);
-  const run = () => {
-    applyMode(next);
-    if (jump) scrollTo({ top: 0, behavior: 'auto' });
+  const { entering, leaving } = sectionsFor(next);
+  const ctx = {
+    next, entering, leaving,
+    apply: (opts) => applyMode(next, { caption: false, ...opts }),
+    caption: () => paintCaption(next),
+    hide: (els) => { els.forEach((el) => { el.hidden = true; }); if (jump) scrollTo({ top: 0, behavior: 'auto' }); },
   };
   store.set('ne-mode', next);
   store.set('ne-touched', '1');
   root.classList.add('touched');
   syncUrl(next);
-  if (scene) scene(next, run); else run();
+  if (scene) scene(ctx);
+  else { applyMode(next); ctx.hide([]); }
 }
 
 export function initModes({ scene } = {}) {
