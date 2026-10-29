@@ -43,6 +43,7 @@ export function applyMode(mode) {
   });
   const cap = document.getElementById('mode-cap');
   if (cap) cap.innerHTML = data.lead[mode];
+  document.dispatchEvent(new Event('modechange'));
 }
 
 function syncUrl(mode) {

@@ -147,7 +147,7 @@ export function createRenderer({ fonts, media, warnings = [] }) {
   /* --------------------------------- шапка --------------------------------- */
 
   function seg(kind) {
-    const label = (s) => (kind === 'mini' ? s.mini : s.big);
+    const label = (s) => (kind === 'big' ? s.big : s.mini);
     return `<div class="seg seg--${kind}" role="group" aria-label="${esc(kind === 'big' ? C.ui.bigSwitchLabel : C.ui.switchLabel)}">` +
       '<i class="seg__run" aria-hidden="true"></i>' +
       C.switcher.map((s) =>

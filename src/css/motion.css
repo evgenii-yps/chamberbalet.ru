@@ -3,3 +3,22 @@
 html[data-mode="chamber"] .mk__ne { max-width: 0; transform: scaleX(0); opacity: 0; }
 html[data-mode="chamber"] .mk__b { opacity: .5; }
 html[data-mode="big"] .mk__t { text-shadow: 0 0 18px rgba(103, 176, 153, .55); }
+
+/* ============================ шапка и меню ============================ */
+@media (prefers-reduced-motion: no-preference) {
+  .top { transition: transform 280ms var(--ease-out), background-color 300ms linear, border-color 300ms linear; }
+  .top__bar { transition: height 300ms var(--ease-out); }
+  .brand { transition: transform 300ms var(--ease-out); }
+  .menu__run { transition: transform 360ms var(--ease-out), width 360ms var(--ease-out), opacity 200ms linear; }
+  .top__progress { transition: opacity 300ms linear; }
+  .seg__run { transition: transform 360ms var(--ease-out); }
+  .seg__b { transition: color 200ms linear; }
+  .burger__i, .burger__i::before, .burger__i::after { transition: transform 300ms var(--ease-out), top 300ms var(--ease-out), background-color 200ms linear; }
+  .mpanel { transition: opacity 300ms linear, visibility 0s linear 300ms; }
+  .top.is-menu-open .mpanel { transition-delay: 0s; }
+  .mpanel__a > span { transform: translateY(105%); transition: transform 500ms var(--ease-out); }
+  .top.is-menu-open .mpanel__a > span { transform: none; transition-delay: calc(80ms + var(--i) * 60ms); }
+  .mpanel__foot { opacity: 0; transition: opacity 300ms linear; }
+  .top.is-menu-open .mpanel__foot { opacity: 1; transition-delay: 450ms; }
+}
+.top.is-hidden:has(.is-menu-open) { transform: none; }
