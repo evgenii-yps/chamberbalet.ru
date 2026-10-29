@@ -29,8 +29,18 @@ async function emptyDist() {
 
 /* ---------------------------------- стили ---------------------------------- */
 
+/** Зерно плёнки: один маленький PNG, а не SVG-фильтр — тот растрируется на CPU под каждый кадр-заглушку. */
+async function noiseCss() {
+  const n = 128;
+  const px = Buffer.alloc(n * n);
+  let x = 20261029;
+  for (let i = 0; i < px.length; i++) { x = (x * 1664525 + 1013904223) >>> 0; px[i] = 90 + ((x >>> 24) % 110); }
+  const png = await sharp(px, { raw: { width: n, height: n, channels: 1 } }).png({ compressionLevel: 9 }).toBuffer();
+  return `:root{--noise:url("data:image/png;base64,${png.toString('base64')}")}`;
+}
+
 async function buildCss(fontCss) {
-  const parts = ['/* шрифты */\n' + fontCss];
+  const parts = ['/* шрифты */\n' + fontCss, await noiseCss()];
   const files = (await fs.readdir(path.join(SRC, 'css'))).filter((f) => f.endsWith('.css'));
   const order = ['tokens.css', 'base.css', 'sections.css', 'blocks.css', 'motion.css'];
   for (const name of order.filter((n) => files.includes(n))) {

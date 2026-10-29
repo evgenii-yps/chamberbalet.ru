@@ -55,7 +55,8 @@ html[data-hero="b"][data-mode="chamber"] .hero__half--l .hero__m, html[data-hero
 
 /* Дуга свечей: 15 огоньков по нижней полудуге. all — 55 %, chamber — 100 % (зажигаются от краёв), big — гасятся */
 .arc { position: absolute; left: 50%; bottom: 96px; width: min(94vw, 1120px); height: clamp(56px, 9vh, 104px); transform: translateX(-50%); }
-.arc__f { position: absolute; left: var(--x); top: var(--y); width: 0; height: 0; opacity: .55; filter: drop-shadow(0 0 7px rgba(255, 211, 154, .8)); }
+.arc__f { position: absolute; left: var(--x); top: var(--y); width: 0; height: 0; opacity: .55; }
+.arc__f::before { content: ''; position: absolute; left: -16px; top: -16px; width: 32px; height: 32px; background: radial-gradient(circle, rgba(255, 211, 154, .55), transparent 68%); }
 .arc__f i { position: absolute; left: -4px; top: -7px; width: 8px; height: 14px; background: var(--candle); clip-path: polygon(50% 0, 100% 62%, 50% 100%, 0 62%); }
 html[data-mode="chamber"] .arc__f { opacity: 1; }
 html[data-mode="big"] .arc__f { opacity: 0; }
@@ -74,10 +75,7 @@ html[data-mode="chamber"] .beam { opacity: 0; }
 html[data-mode="big"] .beam { opacity: 1; }
 
 /* Зерно плёнки: только первый экран */
-.grain {
-  position: absolute; inset: -40px; opacity: .12; mix-blend-mode: overlay;
-  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-}
+.grain { position: absolute; inset: -40px; opacity: .07; background: var(--noise); }
 
 /* Линия под «НЕ» */
 .ne .mk__ul { transform: scaleX(.6); opacity: .5; }
