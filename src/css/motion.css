@@ -173,3 +173,42 @@ html[data-mode="big"] .hero__media--chamber { clip-path: inset(0 100% 0 0); }
   font: 400 clamp(12rem, 32vw, 28rem)/1 var(--font-display); letter-spacing: .08em; color: var(--cream); opacity: .035; pointer-events: none;
 }
 .dir > * { position: relative; }
+
+/* ============================ 6.4 микро-переходы ============================ */
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+}
+@media (prefers-reduced-motion: no-preference) {
+  /* Шапка */
+  .top { transition: background-color 240ms linear, border-color 240ms linear; }
+  .brand { transition: opacity 240ms linear, visibility 240ms linear; }
+  .menu__a::after { transition: transform 240ms var(--ease-out); }
+
+  /* Кнопки-действия: рамка 5×5 → 2×2 → 0 */
+  .btn::before { transition: transform 110ms linear; }
+  .btn--ghost, .more { transition: background-color 110ms linear; }
+
+  /* Строки: линия-маркер, наезд названия, плюс */
+  .row::before { transition: transform 300ms var(--ease-out); }
+  .row__name { transition: transform 200ms var(--ease-out), color 200ms linear; }
+  .row__plus { transition: transform 320ms var(--ease-out), color 200ms linear; }
+  .row__sum, .row__in { transition: padding-left 300ms var(--ease-out); }
+
+  /* Вкладки: подчёркивание переезжает */
+  .tabs__bar { transition: transform 360ms var(--ease-out), width 360ms var(--ease-out); }
+  .tabs__t { transition: color 200ms linear; }
+
+  /* Линейки под заголовками рисуются слева направо при первом появлении */
+  .anim .h2:not(.is-in)::after { transform: scaleX(0); }
+  .anim .h2::after { transition: transform 600ms var(--ease-out); }
+
+  /* Шаги «Заказчикам»: по очереди слева направо, номер подсвечивается последним */
+  .anim .steps:not(.is-in) .step { opacity: 0; clip-path: inset(0 100% 0 0); }
+  .anim .steps:not(.is-in) .step__n { color: var(--cream-2); }
+  .anim .step {
+    transition: opacity 400ms linear, clip-path 600ms var(--ease-out);
+    transition-delay: calc(var(--i) * 80ms);
+  }
+  .anim .step__n { transition: color 400ms linear; transition-delay: calc(480ms + 300ms); }
+}
+.stat__v, .param__v { font-variant-numeric: tabular-nums; }

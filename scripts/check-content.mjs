@@ -7,6 +7,8 @@ import * as C from '../src/content.js';
 const html = await fs.readFile(path.join(DIST, 'index.html'), 'utf8');
 const text = html.replace(/<script[\s\S]*?<\/script>/g, '').replace(/<[^>]+>/g, ' ')
   .replaceAll('&nbsp;', ' ').replaceAll(' ', ' ').replace(/\s+/g, ' ');
+// Подписи режимов лежат в JSON-данных скрипта: сверяем и с ними
+const full = html.replaceAll('\\u003c', '<').replace(/<[^>]+>/g, ' ').replaceAll('&nbsp;', ' ').replaceAll('\u00a0', ' ').replace(/\s+/g, ' ').replace(/\s+([.,;:!?—–])/g, ' $1');
 const fails = [];
 const warns = [];
 const must = (ok, msg) => { if (!ok) fails.push(msg); };
@@ -28,7 +30,7 @@ const skip = new Set([C.site.url, C.site.themeColor, C.site.lang]);
 for (const s of walk([C.about, C.rep, C.venues, C.clients, C.troupe, C.materials, C.hero, C.modes, C.versionLine])) {
   if (skip.has(s) || /^(#|https?:)/.test(s) || s === '') continue;
   const plain = s.replace(/\s+/g, ' ');
-  must(text.includes(plain) || html.includes(plain.replaceAll('&', '&amp;')) || html.includes(plain.replaceAll(' ', ' ')) , `не попало в разметку: ${plain.slice(0, 50)}`);
+  must(text.includes(plain) || full.replace(/ +/g, ' ').includes(plain.replace(/ +/g, ' ')) || html.includes(plain.replaceAll('&', '&amp;')) || html.includes(plain.replaceAll(' ', ' ')) , `не попало в разметку: ${plain.slice(0, 50)}`);
 }
 const robots = await fs.readFile(path.join(DIST, 'robots.txt'), 'utf8').catch(() => '');
 if (process.env.ROBOTS === 'deny') must(/Disallow: \/\s*$/m.test(robots), 'robots.txt без Disallow: /');

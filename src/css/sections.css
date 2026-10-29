@@ -16,7 +16,7 @@
   font: 400 1.0625rem/1.2 var(--font-display); white-space: nowrap;
 }
 .brand .mk { margin-inline: .1em; }
-.top:not(.is-solid) .brand { visibility: hidden; }
+.top:not(.is-solid) .brand { opacity: 0; visibility: hidden; }
 .burger {
   grid-area: burger; width: 44px; height: 44px; padding: 0; background: none; border: 0; cursor: pointer;
   display: grid; place-items: center;
@@ -196,18 +196,22 @@ html[data-mode="big"] .seg__run { transform: translateX(200%); }
   content: ''; position: absolute; left: 0; right: 0; top: 9px; height: 2px; background: currentColor;
 }
 .row__plus::after { transform: rotate(90deg); }
-.row[open] .row__plus { transform: rotate(45deg); }
-.row[open] .row__name { color: var(--patina); }
+.row.is-open .row__plus, .no-js .row[open] .row__plus { transform: rotate(45deg); color: var(--ink); }
+.row.is-open .row__name, .no-js .row[open] .row__name { color: var(--patina); }
 .row__in { padding: 0 4px 28px; max-width: 68ch; }
 .row__meta { color: var(--muted); font-size: .9375rem; margin-bottom: 12px; }
 .row__text { color: var(--cream); }
 .row__ver { margin-top: 14px; color: var(--cream-2); font-size: .9375rem; }
 .v { display: none; }
 html[data-mode="all"] .v--all, html[data-mode="chamber"] .v--chamber, html[data-mode="big"] .v--big { display: inline; }
-.row[open]::before {
+.row::before {
   content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 2px; background: var(--patina);
+  transform: scaleY(0); transform-origin: 50% 0;
 }
-.row[open] > .row__sum, .row[open] .row__in { padding-left: 20px; }
+.row.is-open::before, .no-js .row[open]::before { transform: scaleY(1); }
+.row.is-open > .row__sum, .row.is-open .row__in, .no-js .row[open] > .row__sum, .no-js .row[open] .row__in { padding-left: 20px; }
+.row__sum:hover .row__plus { color: var(--ink); }
+.row__sum:hover .row__name { transform: translateX(6px); }
 
 /* =============================== Площадкам =============================== */
 .venues { padding-bottom: calc(var(--sec-y) + 8px); }

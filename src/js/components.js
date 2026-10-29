@@ -1,3 +1,5 @@
+import { cascade, reduced } from './micro.js';
+
 /* Компоненты: вкладки репертуара, «показать всех», шапка с бургером и подсветкой раздела. */
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
@@ -15,13 +17,25 @@ export function initTabs() {
       bar.style.setProperty('--x', `${t.offsetLeft}px`);
       bar.style.setProperty('--w', `${t.offsetWidth}px`);
     };
+    let token = 0;
     const select = (i, focus) => {
+      if (i === current && panels[i] && !panels[i].hidden) { if (focus) tabs[i].focus(); return; }
+      const prev = panels[current];
+      const mine = ++token;
       current = i;
       tabs.forEach((t, j) => {
         t.setAttribute('aria-selected', String(j === i));
         t.tabIndex = j === i ? 0 : -1;
       });
-      panels.forEach((p, j) => { p.hidden = j !== i; p.removeAttribute('data-later'); });
+      const show = () => {
+        panels.forEach((p, j) => { p.hidden = j !== i; p.removeAttribute('data-later'); });
+        cascade($$('.row', panels[i]));
+      };
+      if (reduced() || prev.hidden) show();
+      else prev.animate({ opacity: [1, 0] }, { duration: 140, fill: 'forwards' }).onfinish = (e) => {
+        e.target.cancel();
+        if (mine === token) show();
+      };
       moveBar();
       if (focus) tabs[i].focus();
       tabs[i].scrollIntoView({ block: 'nearest', inline: 'nearest' });
@@ -51,6 +65,9 @@ export function initMore() {
   let open = false;
   const paint = () => {
     extra.forEach((li) => { li.hidden = !open; });
+    if (open && !reduced()) extra.forEach((li, k) => li.animate(
+      [{ opacity: 0, transform: 'translateY(8px)' }, { opacity: 1, transform: 'none' }],
+      { duration: 300, delay: k * 25, easing: 'cubic-bezier(.2,.7,.2,1)', fill: 'backwards' }));
     btn.setAttribute('aria-expanded', String(open));
     btn.innerHTML = open ? btn.dataset.less : btn.dataset.all;
   };
