@@ -149,7 +149,7 @@ export function createRenderer({ fonts, media }) {
   </div>
   <div class="hero__in">
     <h1 class="mark" aria-label="${attr(C.site.name)}, ${esc(C.hero.line3)}">
-      <span class="mark__l1"><span class="mark__w">${t(C.hero.line1)}</span> <button type="button" class="ne" data-ne aria-label="${esc(C.ui.neRemove)}">${mk()}</button><span class="hint" aria-hidden="true"><svg viewBox="0 0 120 70" width="120" height="70" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"><path class="hint__p" pathLength="1" d="M8 58c18 6 44 2 62-14 14-12 20-26 22-34M92 10l-9 9M92 10l11 7"/></svg><span class="hint__t">${t(C.ui.hintArrow)}</span></span></span>
+      <span class="mark__l1"><span class="mark__w">${t(C.hero.line1)}</span> <button type="button" class="ne" data-ne aria-label="${esc(C.ui.neRemove)}">${mk()}</button><span class="hint" aria-hidden="true"><svg viewBox="0 0 120 70" width="120" height="70" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"><path class="hint__p" pathLength="1" d="M104 56c-34 6-70-6-86-38M18 18l-1 13M18 18l11 7"/></svg><span class="hint__t">${t(C.ui.hintArrow)}</span></span></span>
       <span class="mark__l2">${t(C.hero.line2)}</span>
       <span class="mark__l3">${t(C.hero.line3)}</span>
     </h1>

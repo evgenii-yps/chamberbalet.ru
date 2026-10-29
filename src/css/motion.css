@@ -43,3 +43,133 @@ html[data-mode="big"] .mk__t { text-shadow: 0 0 18px rgba(103, 176, 153, .55); }
   .js:not(.seen) .hero__cta { animation-delay: 1300ms; }
   @keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
 }
+
+/* ====================== 6.2 украшения первого экрана ====================== */
+/* Дуга свечей: 15 огоньков по нижней полудуге. all — 55 %, chamber — 100 % (зажигаются от краёв), big — гасятся */
+.arc { position: absolute; left: 50%; bottom: 22px; width: min(94vw, 1120px); height: clamp(56px, 9vh, 104px); transform: translateX(-50%); }
+.arc__f { position: absolute; left: var(--x); top: var(--y); width: 0; height: 0; opacity: .55; }
+.arc__f i {
+  position: absolute; left: -4px; top: -7px; width: 8px; height: 14px; background: var(--candle);
+  clip-path: polygon(50% 0, 100% 62%, 50% 100%, 0 62%);
+}
+.arc__f { filter: drop-shadow(0 0 7px rgba(255, 211, 154, .8)); }
+html[data-mode="chamber"] .arc__f { opacity: 1; }
+html[data-mode="big"] .arc__f { opacity: 0; }
+
+/* Лучи сцены: два кремовых и один патиной. all — 45 %, big — полные и покачиваются, chamber — нет */
+.beam {
+  position: absolute; top: -6%; width: 30vw; min-width: 220px; height: 112%; opacity: .45;
+  left: var(--bx); transform-origin: 50% 0; transform: rotate(var(--ba));
+  clip-path: polygon(45% 0, 55% 0, 100% 100%, 0 100%);
+  background: linear-gradient(to bottom, rgba(245, 235, 209, .2), rgba(245, 235, 209, 0) 88%);
+}
+.beam--1 { --bx: 6%; --ba: -13deg; --sd: 9s; --sp: -2s; }
+.beam--2 { --bx: 36%; --ba: 1deg; --sd: 11s; --sp: -6s; }
+.beam--3 { --bx: 62%; --ba: 14deg; --sd: 8s; --sp: -4s; background: linear-gradient(to bottom, rgba(103, 176, 153, .22), rgba(103, 176, 153, 0) 88%); }
+html[data-mode="chamber"] .beam { opacity: 0; }
+html[data-mode="big"] .beam { opacity: 1; }
+
+/* Зерно плёнки: только первый экран */
+.grain {
+  position: absolute; inset: -40px; opacity: .12; mix-blend-mode: overlay;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* Пульс {НЕ}: линия под «НЕ» */
+.ne .mk__ul { transform: scaleX(.6); opacity: .5; }
+.ne:hover .mk__ul, .ne:focus-visible .mk__ul { transform: scaleX(1); opacity: 1; }
+html[data-mode="chamber"] .ne .mk__ul { opacity: 0; }
+
+/* Подсказка «нажмите» — только при первом визите и там, где есть место */
+.hint { color: var(--cream-2); font: 500 .875rem/1 var(--font-text); letter-spacing: .06em; opacity: 0; pointer-events: none; }
+.hint__p { stroke-dasharray: 1; stroke-dashoffset: 1; }
+@media (min-width: 521px) {
+  .js:not(.touched) .hint { display: block; position: absolute; left: calc(100% + 8px); top: 38%; width: 120px; }
+  .hint svg { display: block; }
+  .hint__t { position: absolute; left: 36px; top: 62px; white-space: nowrap; }
+  .hint-on .hint { opacity: 1; }
+  .hint-on .hint__p { stroke-dashoffset: 0; }
+}
+
+/* Курсор-свет: мягкое пятно только на десктопе */
+.cursor-light { display: none; }
+@media (pointer: fine) {
+  .cursor-light {
+    display: block; position: absolute; left: 0; top: 0; width: 360px; height: 360px; margin: -180px 0 0 -180px;
+    background: radial-gradient(circle, rgba(255, 211, 154, 1), rgba(255, 211, 154, 0) 68%); opacity: 0; will-change: transform;
+  }
+  .hero.is-hover .cursor-light { opacity: .08; }
+  html[data-mode="big"] .cursor-light { background: radial-gradient(circle, rgba(103, 176, 153, 1), rgba(103, 176, 153, 0) 68%); }
+}
+
+/* Слоты медиа: если файла нет, узла нет вовсе */
+.hero__media { position: absolute; inset: 0; opacity: .5; }
+.hero__media img, .hero__media video { width: 100%; height: 100%; object-fit: cover; }
+.hero__media::after { content: ''; position: absolute; inset: 0; background: rgba(19, 17, 16, .62); }
+.hero__media--chamber { clip-path: inset(0 50% 0 0); }
+.hero__media--big { clip-path: inset(0 0 0 50%); }
+html[data-mode="chamber"] .hero__media--chamber { clip-path: inset(0); }
+html[data-mode="chamber"] .hero__media--big { clip-path: inset(0 0 0 100%); }
+html[data-mode="big"] .hero__media--big { clip-path: inset(0); }
+html[data-mode="big"] .hero__media--chamber { clip-path: inset(0 100% 0 0); }
+
+/* Вне экрана декор стоит */
+.hero-off .hero__decor * { animation-play-state: paused !important; }
+
+@media (prefers-reduced-motion: no-preference) {
+  .arc__f { transition: opacity 600ms var(--ease-out); }
+  html[data-mode="chamber"] .arc__f { transition-delay: calc(var(--ord) * 40ms); }
+  .arc__f i { animation: flick var(--p) ease-in-out var(--ph) infinite alternate; }
+  @keyframes flick { from { opacity: .75; transform: scale(.92); } to { opacity: 1; transform: scale(1.06); } }
+
+  .beam { transition: opacity 800ms var(--ease-out); }
+  html[data-mode="big"] .beam { animation: sway var(--sd) ease-in-out var(--sp) infinite alternate; }
+  @keyframes sway { from { transform: rotate(calc(var(--ba) - 2deg)); } to { transform: rotate(calc(var(--ba) + 2deg)); } }
+
+  .grain { animation: grain .6s steps(3) infinite; }
+  @keyframes grain { 0% { transform: translate(0, 0); } 33% { transform: translate(-23px, 17px); } 66% { transform: translate(19px, -29px); } 100% { transform: translate(0, 0); } }
+
+  .ne .mk__ul { transition: transform 300ms var(--ease-out), opacity 300ms var(--ease-out); }
+  .js:not(.touched) .ne .mk__ul { animation: pulse 2.4s ease-in-out infinite; }
+  .js:not(.touched) .ne:hover .mk__ul { animation: none; }
+  @keyframes pulse { 0%, 100% { transform: scaleX(.6); opacity: .35; } 50% { transform: scaleX(1); opacity: 1; } }
+
+  .hint { transition: opacity 300ms; }
+  .hint-on .hint__p { transition: stroke-dashoffset 700ms var(--ease-out); }
+  .hero__media { transition: opacity 600ms; }
+  .hero__media--chamber, .hero__media--big { transition: clip-path 800ms var(--ease-curtain); }
+}
+
+/* ====================== 6.5 украшения разделов ====================== */
+/* Разделитель-свеча между «О театре» и «Спектаклями» */
+.divider { display: block; position: relative; height: 0; z-index: 3; }
+.divider__l { position: absolute; top: 0; height: 1px; background: var(--hair); }
+.divider__l:first-child { left: var(--gutter); right: calc(50% + 24px); }
+.divider__l:last-child { right: var(--gutter); left: calc(50% + 24px); }
+.flame { position: absolute; left: 50%; top: -9px; width: 0; height: 0; filter: drop-shadow(0 0 7px rgba(255, 211, 154, .8)); }
+.flame i { position: absolute; left: -4px; top: -7px; width: 8px; height: 14px; background: var(--candle); clip-path: polygon(50% 0, 100% 62%, 50% 100%, 0 62%); }
+@media (prefers-reduced-motion: no-preference) {
+  .flame i { animation: flick 3.4s ease-in-out -1s infinite alternate; }
+}
+
+/* Рваный край: нижняя кромка светлой полосы — лист техрайдера */
+.venues::after {
+  content: ''; position: absolute; left: 0; right: 0; top: calc(100% - 1px); height: 16px; background: var(--cream); z-index: 2;
+  clip-path: polygon(0 0, 100% 0, 100% 40%, 97% 75%, 94% 45%, 90% 90%, 86% 55%, 82% 80%, 78% 35%, 74% 85%, 70% 50%, 66% 95%, 62% 60%, 58% 85%, 54% 40%, 50% 80%, 46% 55%, 42% 100%, 38% 60%, 34% 80%, 30% 40%, 26% 90%, 22% 55%, 18% 85%, 14% 45%, 10% 80%, 6% 50%, 3% 75%, 0 45%);
+}
+
+/* Тень занавеса у верхней кромки «Заказчикам» */
+.curtain {
+  display: block; position: absolute; inset: 0 0 auto 0; height: 46%; pointer-events: none; opacity: .06;
+  background: repeating-linear-gradient(90deg, var(--cream) 0, rgba(245, 235, 209, 0) 36px, var(--cream) 72px);
+  -webkit-mask-image: linear-gradient(#000, transparent); mask-image: linear-gradient(#000, transparent);
+  transform: translateY(var(--py, 0px));
+}
+
+/* Монограмма {НЕ}: огромные скобки на фоне худрука */
+.troupe { overflow: clip; }
+.dir::before {
+  content: '{ }'; content: '{ }' / ''; position: absolute; right: -2%; top: 50%; transform: translateY(-52%);
+  font: 400 clamp(12rem, 32vw, 28rem)/1 var(--font-display); letter-spacing: .08em; color: var(--cream); opacity: .035; pointer-events: none;
+}
+.dir > * { position: relative; }
