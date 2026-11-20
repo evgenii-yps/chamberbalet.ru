@@ -1,0 +1,391 @@
+[
+  {
+    "width": 1440,
+    "route": "index.html",
+    "overflow": {
+      "scroll": 1440,
+      "client": 1440
+    },
+    "errors": [],
+    "missing": []
+  },
+  {
+    "width": 1440,
+    "route": "afisha.html",
+    "overflow": {
+      "scroll": 1440,
+      "client": 1440
+    },
+    "errors": [],
+    "missing": [],
+    "showRows": 266,
+    "cityOptions": 28,
+    "filtered": 7
+  },
+  {
+    "width": 1440,
+    "route": "repertoire.html",
+    "overflow": {
+      "scroll": 1440,
+      "client": 1440
+    },
+    "errors": [],
+    "missing": []
+  },
+  {
+    "width": 1440,
+    "route": "nutcracker.html",
+    "overflow": {
+      "scroll": 1440,
+      "client": 1440
+    },
+    "errors": [],
+    "missing": []
+  },
+  {
+    "width": 1440,
+    "route": "swan-lake.html",
+    "overflow": {
+      "scroll": 1440,
+      "client": 1440
+    },
+    "errors": [],
+    "missing": []
+  },
+  {
+    "width": 1440,
+    "route": "people.html",
+    "overflow": {
+      "scroll": 1440,
+      "client": 1440
+    },
+    "errors": [],
+    "missing": [],
+    "profiles": 15,
+    "modal": "false",
+    "escape": "true",
+    "focusRestored": true
+  },
+  {
+    "width": 1440,
+    "route": "venues.html",
+    "overflow": {
+      "scroll": 1440,
+      "client": 1440
+    },
+    "errors": [],
+    "missing": []
+  },
+  {
+    "width": 1024,
+    "route": "index.html",
+    "overflow": {
+      "scroll": 1024,
+      "client": 1024
+    },
+    "errors": [],
+    "missing": []
+  },
+  {
+    "width": 1024,
+    "route": "afisha.html",
+    "overflow": {
+      "scroll": 1024,
+      "client": 1024
+    },
+    "errors": [],
+    "missing": [],
+    "showRows": 266,
+    "cityOptions": 28,
+    "filtered": 7
+  },
+  {
+    "width": 1024,
+    "route": "repertoire.html",
+    "overflow": {
+      "scroll": 1024,
+      "client": 1024
+    },
+    "errors": [],
+    "missing": []
+  },
+  {
+    "width": 1024,
+    "route": "nutcracker.html",
+    "overflow": {
+      "scroll": 1024,
+      "client": 1024
+    },
+    "errors": [],
+    "missing": []
+  },
+  {
+    "width": 1024,
+    "route": "swan-lake.html",
+    "overflow": {
+      "scroll": 1024,
+      "client": 1024
+    },
+    "errors": [],
+    "missing": []
+  },
+  {
+    "width": 1024,
+    "route": "people.html",
+    "overflow": {
+      "scroll": 1024,
+      "client": 1024
+    },
+    "errors": [],
+    "missing": [],
+    "profiles": 15,
+    "modal": "false",
+    "escape": "true",
+    "focusRestored": true
+  },
+  {
+    "width": 1024,
+    "route": "venues.html",
+    "overflow": {
+      "scroll": 1024,
+      "client": 1024
+    },
+    "errors": [],
+    "missing": []
+  },
+  {
+    "width": 768,
+    "route": "index.html",
+    "overflow": {
+      "scroll": 768,
+      "client": 768
+    },
+    "errors": [],
+    "missing": []
+  },
+  {
+    "width": 768,
+    "route": "afisha.html",
+    "overflow": {
+      "scroll": 768,
+      "client": 768
+    },
+    "errors": [],
+    "missing": [],
+    "showRows": 266,
+    "cityOptions": 28,
+    "filtered": 7
+  },
+  {
+    "width": 768,
+    "route": "repertoire.html",
+    "overflow": {
+      "scroll": 768,
+      "client": 768
+    },
+    "errors": [],
+    "missing": []
+  },
+  {
+    "width": 768,
+    "route": "nutcracker.html",
+    "overflow": {
+      "scroll": 768,
+      "client": 768
+    },
+    "errors": [],
+    "missing": []
+  },
+  {
+    "width": 768,
+    "route": "swan-lake.html",
+    "overflow": {
+      "scroll": 768,
+      "client": 768
+    },
+    "errors": [],
+    "missing": []
+  },
+  {
+    "width": 768,
+    "route": "people.html",
+    "overflow": {
+      "scroll": 768,
+      "client": 768
+    },
+    "errors": [],
+    "missing": [],
+    "profiles": 15,
+    "modal": "false",
+    "escape": "true",
+    "focusRestored": true
+  },
+  {
+    "width": 768,
+    "route": "venues.html",
+    "overflow": {
+      "scroll": 768,
+      "client": 768
+    },
+    "errors": [],
+    "missing": []
+  },
+  {
+    "width": 390,
+    "route": "index.html",
+    "overflow": {
+      "scroll": 390,
+      "client": 390
+    },
+    "errors": [],
+    "missing": [],
+    "menuOpened": "true",
+    "menuClosed": "false"
+  },
+  {
+    "width": 390,
+    "route": "afisha.html",
+    "overflow": {
+      "scroll": 390,
+      "client": 390
+    },
+    "errors": [],
+    "missing": [],
+    "showRows": 266,
+    "cityOptions": 28,
+    "filtered": 7
+  },
+  {
+    "width": 390,
+    "route": "repertoire.html",
+    "overflow": {
+      "scroll": 390,
+      "client": 390
+    },
+    "errors": [],
+    "missing": []
+  },
+  {
+    "width": 390,
+    "route": "nutcracker.html",
+    "overflow": {
+      "scroll": 390,
+      "client": 390
+    },
+    "errors": [],
+    "missing": []
+  },
+  {
+    "width": 390,
+    "route": "swan-lake.html",
+    "overflow": {
+      "scroll": 390,
+      "client": 390
+    },
+    "errors": [],
+    "missing": []
+  },
+  {
+    "width": 390,
+    "route": "people.html",
+    "overflow": {
+      "scroll": 390,
+      "client": 390
+    },
+    "errors": [],
+    "missing": [],
+    "profiles": 15,
+    "modal": "false",
+    "escape": "true",
+    "focusRestored": true
+  },
+  {
+    "width": 390,
+    "route": "venues.html",
+    "overflow": {
+      "scroll": 390,
+      "client": 390
+    },
+    "errors": [],
+    "missing": []
+  },
+  {
+    "width": 320,
+    "route": "index.html",
+    "overflow": {
+      "scroll": 320,
+      "client": 320
+    },
+    "errors": [],
+    "missing": [],
+    "menuOpened": "true",
+    "menuClosed": "false"
+  },
+  {
+    "width": 320,
+    "route": "afisha.html",
+    "overflow": {
+      "scroll": 320,
+      "client": 320
+    },
+    "errors": [],
+    "missing": [],
+    "showRows": 266,
+    "cityOptions": 28,
+    "filtered": 7
+  },
+  {
+    "width": 320,
+    "route": "repertoire.html",
+    "overflow": {
+      "scroll": 320,
+      "client": 320
+    },
+    "errors": [],
+    "missing": []
+  },
+  {
+    "width": 320,
+    "route": "nutcracker.html",
+    "overflow": {
+      "scroll": 320,
+      "client": 320
+    },
+    "errors": [],
+    "missing": []
+  },
+  {
+    "width": 320,
+    "route": "swan-lake.html",
+    "overflow": {
+      "scroll": 320,
+      "client": 320
+    },
+    "errors": [],
+    "missing": []
+  },
+  {
+    "width": 320,
+    "route": "people.html",
+    "overflow": {
+      "scroll": 320,
+      "client": 320
+    },
+    "errors": [],
+    "missing": [],
+    "profiles": 15,
+    "modal": "false",
+    "escape": "true",
+    "focusRestored": true
+  },
+  {
+    "width": 320,
+    "route": "venues.html",
+    "overflow": {
+      "scroll": 320,
+      "client": 320
+    },
+    "errors": [],
+    "missing": []
+  }
+]

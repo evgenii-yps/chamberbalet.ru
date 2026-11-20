@@ -1,0 +1,27 @@
+route,source_file,section_id,class,labelledby,headings,evidence
+/afisha.html,dist/afisha.html,,shell section-space page-content,page-title,Афиша,static HTML; dynamic content and visual states reviewed separately
+/afisha.html,dist/afisha.html,upcoming,upcoming,upcoming-title,Ближайшие показы,static HTML; dynamic content and visual states reviewed separately
+/afisha.html,dist/afisha.html,,schedule-repertoire,schedule-repertoire-title,О спектаклях,static HTML; dynamic content and visual states reviewed separately
+/index.html,dist/index.html,,hero,poster-title,Щелкунчик,static HTML; dynamic content and visual states reviewed separately
+/index.html,dist/index.html,afisha,home-schedule,afisha-title,Афиша,static HTML; dynamic content and visual states reviewed separately
+/index.html,dist/index.html,repertoire,repertoire shell section-space,repertoire-title,Постановки | Щелкунчик | Лебединое озеро,static HTML; dynamic content and visual states reviewed separately
+/index.html,dist/index.html,,formats,formats-title,Два формата театра | Камерные вечера | Большая сцена,static HTML; dynamic content and visual states reviewed separately
+/index.html,dist/index.html,theatre,theatre,,,static HTML; dynamic content and visual states reviewed separately
+/index.html,dist/index.html,venues,venues,venues-title,Для площадок,static HTML; dynamic content and visual states reviewed separately
+/nutcracker.html,dist/nutcracker.html,,detail-hero performance-hero performance-hero--nutcracker,show-title,Щелкунчик,static HTML; dynamic content and visual states reviewed separately
+/nutcracker.html,dist/nutcracker.html,,shell performance-story section-space,story-title,О спектакле,static HTML; dynamic content and visual states reviewed separately
+/nutcracker.html,dist/nutcracker.html,,shell performance-gallery,gallery-title,В зале особняка,static HTML; dynamic content and visual states reviewed separately
+/nutcracker.html,dist/nutcracker.html,,formats performance-formats,format-title,Две версии балета | Камерная при свечах | Для большой сцены,static HTML; dynamic content and visual states reviewed separately
+/nutcracker.html,dist/nutcracker.html,showtimes,shell production-showtimes section-space,showtimes-title,Ближайшие показы,static HTML; dynamic content and visual states reviewed separately
+/nutcracker.html,dist/nutcracker.html,,other-production,,Лебединое озеро,static HTML; dynamic content and visual states reviewed separately
+/repertoire.html,dist/repertoire.html,,shell section-space page-content,page-title,Постановки | Щелкунчик | Лебединое озеро,static HTML; dynamic content and visual states reviewed separately
+/repertoire.html,dist/repertoire.html,,repertoire-more,repertoire-more-title,Ещё в репертуаре,static HTML; dynamic content and visual states reviewed separately
+/swan-lake.html,dist/swan-lake.html,,detail-hero performance-hero performance-hero--swan,show-title,Лебединое озеро,static HTML; dynamic content and visual states reviewed separately
+/swan-lake.html,dist/swan-lake.html,,shell performance-story section-space,story-title,О спектакле,static HTML; dynamic content and visual states reviewed separately
+/swan-lake.html,dist/swan-lake.html,,formats performance-formats,format-title,Две версии балета | Камерная при свечах | Для большой сцены,static HTML; dynamic content and visual states reviewed separately
+/swan-lake.html,dist/swan-lake.html,showtimes,shell production-showtimes section-space,showtimes-title,Ближайшие показы,static HTML; dynamic content and visual states reviewed separately
+/swan-lake.html,dist/swan-lake.html,,other-production,,Щелкунчик,static HTML; dynamic content and visual states reviewed separately
+/venues.html,dist/venues.html,,detail-hero venues-hero,page-title,Балетный спектакль на вашей площадке,static HTML; dynamic content and visual states reviewed separately
+/venues.html,dist/venues.html,,shell section-space venues-section,options-title,Условия сотрудничества | Аренда зала | Совместный показ,static HTML; dynamic content and visual states reviewed separately
+/venues.html,dist/venues.html,,formats,formats-title,Что можем привезти | Камерный вечер | Большой спектакль,static HTML; dynamic content and visual states reviewed separately
+/venues.html,dist/venues.html,contact,shell section-space venues-section venue-enquiry,contact-title,Обсудим показ | Что указать в первом письме,static HTML; dynamic content and visual states reviewed separately

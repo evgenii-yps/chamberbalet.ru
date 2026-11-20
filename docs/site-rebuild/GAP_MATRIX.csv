@@ -1,0 +1,10 @@
+area,prototype_evidence,current_repo_baseline,gap_or_action,status
+Routes,Seven dist HTML pages,README describes one generated homepage,Map and implement seven distinct routes and verify error routes,OPEN
+Content and People,15 profiles 14 portraits and biography dialog,Older content.js and modes not authoritative,Preserve source profiles and interactions and clear rights,OPEN
+Events,266 shows 168 tour and 98 home in show-schedule.js,Old source is a different site,Port data model and validate date and ticket links plus maintenance,OPEN
+Media,Original tree includes video fonts portraits graphics and two PDFs,media/media.json empty; previous media is separate,Map exact assets and confirm rights and original masters,OPEN
+Interactive and responsive,menu intro modal city filter and CSS breakpoints,Old JS modules implement different mode based flows,Map individual state behaviors and browser compare,OPEN
+SEO and privacy,Prototype marks itself closed; metadata and policy need review,Old builder emits sitemap robots manifest and favicon,Establish approved public metadata and legal/privacy before release,OPEN
+Build,Static dist and hosting manifest; no source build scripts,Old build generates old content and resets dist,Design reproducible pipeline after authorization; do not use old build as parity,OPEN
+Hosting,Native static files function locally,Old Apache rules include extension wide immutable cache and 404 index,Verify host and adjust on approved implementation branch,OPEN
+Source provenance,Exact Git commit and 57 hashes verified; saved tar unverified,GitHub baseline is not prototype,Obtain tar or explicit limited owner waiver and verify upstream source completeness,BLOCKED
