@@ -1,0 +1,352 @@
+[
+  {
+    "route": "index.html",
+    "width": 1440,
+    "viewportHeight": 900,
+    "referenceSha256": "610b2187f548af5965ed0628db7c179d2bca4e741bbe03b6f49c28e64623528d",
+    "privatePreviewSha256": "610b2187f548af5965ed0628db7c179d2bca4e741bbe03b6f49c28e64623528d",
+    "differentPixelPercent": 0.0,
+    "knownDifference": "none in initial viewport",
+    "imagesStored": "private workspace only"
+  },
+  {
+    "route": "afisha.html",
+    "width": 1440,
+    "viewportHeight": 900,
+    "referenceSha256": "f44b3811ed53081e94c7861e7f668d11afcae1d220f1f8d37bbb710f79648777",
+    "privatePreviewSha256": "20da97028ff13be310ca54107b1a927793ceedad3bd29bb7e356d620cfe06b3e",
+    "differentPixelPercent": 0.261,
+    "knownDifference": "date filter on afisha",
+    "imagesStored": "private workspace only"
+  },
+  {
+    "route": "repertoire.html",
+    "width": 1440,
+    "viewportHeight": 900,
+    "referenceSha256": "ea307ff0614a4848307f5a76a9e1ab1b2e3ce1b4e00bcd3b6fa2c67bf39bc99a",
+    "privatePreviewSha256": "ea307ff0614a4848307f5a76a9e1ab1b2e3ce1b4e00bcd3b6fa2c67bf39bc99a",
+    "differentPixelPercent": 0.0,
+    "knownDifference": "none in initial viewport",
+    "imagesStored": "private workspace only"
+  },
+  {
+    "route": "nutcracker.html",
+    "width": 1440,
+    "viewportHeight": 900,
+    "referenceSha256": "85f798cbf5e882415c85358976fa34e95c930da9d1ffe28903aa33a8a1330622",
+    "privatePreviewSha256": "85f798cbf5e882415c85358976fa34e95c930da9d1ffe28903aa33a8a1330622",
+    "differentPixelPercent": 0.0,
+    "knownDifference": "none in initial viewport",
+    "imagesStored": "private workspace only"
+  },
+  {
+    "route": "swan-lake.html",
+    "width": 1440,
+    "viewportHeight": 900,
+    "referenceSha256": "c474821a6b0cfbcfe23ad19624ef3d158a11e2000ae5c302aa61525ba064a6aa",
+    "privatePreviewSha256": "c474821a6b0cfbcfe23ad19624ef3d158a11e2000ae5c302aa61525ba064a6aa",
+    "differentPixelPercent": 0.0,
+    "knownDifference": "none in initial viewport",
+    "imagesStored": "private workspace only"
+  },
+  {
+    "route": "people.html",
+    "width": 1440,
+    "viewportHeight": 900,
+    "referenceSha256": "9b7a212d047c836657d0083569133cb8a22b06a8acf05182d05c978ce05588ed",
+    "privatePreviewSha256": "9b7a212d047c836657d0083569133cb8a22b06a8acf05182d05c978ce05588ed",
+    "differentPixelPercent": 0.0,
+    "knownDifference": "none in initial viewport",
+    "imagesStored": "private workspace only"
+  },
+  {
+    "route": "venues.html",
+    "width": 1440,
+    "viewportHeight": 900,
+    "referenceSha256": "7fec062826e0f6838a54d324715195c21c98102797354f085a099ab7a4f7e5df",
+    "privatePreviewSha256": "7fec062826e0f6838a54d324715195c21c98102797354f085a099ab7a4f7e5df",
+    "differentPixelPercent": 0.0,
+    "knownDifference": "none in initial viewport",
+    "imagesStored": "private workspace only"
+  },
+  {
+    "route": "index.html",
+    "width": 1024,
+    "viewportHeight": 900,
+    "referenceSha256": "81bfe88ef373cace5b279269f974f7d0201f93ca3232c0ddd8bffc5507244a7e",
+    "privatePreviewSha256": "81bfe88ef373cace5b279269f974f7d0201f93ca3232c0ddd8bffc5507244a7e",
+    "differentPixelPercent": 0.0,
+    "knownDifference": "none in initial viewport",
+    "imagesStored": "private workspace only"
+  },
+  {
+    "route": "afisha.html",
+    "width": 1024,
+    "viewportHeight": 900,
+    "referenceSha256": "0d132d83dd391a20847bb90ccfaec1476fa0a295bc521a652be3bbd09f03d4f0",
+    "privatePreviewSha256": "595321ec9b2d4685e33dec3880a5614d269b44d4df690f753fda378db39364e8",
+    "differentPixelPercent": 0.372,
+    "knownDifference": "date filter on afisha",
+    "imagesStored": "private workspace only"
+  },
+  {
+    "route": "repertoire.html",
+    "width": 1024,
+    "viewportHeight": 900,
+    "referenceSha256": "7743a34709cca90acdf76b23d89b0d94ce8f8571830e16c88cd943fcbb8c2f70",
+    "privatePreviewSha256": "7743a34709cca90acdf76b23d89b0d94ce8f8571830e16c88cd943fcbb8c2f70",
+    "differentPixelPercent": 0.0,
+    "knownDifference": "none in initial viewport",
+    "imagesStored": "private workspace only"
+  },
+  {
+    "route": "nutcracker.html",
+    "width": 1024,
+    "viewportHeight": 900,
+    "referenceSha256": "a5ddf114f1caa67d33cda14219355722fb90f244bea5345e544aa9669aedefec",
+    "privatePreviewSha256": "a5ddf114f1caa67d33cda14219355722fb90f244bea5345e544aa9669aedefec",
+    "differentPixelPercent": 0.0,
+    "knownDifference": "none in initial viewport",
+    "imagesStored": "private workspace only"
+  },
+  {
+    "route": "swan-lake.html",
+    "width": 1024,
+    "viewportHeight": 900,
+    "referenceSha256": "e213c6c5acf4cce4c96ba74c5a6fece57cc7aefbd0f1b22a149491430ffed267",
+    "privatePreviewSha256": "e213c6c5acf4cce4c96ba74c5a6fece57cc7aefbd0f1b22a149491430ffed267",
+    "differentPixelPercent": 0.0,
+    "knownDifference": "none in initial viewport",
+    "imagesStored": "private workspace only"
+  },
+  {
+    "route": "people.html",
+    "width": 1024,
+    "viewportHeight": 900,
+    "referenceSha256": "16fbdf6e6ee2150983eaa6c6e3fd98fe8ba684b17b8f7e9de483f89933a53524",
+    "privatePreviewSha256": "16fbdf6e6ee2150983eaa6c6e3fd98fe8ba684b17b8f7e9de483f89933a53524",
+    "differentPixelPercent": 0.0,
+    "knownDifference": "none in initial viewport",
+    "imagesStored": "private workspace only"
+  },
+  {
+    "route": "venues.html",
+    "width": 1024,
+    "viewportHeight": 900,
+    "referenceSha256": "fbfd181faf929a9339b183278293b909c78e47f92ab1604d424cf5e11f71a14c",
+    "privatePreviewSha256": "fbfd181faf929a9339b183278293b909c78e47f92ab1604d424cf5e11f71a14c",
+    "differentPixelPercent": 0.0,
+    "knownDifference": "none in initial viewport",
+    "imagesStored": "private workspace only"
+  },
+  {
+    "route": "index.html",
+    "width": 768,
+    "viewportHeight": 900,
+    "referenceSha256": "5c7a6d550817b62abfa9569c127bbb521a66a9c2e800eb3ae4712f1eddceda8d",
+    "privatePreviewSha256": "5c7a6d550817b62abfa9569c127bbb521a66a9c2e800eb3ae4712f1eddceda8d",
+    "differentPixelPercent": 0.0,
+    "knownDifference": "none in initial viewport",
+    "imagesStored": "private workspace only"
+  },
+  {
+    "route": "afisha.html",
+    "width": 768,
+    "viewportHeight": 900,
+    "referenceSha256": "84032471045a0d31fc7c58c76c91ae278a027ed4578bd9b55bd4fcff2913f05f",
+    "privatePreviewSha256": "054fa3182a67fce6ead9ffe25df5f398f858a822f18983f629e94901f64d941d",
+    "differentPixelPercent": 0.492,
+    "knownDifference": "date filter on afisha",
+    "imagesStored": "private workspace only"
+  },
+  {
+    "route": "repertoire.html",
+    "width": 768,
+    "viewportHeight": 900,
+    "referenceSha256": "48a42d288362bf6f189585025969a86d592ae77cd34ef144ea284b29465c17f2",
+    "privatePreviewSha256": "48a42d288362bf6f189585025969a86d592ae77cd34ef144ea284b29465c17f2",
+    "differentPixelPercent": 0.0,
+    "knownDifference": "none in initial viewport",
+    "imagesStored": "private workspace only"
+  },
+  {
+    "route": "nutcracker.html",
+    "width": 768,
+    "viewportHeight": 900,
+    "referenceSha256": "3e4fc3737450730dcea86d5ffbe4df7a9c0f2e1e5404e82c5d2b3a32697727ed",
+    "privatePreviewSha256": "3e4fc3737450730dcea86d5ffbe4df7a9c0f2e1e5404e82c5d2b3a32697727ed",
+    "differentPixelPercent": 0.0,
+    "knownDifference": "none in initial viewport",
+    "imagesStored": "private workspace only"
+  },
+  {
+    "route": "swan-lake.html",
+    "width": 768,
+    "viewportHeight": 900,
+    "referenceSha256": "50fcfa5b50ee3e570f1f240d7157feaebaca91f8418ec55b7e12733913dfb535",
+    "privatePreviewSha256": "50fcfa5b50ee3e570f1f240d7157feaebaca91f8418ec55b7e12733913dfb535",
+    "differentPixelPercent": 0.0,
+    "knownDifference": "none in initial viewport",
+    "imagesStored": "private workspace only"
+  },
+  {
+    "route": "people.html",
+    "width": 768,
+    "viewportHeight": 900,
+    "referenceSha256": "302fa88ba1ba07225d5788fad167180398aebb47dd51f8c2d26a53c5b8fbb86a",
+    "privatePreviewSha256": "302fa88ba1ba07225d5788fad167180398aebb47dd51f8c2d26a53c5b8fbb86a",
+    "differentPixelPercent": 0.0,
+    "knownDifference": "none in initial viewport",
+    "imagesStored": "private workspace only"
+  },
+  {
+    "route": "venues.html",
+    "width": 768,
+    "viewportHeight": 900,
+    "referenceSha256": "dcaa1d387f9f8d7238f1f0440fe8da8f7b71688430e8661196de4e1f9b4d0182",
+    "privatePreviewSha256": "dcaa1d387f9f8d7238f1f0440fe8da8f7b71688430e8661196de4e1f9b4d0182",
+    "differentPixelPercent": 0.0,
+    "knownDifference": "none in initial viewport",
+    "imagesStored": "private workspace only"
+  },
+  {
+    "route": "index.html",
+    "width": 390,
+    "viewportHeight": 900,
+    "referenceSha256": "3f11f449e92be539f6b2514ee7e72e632ca31b785f30415b24532f715d03944d",
+    "privatePreviewSha256": "3f11f449e92be539f6b2514ee7e72e632ca31b785f30415b24532f715d03944d",
+    "differentPixelPercent": 0.0,
+    "knownDifference": "none in initial viewport",
+    "imagesStored": "private workspace only"
+  },
+  {
+    "route": "afisha.html",
+    "width": 390,
+    "viewportHeight": 900,
+    "referenceSha256": "130daa8b45e93725f836050ab6f251afbd56de5dd83bbed9ae674c65d0911ea7",
+    "privatePreviewSha256": "2bcfb2bf60907a9762e1bb33d67ea10553b6ff7d4d102f1cdd2aefc616b65811",
+    "differentPixelPercent": 9.674,
+    "knownDifference": "date filter on afisha",
+    "imagesStored": "private workspace only"
+  },
+  {
+    "route": "repertoire.html",
+    "width": 390,
+    "viewportHeight": 900,
+    "referenceSha256": "d752ed7c0df5e80c303c29f90526a50f23b5bd71511ce7ea8755773de292ca1f",
+    "privatePreviewSha256": "d752ed7c0df5e80c303c29f90526a50f23b5bd71511ce7ea8755773de292ca1f",
+    "differentPixelPercent": 0.0,
+    "knownDifference": "none in initial viewport",
+    "imagesStored": "private workspace only"
+  },
+  {
+    "route": "nutcracker.html",
+    "width": 390,
+    "viewportHeight": 900,
+    "referenceSha256": "54f7577cb3f2fd18c73076fc3815af372c4043c81d02823bb0ead193db1a47af",
+    "privatePreviewSha256": "54f7577cb3f2fd18c73076fc3815af372c4043c81d02823bb0ead193db1a47af",
+    "differentPixelPercent": 0.0,
+    "knownDifference": "none in initial viewport",
+    "imagesStored": "private workspace only"
+  },
+  {
+    "route": "swan-lake.html",
+    "width": 390,
+    "viewportHeight": 900,
+    "referenceSha256": "913012ab45fbf0e9c3cfcd7895bf33e92351249657ec2558d8eeb5a148c7eb77",
+    "privatePreviewSha256": "913012ab45fbf0e9c3cfcd7895bf33e92351249657ec2558d8eeb5a148c7eb77",
+    "differentPixelPercent": 0.0,
+    "knownDifference": "none in initial viewport",
+    "imagesStored": "private workspace only"
+  },
+  {
+    "route": "people.html",
+    "width": 390,
+    "viewportHeight": 900,
+    "referenceSha256": "e6a9ab8015a8407bdbb7e94ccbea6cec3766f026e2d501ff9b1f7e86495508e1",
+    "privatePreviewSha256": "e6a9ab8015a8407bdbb7e94ccbea6cec3766f026e2d501ff9b1f7e86495508e1",
+    "differentPixelPercent": 0.0,
+    "knownDifference": "none in initial viewport",
+    "imagesStored": "private workspace only"
+  },
+  {
+    "route": "venues.html",
+    "width": 390,
+    "viewportHeight": 900,
+    "referenceSha256": "d445060bab488fd6af5b898d202470c36cbc91bd4adec3b7d80b6d83576ff8a3",
+    "privatePreviewSha256": "d445060bab488fd6af5b898d202470c36cbc91bd4adec3b7d80b6d83576ff8a3",
+    "differentPixelPercent": 0.0,
+    "knownDifference": "none in initial viewport",
+    "imagesStored": "private workspace only"
+  },
+  {
+    "route": "index.html",
+    "width": 320,
+    "viewportHeight": 900,
+    "referenceSha256": "f30947c90e4526dbc2d6de849ca6a312a5f1f74b43b93aa874a1bf3d4ff0d143",
+    "privatePreviewSha256": "f30947c90e4526dbc2d6de849ca6a312a5f1f74b43b93aa874a1bf3d4ff0d143",
+    "differentPixelPercent": 0.0,
+    "knownDifference": "none in initial viewport",
+    "imagesStored": "private workspace only"
+  },
+  {
+    "route": "afisha.html",
+    "width": 320,
+    "viewportHeight": 900,
+    "referenceSha256": "7f3af9ae78e44275e5219b284bca802a54fe6bebeb2b3acffc874af14413887c",
+    "privatePreviewSha256": "630e305c6da722812aff5c4d22882d642118687fab2e8a6964989d018b3a0bf8",
+    "differentPixelPercent": 11.592,
+    "knownDifference": "date filter on afisha",
+    "imagesStored": "private workspace only"
+  },
+  {
+    "route": "repertoire.html",
+    "width": 320,
+    "viewportHeight": 900,
+    "referenceSha256": "8ffd76a4ea108712a400228ed5b3c07a25d039282cd2b2a31c46362b5bb32059",
+    "privatePreviewSha256": "8ffd76a4ea108712a400228ed5b3c07a25d039282cd2b2a31c46362b5bb32059",
+    "differentPixelPercent": 0.0,
+    "knownDifference": "none in initial viewport",
+    "imagesStored": "private workspace only"
+  },
+  {
+    "route": "nutcracker.html",
+    "width": 320,
+    "viewportHeight": 900,
+    "referenceSha256": "343a0a8579a95858192602fb94b001d7aa0fa8f7066858e3f4c6228ae883d8f5",
+    "privatePreviewSha256": "343a0a8579a95858192602fb94b001d7aa0fa8f7066858e3f4c6228ae883d8f5",
+    "differentPixelPercent": 0.0,
+    "knownDifference": "none in initial viewport",
+    "imagesStored": "private workspace only"
+  },
+  {
+    "route": "swan-lake.html",
+    "width": 320,
+    "viewportHeight": 900,
+    "referenceSha256": "301913f81fd8492e9bbe5cf75f5c5c53d20ab74099bff9d25312987eeb1e4b76",
+    "privatePreviewSha256": "301913f81fd8492e9bbe5cf75f5c5c53d20ab74099bff9d25312987eeb1e4b76",
+    "differentPixelPercent": 0.0,
+    "knownDifference": "none in initial viewport",
+    "imagesStored": "private workspace only"
+  },
+  {
+    "route": "people.html",
+    "width": 320,
+    "viewportHeight": 900,
+    "referenceSha256": "7afbbc7212b877d2db28b4a54f6e7d96f1128441bb6b3abaedb4209c73b3ed13",
+    "privatePreviewSha256": "7afbbc7212b877d2db28b4a54f6e7d96f1128441bb6b3abaedb4209c73b3ed13",
+    "differentPixelPercent": 0.0,
+    "knownDifference": "none in initial viewport",
+    "imagesStored": "private workspace only"
+  },
+  {
+    "route": "venues.html",
+    "width": 320,
+    "viewportHeight": 900,
+    "referenceSha256": "dbdade6d3c9ed7d783482dd687475e46d730e0c27805b56f9f5c7a4dce0a24db",
+    "privatePreviewSha256": "dbdade6d3c9ed7d783482dd687475e46d730e0c27805b56f9f5c7a4dce0a24db",
+    "differentPixelPercent": 0.0,
+    "knownDifference": "none in initial viewport",
+    "imagesStored": "private workspace only"
+  }
+]

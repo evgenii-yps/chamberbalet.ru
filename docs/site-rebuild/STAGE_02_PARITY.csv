@@ -1,0 +1,8 @@
+route,reference_sections,private_output,interaction_status,known_deviation
+index.html,"hero video, afisha, productions, formats, people, venues",source HTML and local assets,video skip replay/error/reduced tested; 2 leaders,external actions disabled
+afisha.html,"schedule, city filter, repertoire",source HTML and source data,266 shows; city selector; date filter tested,date filter added; external actions disabled
+repertoire.html,"two productions, additional repertoire",source HTML and local assets,navigation smoke,external actions disabled
+nutcracker.html,"story, gallery, formats, showtimes",source HTML and local assets,direct route smoke,tickets disabled
+swan-lake.html,"story, formats, showtimes",source HTML and local assets,direct route smoke,tickets disabled
+people.html,"leaders, artists, biography dialog",source HTML and people module,15 profiles; Escape/focus; desktop backdrop,mobile modal fills viewport; no backdrop area
+venues.html,"offer, conditions, formats, contacts, documents",source HTML and local assets,direct route smoke,contact and PDF disabled
