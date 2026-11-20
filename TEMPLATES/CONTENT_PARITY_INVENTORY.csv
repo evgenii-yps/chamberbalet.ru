@@ -1,2 +1,6 @@
-<PARSED TEXT FOR SHEET: 1 / 1 TABS
-TAB NAME: TEMPLATES__CONTENT_PARITY_INVENTORY.csv>
+﻿route,section_id,source_url_or_path,asset_path,expected_behavior,approved_copy_source,source_verified,rights_status,migration_status,evidence_link,notes
+/,homepage,https://chamberbalet-prototype-v01.cuppedhornbill2.chatgpt.site/,,,,PENDING_SOURCE_AUDIT,PENDING,NOT_STARTED,,DO NOT INVENT UNKNOWN ROUTES
+/people.html,people,,,,,PENDING_SOURCE_AUDIT,PENDING,NOT_STARTED,,DO NOT INVENT UNKNOWN ROUTES
+UNKNOWN_ROUTE,performances,,,,,PENDING_SOURCE_AUDIT,PENDING,NOT_STARTED,,DO NOT INVENT UNKNOWN ROUTES
+UNKNOWN_ROUTE,touring-afisha,,,,,PENDING_SOURCE_AUDIT,PENDING,NOT_STARTED,,DO NOT INVENT UNKNOWN ROUTES
+UNKNOWN_ROUTE,venue-partnership,,,,,PENDING_SOURCE_AUDIT,PENDING,NOT_STARTED,,DO NOT INVENT UNKNOWN ROUTES
