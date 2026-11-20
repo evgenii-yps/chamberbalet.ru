@@ -1,0 +1,5 @@
+# Stage 01 — private foundation (not a release)
+
+From this folder: `npm ci`, `npm run build`, `npm run check`, `npm run preview`. Open http://127.0.0.1:4178/ locally. Node >=20; no external runtime dependencies. The build only replaces `foundation/dist/` and never touches the previous root-level `dist/`. The preview server binds loopback only and returns a real HTTP 404 for unknown resources. Do not expose this server to the internet. Output contains seven route skeletons, an explicit noindex indicator and a SHA-256 file inventory. It uses fictional fixtures and visible placeholders. `RELEASE=1 npm run build` is explicitly blocked; none of these controls are a substitute for publication review.
+
+See `docs/ARCHITECTURE.md`, `docs/STAGE_01_REPORT.md`, and `data/asset-manifest.json`. The owner-confirmed authoritative reference is Sites v16 Git commit `329a00aec044a5bf10d96386f953efe1369f9bb1`, not the root legacy build. The actual reference bytes remain outside this public repository; the generated foundation deliberately does not reproduce the real design or data at this stage. Full implementation requires Stage 02 authorization.

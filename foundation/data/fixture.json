@@ -1,0 +1,10 @@
+{
+  "notice": "FIXTURE ONLY — fictional content; no real events or biographies",
+  "venues": [{"id":"fixture-venue","name":"Fixture venue","city":"Fixture city","timezone":"Europe/Moscow"}],
+  "productions": [{"id":"fixture-production","title":"Fixture production","route":"nutcracker.html"}],
+  "sessions": [{"id":"fixture-session","productionId":"fixture-production","venueId":"fixture-venue","city":"Fixture city","timezone":"Europe/Moscow","startsAt":"2030-01-01T12:00:00+03:00","bookingStatus":"unavailable"}],
+  "people": [{"id":"fixture-person","name":"Fixture person","role":"Fixture role","biography":"Fictional biography","portraitAssetId":"fixture-portrait"}],
+  "media": [{"id":"fixture-portrait","sourcePath":"private/fixture","sha256":"0000000000000000000000000000000000000000000000000000000000000000","rightsStatus":"pending"}],
+  "documents": [{"id":"fixture-document","title":"Fixture document","approvalStatus":"pending"}],
+  "metadata": {"description":"Fixture only","legalState":"pending"}
+}

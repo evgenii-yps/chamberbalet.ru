@@ -1,0 +1,13 @@
+{
+  "name": "chamberbalet-stage01-foundation",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "preview": "node scripts/preview.mjs",
+    "check": "node --check scripts/build.mjs && node --check scripts/preview.mjs && node --check src/model.mjs && node --test tests/*.test.mjs",
+    "test": "node --test tests/*.test.mjs"
+  },
+  "engines": {"node": ">=20"}
+}

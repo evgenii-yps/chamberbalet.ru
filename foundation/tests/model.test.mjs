@@ -1,0 +1,8 @@
+import test from 'node:test';import assert from 'node:assert/strict';
+import {routes,validateSession,validateRecord,upcomingSessions} from '../src/model.mjs';
+const base={id:'x',productionId:'p',venueId:'v',city:'fixture',timezone:'Europe/Moscow',startsAt:'2030-01-01T12:00:00+03:00',bookingStatus:'unavailable'};
+test('seven unique routes',()=>{assert.equal(routes.length,7);assert.equal(new Set(routes.map(r=>r.path)).size,7)});
+test('timezone and ISO offset are required',()=>{assert.deepEqual(validateSession(base),[]);assert.ok(validateSession({...base,startsAt:'2030-01-01T12:00:00',timezone:'bad/timezone'}).includes('timezone'));assert.ok(validateSession({...base,startsAt:'2030-01-01T12:00:00'}).includes('startsAt'))});
+test('unverified booking targets cannot enter fixture data',()=>{assert.ok(validateSession({...base,bookingUrl:'https://example.test'}).includes('unverified bookingUrl'));assert.ok(validateSession({...base,bookingStatus:'verified',bookingUrl:'http://example.test'}).includes('bookingUrl'));assert.deepEqual(validateSession({...base,bookingStatus:'verified',bookingUrl:'https://example.test'}),[])});
+test('future session filtering uses timestamps and sorts without mutation',()=>{const a={...base,id:'a',startsAt:'2030-01-01T13:00:00+03:00'},b={...base,id:'b'};const input=[a,b];assert.deepEqual(upcomingSessions(input,Date.parse('2030-01-01T09:30:00Z')).map(x=>x.id),['a']);assert.deepEqual(input.map(x=>x.id),['a','b'])});
+test('media and document require rights metadata',()=>{assert.ok(validateRecord('media',{id:'x',sourcePath:'private',sha256:'bad',rightsStatus:'yes'}).includes('sha256'));assert.ok(validateRecord('document',{id:'x',title:'x',approvalStatus:'unknown'}).includes('approvalStatus'))});

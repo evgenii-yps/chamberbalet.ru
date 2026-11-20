@@ -1,0 +1,467 @@
+{
+  "sourceCommit": "329a00aec044a5bf10d96386f953efe1369f9bb1",
+  "assets": [
+    {
+      "sourcePath": "dist/assets/golos-text.woff",
+      "bytes": 93904,
+      "sha256": "04faffe6380bbd282338704287a05bb1d80d51995392cac893b2b56985a28dc5",
+      "dimensions": null,
+      "altText": "NEEDS_EDITORIAL_REVIEW",
+      "rightsStatus": "pending",
+      "optionalPrivateSource": null
+    },
+    {
+      "sourcePath": "dist/assets/kp-dlya-ploshchadok-sait.pdf",
+      "bytes": 291186,
+      "sha256": "b0fbb52c9e5d034097e72ffe44774137e2cb7658db3feee62e2c22dc3211a290",
+      "dimensions": null,
+      "altText": "NEEDS_EDITORIAL_REVIEW",
+      "rightsStatus": "pending",
+      "optionalPrivateSource": null
+    },
+    {
+      "sourcePath": "dist/assets/logo.svg",
+      "bytes": 29373,
+      "sha256": "6738d307f9aa966743aabf4cbb8ca4f4c8a9893be26edf0ad5999f830a3d33e7",
+      "dimensions": null,
+      "altText": "NEEDS_EDITORIAL_REVIEW",
+      "rightsStatus": "pending",
+      "optionalPrivateSource": null
+    },
+    {
+      "sourcePath": "dist/assets/nutcracker-artist.webp",
+      "bytes": 159694,
+      "sha256": "3c46d47ab97b7b600c0d31efbbb571aae098e073598d2186b877153e1a277f02",
+      "dimensions": {
+        "width": 1200,
+        "height": 800
+      },
+      "altText": "NEEDS_EDITORIAL_REVIEW",
+      "rightsStatus": "pending",
+      "optionalPrivateSource": null
+    },
+    {
+      "sourcePath": "dist/assets/nutcracker-candlelit-hall.webp",
+      "bytes": 190700,
+      "sha256": "17f59dece3bca58d7e810e6fd08d2848e01a26b6c672d3675760611393476914",
+      "dimensions": {
+        "width": 1136,
+        "height": 757
+      },
+      "altText": "NEEDS_EDITORIAL_REVIEW",
+      "rightsStatus": "pending",
+      "optionalPrivateSource": null
+    },
+    {
+      "sourcePath": "dist/assets/nutcracker-candles.webp",
+      "bytes": 60554,
+      "sha256": "1963971fa4a9e2d2faca66b3af2805e597eca41f46cc8754974942d58fc3c8cc",
+      "dimensions": {
+        "width": 1200,
+        "height": 800
+      },
+      "altText": "NEEDS_EDITORIAL_REVIEW",
+      "rightsStatus": "pending",
+      "optionalPrivateSource": null
+    },
+    {
+      "sourcePath": "dist/assets/nutcracker-duet.webp",
+      "bytes": 220098,
+      "sha256": "cc8d3a1f54a3b86a976523444e575afd54121ae593888237ec7ade0f0afae2c0",
+      "dimensions": {
+        "width": 1260,
+        "height": 1890
+      },
+      "altText": "NEEDS_EDITORIAL_REVIEW",
+      "rightsStatus": "pending",
+      "optionalPrivateSource": null
+    },
+    {
+      "sourcePath": "dist/assets/nutcracker-mansion.webp",
+      "bytes": 320766,
+      "sha256": "40bc1002c013d95e8c12fd6d0b7d5ea484975ec320991a4beb24948455a8ffda",
+      "dimensions": {
+        "width": 1840,
+        "height": 1227
+      },
+      "altText": "NEEDS_EDITORIAL_REVIEW",
+      "rightsStatus": "pending",
+      "optionalPrivateSource": null
+    },
+    {
+      "sourcePath": "dist/assets/olesya-gapienko.webp",
+      "bytes": 59122,
+      "sha256": "97f9f0b83131c0f95bcf20d57bf711455078ca931e07c12a754e9a0b35dc5c5b",
+      "dimensions": {
+        "width": 660,
+        "height": 680
+      },
+      "altText": "NEEDS_EDITORIAL_REVIEW",
+      "rightsStatus": "pending",
+      "optionalPrivateSource": null
+    },
+    {
+      "sourcePath": "dist/assets/prata.woff",
+      "bytes": 49268,
+      "sha256": "c221c3819eaf320d2ae972163529f50b3b34a8e77ab8484412ad9539a7c567ec",
+      "dimensions": null,
+      "altText": "NEEDS_EDITORIAL_REVIEW",
+      "rightsStatus": "pending",
+      "optionalPrivateSource": null
+    },
+    {
+      "sourcePath": "dist/assets/predlozhenie-dlya-ploshchadok.pdf",
+      "bytes": 1632505,
+      "sha256": "bea73f65a633f89471fdae28cbf2d2e80c6fcd1b2c939a2467f676aacfc7a678",
+      "dimensions": null,
+      "altText": "NEEDS_EDITORIAL_REVIEW",
+      "rightsStatus": "pending",
+      "optionalPrivateSource": null
+    },
+    {
+      "sourcePath": "dist/assets/swan-lake-stage.webp",
+      "bytes": 103892,
+      "sha256": "49f3ce1e40db9929c27a94abb5ace0847da3cec7205eff0c6e31d80276f0527e",
+      "dimensions": {
+        "width": 1280,
+        "height": 978
+      },
+      "altText": "NEEDS_EDITORIAL_REVIEW",
+      "rightsStatus": "pending",
+      "optionalPrivateSource": null
+    },
+    {
+      "sourcePath": "dist/assets/team/andrey-marchenko.webp",
+      "bytes": 19936,
+      "sha256": "0f7fde7dc3dabdaab7bc9e03b1abaf40ce8a931aaa037f7c044f0d34477d3c73",
+      "dimensions": {
+        "width": 473,
+        "height": 380
+      },
+      "altText": "NEEDS_EDITORIAL_REVIEW",
+      "rightsStatus": "pending",
+      "optionalPrivateSource": null
+    },
+    {
+      "sourcePath": "dist/assets/team/dmitry-akulinin.webp",
+      "bytes": 26214,
+      "sha256": "d063a98dc9c5c700024ea341e2c13ac882a050512b4aa98644f70d3fbdf9dbc5",
+      "dimensions": {
+        "width": 460,
+        "height": 369
+      },
+      "altText": "NEEDS_EDITORIAL_REVIEW",
+      "rightsStatus": "pending",
+      "optionalPrivateSource": null
+    },
+    {
+      "sourcePath": "dist/assets/team/evgenia-shtaneva.webp",
+      "bytes": 15624,
+      "sha256": "a6801f3cf3c4abedab1def888ece5f131596003c2fcff8cb9d1ed96f08a5de05",
+      "dimensions": {
+        "width": 460,
+        "height": 369
+      },
+      "altText": "NEEDS_EDITORIAL_REVIEW",
+      "rightsStatus": "pending",
+      "optionalPrivateSource": null
+    },
+    {
+      "sourcePath": "dist/assets/team/ilmira-bagautdinova.webp",
+      "bytes": 22650,
+      "sha256": "a880bc008a7d59de0e44cacaea71870c79b3d6e7ceef93dadb33c6e85a033880",
+      "dimensions": {
+        "width": 460,
+        "height": 369
+      },
+      "altText": "NEEDS_EDITORIAL_REVIEW",
+      "rightsStatus": "pending",
+      "optionalPrivateSource": null
+    },
+    {
+      "sourcePath": "dist/assets/team/indira-ivanova.webp",
+      "bytes": 19596,
+      "sha256": "9e3f8573346e996912d43a49ac9e593db401b41c3acd30d754b3702c94385e70",
+      "dimensions": {
+        "width": 460,
+        "height": 369
+      },
+      "altText": "NEEDS_EDITORIAL_REVIEW",
+      "rightsStatus": "pending",
+      "optionalPrivateSource": null
+    },
+    {
+      "sourcePath": "dist/assets/team/margarita-ushakova.webp",
+      "bytes": 8948,
+      "sha256": "cab00f7ed35cafa15606f957ef696644bc5e769f329949e06a7915a583b35fbd",
+      "dimensions": {
+        "width": 460,
+        "height": 369
+      },
+      "altText": "NEEDS_EDITORIAL_REVIEW",
+      "rightsStatus": "pending",
+      "optionalPrivateSource": null
+    },
+    {
+      "sourcePath": "dist/assets/team/olga-pavlova.webp",
+      "bytes": 14174,
+      "sha256": "2935b7c047a48966f09fe7e36033c81f7d7b9d62c59f233baaee0070b4e6fb5d",
+      "dimensions": {
+        "width": 474,
+        "height": 380
+      },
+      "altText": "NEEDS_EDITORIAL_REVIEW",
+      "rightsStatus": "pending",
+      "optionalPrivateSource": null
+    },
+    {
+      "sourcePath": "dist/assets/team/sergey-dubrovin.webp",
+      "bytes": 8882,
+      "sha256": "4bef197e94d35cd141da3fc02250006cb3043e4a92240c0ded0832aee0f1dd3f",
+      "dimensions": {
+        "width": 460,
+        "height": 369
+      },
+      "altText": "NEEDS_EDITORIAL_REVIEW",
+      "rightsStatus": "pending",
+      "optionalPrivateSource": null
+    },
+    {
+      "sourcePath": "dist/assets/team/sergey-fedorkov.webp",
+      "bytes": 19544,
+      "sha256": "08286719bcccdfa02cd8e73b214e30c1f9e5cf92b47b11fc5ab6002bc30a014c",
+      "dimensions": {
+        "width": 460,
+        "height": 369
+      },
+      "altText": "NEEDS_EDITORIAL_REVIEW",
+      "rightsStatus": "pending",
+      "optionalPrivateSource": null
+    },
+    {
+      "sourcePath": "dist/assets/team/stanislav-kultin.webp",
+      "bytes": 9758,
+      "sha256": "ca50b8b03c96bbc9491eb28bab1224ac99550570e2d7325cd8b927cda6e9175e",
+      "dimensions": {
+        "width": 473,
+        "height": 380
+      },
+      "altText": "NEEDS_EDITORIAL_REVIEW",
+      "rightsStatus": "pending",
+      "optionalPrivateSource": null
+    },
+    {
+      "sourcePath": "dist/assets/team/veronika-ivanova.webp",
+      "bytes": 7134,
+      "sha256": "da6b3b99b398c15801b5b3139f6cbbfec132dd7f98c98e524eb5a63f59a2b3ae",
+      "dimensions": {
+        "width": 460,
+        "height": 369
+      },
+      "altText": "NEEDS_EDITORIAL_REVIEW",
+      "rightsStatus": "pending",
+      "optionalPrivateSource": null
+    },
+    {
+      "sourcePath": "dist/assets/team/vladislav-shumakov.webp",
+      "bytes": 9260,
+      "sha256": "3eebe753001a884e52709006fb7075141f4cbf9fd8aa9264e9cd4b4543c1abdd",
+      "dimensions": {
+        "width": 473,
+        "height": 380
+      },
+      "altText": "NEEDS_EDITORIAL_REVIEW",
+      "rightsStatus": "pending",
+      "optionalPrivateSource": null
+    },
+    {
+      "sourcePath": "dist/assets/theatre-intro.mp4",
+      "bytes": 1638967,
+      "sha256": "f3f9d820bfc4bdbfd093e687476f6b2720e8f7fa04a310afdcfc12fa64614099",
+      "dimensions": null,
+      "altText": "NEEDS_EDITORIAL_REVIEW",
+      "rightsStatus": "pending",
+      "optionalPrivateSource": null
+    },
+    {
+      "sourcePath": "dist/assets/yuri-varvarov.webp",
+      "bytes": 59660,
+      "sha256": "6a17ec7c122cb3484e410401bbd695f83160375f8c6f6d8228446a81f0ed1a63",
+      "dimensions": {
+        "width": 660,
+        "height": 680
+      },
+      "altText": "NEEDS_EDITORIAL_REVIEW",
+      "rightsStatus": "pending",
+      "optionalPrivateSource": null
+    },
+    {
+      "sourcePath": "dist/people-module/assets/andrey-1.jpg",
+      "bytes": 44259,
+      "sha256": "62ac9dafd42040f5b8aa83be08409472cf2ea6a98304c389233b6c852a65c60b",
+      "dimensions": {
+        "width": 479,
+        "height": 387
+      },
+      "altText": "NEEDS_EDITORIAL_REVIEW",
+      "rightsStatus": "pending",
+      "optionalPrivateSource": null
+    },
+    {
+      "sourcePath": "dist/people-module/assets/dmitry-1.jpg",
+      "bytes": 53596,
+      "sha256": "d9f5f23e4c7bb94ea93b9966272701d0fda0c0ce46f4cc182071ce66dba55d24",
+      "dimensions": {
+        "width": 466,
+        "height": 379
+      },
+      "altText": "NEEDS_EDITORIAL_REVIEW",
+      "rightsStatus": "pending",
+      "optionalPrivateSource": null
+    },
+    {
+      "sourcePath": "dist/people-module/assets/evgeniya-1.jpg",
+      "bytes": 35766,
+      "sha256": "9be7b4379402d4c4e477172bb46f410f257181b23420b85ad03788a45342263d",
+      "dimensions": {
+        "width": 464,
+        "height": 379
+      },
+      "altText": "NEEDS_EDITORIAL_REVIEW",
+      "rightsStatus": "pending",
+      "optionalPrivateSource": null
+    },
+    {
+      "sourcePath": "dist/people-module/assets/ilmira-1.jpg",
+      "bytes": 53529,
+      "sha256": "9f0377858ac6e04e9215fb0ca893a68413628cd771c0892285af54859b56c79d",
+      "dimensions": {
+        "width": 467,
+        "height": 379
+      },
+      "altText": "NEEDS_EDITORIAL_REVIEW",
+      "rightsStatus": "pending",
+      "optionalPrivateSource": null
+    },
+    {
+      "sourcePath": "dist/people-module/assets/indira-1.jpg",
+      "bytes": 33498,
+      "sha256": "bfd653b7327fa38b6205ada02e1865ab5a6975f078f7aca9500e42bb48373e93",
+      "dimensions": {
+        "width": 464,
+        "height": 377
+      },
+      "altText": "NEEDS_EDITORIAL_REVIEW",
+      "rightsStatus": "pending",
+      "optionalPrivateSource": null
+    },
+    {
+      "sourcePath": "dist/people-module/assets/margarita-1.jpg",
+      "bytes": 21066,
+      "sha256": "67eec76aee049e344376d98a6610bf01fb3dbeea47949b47932248518778bb81",
+      "dimensions": {
+        "width": 466,
+        "height": 379
+      },
+      "altText": "NEEDS_EDITORIAL_REVIEW",
+      "rightsStatus": "pending",
+      "optionalPrivateSource": null
+    },
+    {
+      "sourcePath": "dist/people-module/assets/olesya-1.jpg",
+      "bytes": 29743,
+      "sha256": "8ee55604d7768f298d8b268b0d8a83452729214b7362ae6f0cb494e670d98984",
+      "dimensions": {
+        "width": 252,
+        "height": 308
+      },
+      "altText": "NEEDS_EDITORIAL_REVIEW",
+      "rightsStatus": "pending",
+      "optionalPrivateSource": null
+    },
+    {
+      "sourcePath": "dist/people-module/assets/olga-1.jpg",
+      "bytes": 36768,
+      "sha256": "6141e2902620fcdaeebf8ed9b450da01212fa837c8cb5f33d7d535258ffb2d71",
+      "dimensions": {
+        "width": 479,
+        "height": 387
+      },
+      "altText": "NEEDS_EDITORIAL_REVIEW",
+      "rightsStatus": "pending",
+      "optionalPrivateSource": null
+    },
+    {
+      "sourcePath": "dist/people-module/assets/sergey_d-1.jpg",
+      "bytes": 25597,
+      "sha256": "bd8be850e3bf6d97e077aac864d7bb7fc32c75752a409bf5b8856246002e20e4",
+      "dimensions": {
+        "width": 466,
+        "height": 377
+      },
+      "altText": "NEEDS_EDITORIAL_REVIEW",
+      "rightsStatus": "pending",
+      "optionalPrivateSource": null
+    },
+    {
+      "sourcePath": "dist/people-module/assets/sergey_f-1.jpg",
+      "bytes": 42158,
+      "sha256": "df9f41dd7f73289564f877d4910d8617d1853e2a70e8e35a5fc176a66cd35a24",
+      "dimensions": {
+        "width": 466,
+        "height": 377
+      },
+      "altText": "NEEDS_EDITORIAL_REVIEW",
+      "rightsStatus": "pending",
+      "optionalPrivateSource": null
+    },
+    {
+      "sourcePath": "dist/people-module/assets/stanislav-1.jpg",
+      "bytes": 28704,
+      "sha256": "53ae2feb50a6949b52ab08e6f628fb905a608d6ecf180ea0e3844b912b41aa74",
+      "dimensions": {
+        "width": 483,
+        "height": 387
+      },
+      "altText": "NEEDS_EDITORIAL_REVIEW",
+      "rightsStatus": "pending",
+      "optionalPrivateSource": null
+    },
+    {
+      "sourcePath": "dist/people-module/assets/veronika-1.jpg",
+      "bytes": 22749,
+      "sha256": "758498121643bdd872ae24e199e93d9839e79312a953dbe9b502a01746467307",
+      "dimensions": {
+        "width": 467,
+        "height": 377
+      },
+      "altText": "NEEDS_EDITORIAL_REVIEW",
+      "rightsStatus": "pending",
+      "optionalPrivateSource": null
+    },
+    {
+      "sourcePath": "dist/people-module/assets/vladislav-1.jpg",
+      "bytes": 26718,
+      "sha256": "41370bd9907524c752fa8af92262995c4be5b05d321c2cb4ce27b372a1361c41",
+      "dimensions": {
+        "width": 483,
+        "height": 387
+      },
+      "altText": "NEEDS_EDITORIAL_REVIEW",
+      "rightsStatus": "pending",
+      "optionalPrivateSource": null
+    },
+    {
+      "sourcePath": "dist/people-module/assets/yury-1.jpg",
+      "bytes": 30488,
+      "sha256": "54b67d314d3d5f71261b99151e345f9713d1213921fcea4bd91c24a28478171e",
+      "dimensions": {
+        "width": 250,
+        "height": 308
+      },
+      "altText": "NEEDS_EDITORIAL_REVIEW",
+      "rightsStatus": "pending",
+      "optionalPrivateSource": null
+    }
+  ]
+}
