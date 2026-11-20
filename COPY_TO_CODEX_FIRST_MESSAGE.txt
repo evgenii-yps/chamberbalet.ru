@@ -1,0 +1,7 @@
+Continue the real chamberbalet.ru website rebuild. I have attached the complete staged technical-assignment package `CHAMBERBALET_CODEX_HANDOFF_2026-11-21.zip`.
+
+Execute ONLY ACTIVE_STAGE=00 as specified in START_HERE_CODEX.md and TASKS/STAGE_00_AUDIT_AND_RECOVERY.md. Read AGENTS.md, PROJECT_CONTRACT.md, REFERENCE/REFERENCE_MANIFEST.md and current Notion task before work. The authoritative site prototype is https://chamberbalet-prototype-v01.cuppedhornbill2.chatgpt.site/. The older site repository is https://github.com/evgenii-yps/chamberbalet.ru and is NOT the full prototype. Do not replace the source with the shortened v0.19 demo.
+
+You must audit/recover the full original source, record evidence and blockers, create documentation-only work on an isolated branch, update the Notion task https://app.notion.com/p/41eafb0a249f81a1ae10c7c271913273, and report results in Russian with full GitHub commit SHA. Do NOT implement Stage 01, merge to main, publish, deploy, change DNS or touch REG.RU. Future stage tasks are reference only until my separate approval.
+
+If you cannot obtain the original site source/assets through authorized access, stop with BLOCKED and explain the exact access/export I need to provide. Confirm production unchanged.

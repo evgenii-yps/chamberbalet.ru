@@ -1,0 +1,15 @@
+{
+  "release_id": "DRAFT_NOT_RELEASED",
+  "repo": "evgenii-yps/chamberbalet.ru",
+  "commit_sha": "REQUIRED_FULL_SHA",
+  "build_command": "npm ci && npm run build",
+  "build_output": "dist/",
+  "zip_contents_root": "index.html",
+  "file_manifest": [],
+  "zip_sha256": "REQUIRED_AFTER_BUILD",
+  "tested_routes": [],
+  "legal_clearance": "PENDING",
+  "media_rights": "PENDING",
+  "owner_approval": "REQUIRED",
+  "deployment_status": "NOT_DEPLOYED"
+}
