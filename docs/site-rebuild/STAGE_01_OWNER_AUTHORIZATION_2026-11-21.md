@@ -9,6 +9,14 @@ Approved Sites v16 source commit: 329a00aec044a5bf10d96386f953efe1369f9bb1
 Historical main baseline: aff98db8fbe7865a96992b1f7288764f311075a6 (recheck before creating branch)
 Notion task: https://app.notion.com/p/41eafb0a249f81a1ae10c7c271913273
 
+## OWNER CLARIFICATION (2026-11-21) — REPLACE THE OLD SITE, FOLLOW THE PROVIDED NEW MOCKUP
+
+The owner has explicitly clarified: the existing old website's design, copy, structure and implementation are **disposable**. Do not preserve or reproduce the old website as a product requirement. The old GitHub repository is a technical starting location and rollback source only; replacing legacy architecture on the separate feature branch is allowed if it better fits the new site. Keep historical Git references and a safe production backup/rollback for the eventual separately authorized launch.
+
+The owner has **already supplied Codex the NEW mockup as the reference to implement**. First verify the exact provided file/artifact, version, page and media coverage against the authoritative ChatGPT Sites v16 Git source commit `329a00aec044a5bf10d96386f953efe1369f9bb1`. If the supplied artifact is complete and current, use it as the primary visual and interaction target. If the attachment differs, is missing assets, or is an earlier partial v0.19, document the discrepancy and use the verified approved v16 source as the source of truth. Do not silently use the obsolete site as the design reference.
+
+**Permission to discard the old website's design/code does NOT authorize deleting the live REG.RU files now.** Stage 01 remains limited to isolated, nonpublic architecture and private local preview; Stage 02 implementation, public GitHub asset disclosure, changes to main, hosting or DNS, and deployment require their own separate authorization. At release, back up old production including hidden files and configs and verify rollback before replacing it.
+
 ## 1. Owner decision — limited G0 waiver, NOT public release clearance
 
 The owner explicitly APPROVES Stage 01 ONLY.
