@@ -1,7 +1,9 @@
 import {spawn} from 'node:child_process';
 import http from 'node:http';
 import {setTimeout as wait} from 'node:timers/promises';
-const server=spawn(process.execPath,['server.mjs'],{cwd:import.meta.dirname,stdio:['inherit','pipe','inherit']});
+import path from 'node:path';
+import {fileURLToPath} from 'node:url';
+const server=spawn(process.execPath,['server.mjs'],{cwd:path.dirname(fileURLToPath(import.meta.url)),stdio:['inherit','pipe','inherit']});
 let exited=false;
 let listening=false;
 server.stdout.on('data',chunk=>{process.stdout.write(chunk);if(chunk.toString().includes('PRIVATE LOCAL PREVIEW'))listening=true});
