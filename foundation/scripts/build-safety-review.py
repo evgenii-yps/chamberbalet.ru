@@ -32,6 +32,12 @@ for page in pages:
     for el in doc.xpath('//*[@id="contact"]'):
         for child in list(el): child.drop_tree()
         el.text='Контактные действия временно недоступны.'
+    if page=='venues.html':
+        for el in doc.xpath('//*[contains(concat(" ",normalize-space(@class)," ")," venues-options ")]//p'):
+            if 'билет' in el.text_content().lower() or 'выруч' in el.text_content().lower(): el.drop_tree()
+    if page=='index.html':
+        for el in doc.xpath('//*[contains(concat(" ",normalize-space(@class)," ")," hero__copy ")]'):
+            etree.SubElement(el,'p',{'class':'review-video-notice'}).text='Видеовступление временно недоступно.'
     for el in doc.xpath('//*[@id="pdf-note"]'): el.drop_tree()
     # Unsupported attribution in source performance credits remains private.
     for el in doc.xpath('//p[contains(., "Гапиенко")]|//dd[contains(., "Гапиенко")]|//li[contains(., "Гапиенко")]'):
