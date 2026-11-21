@@ -26,5 +26,6 @@ files=[]
 for p in sorted(target.rglob('*')):
  if p.is_file():
   b=p.read_bytes();files.append({'path':p.relative_to(target).as_posix(),'bytes':len(b),'sha256':sha(b)})
-(target/'STAGE04_MANIFEST.json').write_text(json.dumps({'mode':'OWNER-ONLY NON-PRODUCTION REVIEW','g2Commit':'d533bf086eb1d5455fd9c383d22ffda22f148f30','sourceCommit':'329a00aec044a5bf10d96386f953efe1369f9bb1','g2ArchiveSha256':'083cd2bbef16f33135e2b9772752ae1654163f5357c1f17fb967d4d992bb0977','files':files},ensure_ascii=False,indent=2)+'\n',encoding='utf8')
+preflight=subprocess.check_output(['git','-C',str(root),'rev-parse','HEAD'],text=True).strip()
+(target/'STAGE04_MANIFEST.json').write_text(json.dumps({'mode':'OWNER-ONLY NON-PRODUCTION REVIEW','preflightCommit':preflight,'g2Commit':'d533bf086eb1d5455fd9c383d22ffda22f148f30','sourceCommit':'329a00aec044a5bf10d96386f953efe1369f9bb1','g2ArchiveSha256':'083cd2bbef16f33135e2b9772752ae1654163f5357c1f17fb967d4d992bb0977','files':files},ensure_ascii=False,indent=2)+'\n',encoding='utf8')
 print('Owner-only Stage 04 preflight assembled; NOT FOR DEPLOYMENT')
