@@ -17,6 +17,10 @@ import { bundleJs } from './bundle-js.mjs';
 import { stripComments } from './strip-comments.mjs';
 import * as C from '../src/content.js';
 
+// This legacy October build is not the approved v16 site. Stage 02 has no
+// authorized public release pipeline; fail before deleting or writing output.
+throw new Error('Release blocked: legacy builder is not the approved Sites v16 implementation. Stage 02 preview only.');
+
 const ROBOTS_DENY = process.env.ROBOTS === 'deny';
 const KEEP_COMMENTS = process.env.BUILD_COMMENTS === 'keep';
 const hash = (data) => crypto.createHash('sha256').update(data).digest('hex').slice(0, 8);

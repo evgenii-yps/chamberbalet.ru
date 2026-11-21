@@ -11,6 +11,7 @@ Owner approved the presented visual design; this is not technical G2 acceptance.
 - Automated Chromium full-page screenshots of locally served verified original and preview at widths 1440, 1024, 768, 390, 320, height 900, reduced motion. All 70 requests returned 200, no page errors or horizontal overflow. Five routes (home, repertoire, two productions, people) were pixel-identical at all widths. Afisha differed, including 33px taller preview at 390/320; date filter is an intentional change but differences are not fully attributed. Venues differed by 308–312 pixels per width, reason not yet established. Screenshots and detailed results remain private. These are static states, not proof of full interaction parity.
 - Chromium mobile-width automated checks: 15/15 People dialogs opened, Escape closed and focus returned; mobile menu opened and closed with Escape; date with no events showed a status and clearing the date restored rows. These observations do not establish all modal content, touch, video, focus trap, filtering combinations, network or asset rights.
 - `npm run build && npm run check`: 6/6 passed; `npm run test:private`: 3/3 passed; `SITES_SOURCE=… node --test tests/import-private.test.mjs`: 1/1 passed. No live ticket destinations were checked.
+- The historical repository-root builder now fails before removing or writing output; `node scripts/build.mjs` returned exit 1 as intended. This guard does not constitute an authorized or complete future production pipeline.
 
 ## Remaining before G2 recommendation
 
