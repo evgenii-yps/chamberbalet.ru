@@ -1,5 +1,7 @@
 # Stage 02 private implementation checkpoint
 
+> Update 2026-11-21: the owner has viewed and approved the visual design; statements below that the owner has not viewed it are historical. Technical G2 remains open. Current evidence and limitations are in `STAGE_02_TECHNICAL_PROGRESS_2026-11-21.md`.
+
 ## Status and provenance
 
 Stage 02 authorized by `64af9655686c6baeffaebf9a444d88b00ce61626`; branch starts at accepted Stage 01 `3ce63e3902003d30700c6b48a66d343b3ac60094`. G2 is **NOT READY for acceptance yet**: owner has not seen the private visual result, Cloud Desktop failed to open (`the gaas-browser node_repl sandbox cannot be disabled`), and several requested checks and release blockers remain. Stage 03 has not started.
