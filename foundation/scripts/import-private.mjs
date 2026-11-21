@@ -29,6 +29,13 @@ const peopleText=await fs.readFile(path.join(source,peoplePath),'utf8');
 const match=peopleText.match(/const data=(\[.*?\]);\s*const url=/s);if(!match)throw Error('People extraction failed');
 const people=JSON.parse(match[1]).map((value,order)=>({id:`person-${value.id}`,order,source:{path:peoplePath,sha256:sha(peopleText),valueSha256:sha(JSON.stringify(value))},value}));
 if(people.length!==15||people.filter(x=>x.value.leader).length!==2||people.filter(x=>x.value.photos.length).length!==14||new Set(people.map(x=>x.id)).size!==15)throw Error('People reconciliation failed');
-const target=path.join(root,'.private','data');await fs.mkdir(target,{recursive:true});
-for(const [name,data] of [['events.json',events],['people.json',people]])await fs.writeFile(path.join(target,name),JSON.stringify(data,null,2)+'\n');
+const target=process.env.PRIVATE_DATA_DIR ? path.resolve(process.env.PRIVATE_DATA_DIR) : path.join(root,'.private','data');await fs.mkdir(target,{recursive:true});
+// Never overwrite a private editorial copy. Reconciliation of a changed
+// source requires an explicit review, not automatic fuzzy matching.
+const existing=await Promise.all(['events.json','people.json'].map(name=>fs.access(path.join(target,name)).then(()=>true,()=>false)));
+if(existing.some(Boolean)&&!existing.every(Boolean))throw Error('Incomplete private data; restore from backup');
+for(const [name,data] of [['events.json',events],['people.json',people]]){
+  try{await fs.writeFile(path.join(target,name),JSON.stringify(data,null,2)+'\n',{flag:'wx'})}
+  catch(error){if(error.code!=='EEXIST')throw error;console.log(`Preserved existing ${name}`)}
+}
 console.log(`PRIVATE import: ${events.length} events, ${people.length} people; output ignored by Git`);

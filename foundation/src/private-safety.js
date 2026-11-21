@@ -4,6 +4,9 @@ function disableOutbound(root=document) {
   const raw=link.getAttribute('href');
   let destination; try { destination = new URL(raw, location.href); } catch { destination = null; }
   if (!destination || destination.origin !== location.origin || !['http:', 'https:'].includes(destination.protocol) || /\.pdf(?:[?#]|$)/i.test(raw)) {
+   // Preserve the link's visible decoration before removing href; browser
+   // default link styles otherwise disappear from the private preview.
+   if (getComputedStyle(link).textDecorationLine.includes('underline')) link.style.textDecorationLine='underline';
    link.dataset.verificationStatus='source_recorded_unverified'; link.removeAttribute('href'); link.removeAttribute('download'); link.setAttribute('aria-disabled','true'); link.dataset.privateBlocked='true';
   }
  }
