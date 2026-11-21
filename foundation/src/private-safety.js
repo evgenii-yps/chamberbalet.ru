@@ -12,4 +12,13 @@ function disableOutbound(root=document) {
  }
 }
 disableOutbound();
-new MutationObserver(()=>disableOutbound()).observe(document.body,{childList:true,subtree:true});
+new MutationObserver(()=>disableOutbound()).observe(document.body,{childList:true,subtree:true,attributes:true,attributeFilter:['href','download']});
+// Catch a newly assigned destination even before the mutation observer runs.
+document.addEventListener('click', event => {
+ const link=event.target instanceof Element ? event.target.closest('a[href]') : null;
+ if (!link) return;
+ let url; try { url=new URL(link.getAttribute('href'),location.href); } catch {}
+ if (!url || url.origin!==location.origin || !['http:','https:'].includes(url.protocol) || /\.pdf$/i.test(url.pathname)) {
+  event.preventDefault(); event.stopImmediatePropagation(); disableOutbound(document);
+ }
+}, true);

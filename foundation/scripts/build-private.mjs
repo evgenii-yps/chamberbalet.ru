@@ -50,3 +50,15 @@ await fs.copyFile(path.join(root,'src/private-safety.js'),path.join(target,'priv
 await fs.writeFile(path.join(target,'404.html'),'<!doctype html><html lang="ru"><meta charset="utf-8"><title>404</title><h1>Страница не найдена</h1><a href="/">На главную</a></html>');
 await fs.writeFile(path.join(target,'robots.txt'),'User-agent: *\nDisallow: /\n');
 console.log('PRIVATE PREVIEW ONLY: source commit and 57 file hashes verified; seven routes.');
+// A private manifest makes the exact candidate auditable without publishing its contents.
+async function listFiles(dir, prefix='') {
+ const result=[];
+ for(const entry of (await fs.readdir(dir,{withFileTypes:true})).sort((a,b)=>a.name.localeCompare(b.name,'en'))) {
+  const relative=prefix ? `${prefix}/${entry.name}` : entry.name;
+  if(entry.isDirectory()) result.push(...await listFiles(path.join(dir,entry.name),relative));
+  else if(entry.isFile()) {const bytes=await fs.readFile(path.join(dir,entry.name));result.push({path:relative,bytes:bytes.length,sha256:crypto.createHash('sha256').update(bytes).digest('hex')});}
+  else throw Error(`Unexpected output entry: ${relative}`);
+ }
+ return result;
+}
+await fs.writeFile(path.join(root,'.private','candidate-manifest.json'),JSON.stringify({mode:'PRIVATE NON-PRODUCTION',sourceCommit:head,files:await listFiles(target)},null,2)+'\n');
