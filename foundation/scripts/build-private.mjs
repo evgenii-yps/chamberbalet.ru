@@ -3,6 +3,7 @@ import path from 'node:path';
 import crypto from 'node:crypto';
 import {execFileSync} from 'node:child_process';
 import {fileURLToPath} from 'node:url';
+import {loadActive,guardEditorialFiles} from '../src/private-store.mjs';
 const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 const source=process.env.SITES_SOURCE;
 if(!source) throw Error('Set SITES_SOURCE to the private authorized Sites v16 git checkout.');
@@ -16,13 +17,16 @@ for(const line of lines){const [name,size,hash]=line.split(',');const buf=await 
 // exists; never overwrite the editor's work during a rebuild.
 const dataDir=process.env.PRIVATE_DATA_DIR ? path.resolve(process.env.PRIVATE_DATA_DIR) : path.join(root,'.private','data');
 const dataFiles=['events.json','people.json'].map(x=>path.join(dataDir,x));
+const store=path.join(root,'.private','version-store');
+const hasActive=!process.env.PRIVATE_DATA_DIR&&await fs.lstat(store).then(()=>true,e=>{if(e.code==='ENOENT')return false;throw e});
 const present=await Promise.all(dataFiles.map(x=>fs.access(x).then(()=>true,()=>false)));
-if(!present.some(Boolean)&&!process.env.PRIVATE_DATA_DIR)execFileSync(process.execPath,[path.join(root,'scripts/import-private.mjs')],{env:process.env,stdio:'inherit'});
+if(!hasActive){if(!present.some(Boolean)&&!process.env.PRIVATE_DATA_DIR)execFileSync(process.execPath,[path.join(root,'scripts/import-private.mjs')],{env:process.env,stdio:'inherit'});
 else if(!present.some(Boolean))throw Error('Private data directory is empty');
-else if(!present.every(Boolean))throw Error('Incomplete private data; restore both files from backup');
-const [events,people]=await Promise.all(dataFiles.map(async x=>JSON.parse(await fs.readFile(x,'utf8'))));
+else if(!present.every(Boolean))throw Error('Incomplete private data; restore both files from backup')}
+const [events,people]=hasActive?await loadActive(store).then(async({state})=>{await guardEditorialFiles(dataDir,state);return [state.events,state.people]}):await Promise.all(dataFiles.map(async x=>JSON.parse(await fs.readFile(x,'utf8'))));
 if(!Array.isArray(events)||!events.length||new Set(events.map(x=>x.id)).size!==events.length||events.some(x=>!/^event-[a-zA-Z0-9-]+$/.test(x.id)||!x.value||typeof x.value.startsAt!=='string'||Number.isNaN(Date.parse(x.value.startsAt))))throw Error('Invalid private events');
 if(!Array.isArray(people)||!people.length||new Set(people.map(x=>x.id)).size!==people.length||people.some(x=>!x.value||x.id!==`person-${x.value.id}`||!Array.isArray(x.value.photos)))throw Error('Invalid private people');
+for(const p of people)for(const photo of p.value.photos){if(typeof photo!=='string'||!/^assets\/[A-Za-z0-9_.-]+$/.test(photo))throw Error('Invalid portrait path');await fs.access(path.join(sourceDir,'dist','people-module',photo))}
 const target=path.join(root,'.private','dist');await fs.rm(target,{recursive:true,force:true});await fs.mkdir(target,{recursive:true});await fs.cp(path.join(sourceDir,'dist'),target,{recursive:true});
 // Replace only the exact, checksum-verified data declarations. Rendering code
 // stays the original v16 implementation; no private content enters Git.
