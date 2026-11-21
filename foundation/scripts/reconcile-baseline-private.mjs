@@ -1,0 +1,8 @@
+import fs from 'node:fs/promises';import path from 'node:path';import vm from 'node:vm';import crypto from 'node:crypto';import {execFileSync} from 'node:child_process';import {fileURLToPath} from 'node:url';
+const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');const source=process.env.SITES_SOURCE&&path.resolve(process.env.SITES_SOURCE);if(!source)throw Error('SITES_SOURCE required');
+// The existing importer validates the commit and every source byte before
+// preserving the existing editorial pair.
+execFileSync(process.execPath,[path.join(root,'scripts/import-private.mjs')],{env:process.env,stdio:'pipe'});
+const records=JSON.parse(await fs.readFile(path.join(root,'.private/data/events.json'),'utf8'));const script=await fs.readFile(path.join(source,'dist/show-schedule.js'),'utf8');const marker='  const now = Date.now();';if(script.split(marker).length!==2)throw Error('Unexpected source');const c={};vm.runInNewContext(script.replace(marker,'  globalThis.result = performances; return;\n'+marker),c,{timeout:1000});const values=JSON.parse(JSON.stringify(c.result));const hash=x=>crypto.createHash('sha256').update(JSON.stringify(x)).digest('hex');
+const baseline=records.map(r=>{const matches=values.filter(v=>hash(v)===r.source.valueSha256);if(!matches.length)throw Error('Record requires reviewed reconciliation, cannot bootstrap');return matches[0]});
+const out=path.join(root,'.private/data/baseline-v16.json');await fs.writeFile(out,JSON.stringify(baseline,null,2)+'\n',{flag:'wx',mode:0o600});console.log('Private baseline created; editorial records unchanged');

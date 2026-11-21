@@ -32,7 +32,7 @@ const start='  const performances = [';const end='\n  const now = Date.now();';
 if(schedule.split(start).length!==2||schedule.split(end).length!==2)throw Error('Schedule adapter contract changed');
 const left=schedule.indexOf(start),right=schedule.indexOf(end,left);
 if(right<0)throw Error('Schedule adapter bounds invalid');
-schedule=schedule.slice(0,left)+'  const performances = '+JSON.stringify(events.map(x=>x.value))+';\n'+schedule.slice(right);
+schedule=schedule.slice(0,left)+'  const performances = '+JSON.stringify(events.filter(x=>x.reconciliation?.status!=='cancelled').map(x=>x.value))+';\n'+schedule.slice(right);
 await fs.writeFile(scheduleFile,schedule);
 const peopleFile=path.join(target,'people-module','theatre-people.js');
 let peopleSource=await fs.readFile(peopleFile,'utf8');
